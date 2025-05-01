@@ -27,7 +27,7 @@ class InviteRequest(BaseModel):
     org_unit_id: str = None
     manager_id: str = None
 
-@router.post("/login", response_model=Token)
+@router.post("/login", tags=["auth"], response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or user.hashed_password != form_data.password:
@@ -53,7 +53,7 @@ def require_hr_admin(current_user: User = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return current_user
 
-@router.post("/invite", response_model=UserRead)
+@router.post("/invite", tags=["auth"], response_model=UserRead)
 def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_user: User = Depends(require_hr_admin)):
     # In a real app, send invite email and create user with temp password
     existing = db.query(User).filter(User.email == invite.email).first()
@@ -62,7 +62,7 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     user = User(
         name=invite.name,
         email=invite.email,
-        hashed_password="temp123",  # In real app, generate/send temp password
+        hashed_password="secret123",  # In real app, generate/send temp password
         role_band=invite.role_band,
         role_title=invite.role_title,
         org_unit_id=invite.org_unit_id,

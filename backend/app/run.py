@@ -1,7 +1,44 @@
 from fastapi import FastAPI
 from importlib import import_module
 
-app = FastAPI(title="Leave Management API")
+from fastapi.security import OAuth2PasswordBearer
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, SecuritySchemeType
+from fastapi import Security
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+app = FastAPI(title="Leave Management API", 
+    swagger_ui_init_oauth={
+        "usePkceWithAuthorizationCodeGrant": True,
+        "clientId": "swagger-ui-client"
+    },
+    openapi_tags=[
+        {"name": "auth", "description": "Authentication and authorization endpoints"},
+        {"name": "users", "description": "User management endpoints"},
+        {"name": "org", "description": "Organization units endpoints"},
+        {"name": "leave", "description": "Leave requests endpoints"},
+        {"name": "files", "description": "Files endpoints"},
+        {"name": "analytics", "description": "Analytics endpoints"},
+    ]
+)
+
+# Add a global dependency to require Authorization except for /login
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class AuthRequiredMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path.startswith("/api/v1/auth/login") or request.url.path.startswith("/docs") or request.url.path.startswith("/openapi") or request.url.path.startswith("/redoc"):
+            return await call_next(request)
+        # Only require token for API routes
+        if request.url.path.startswith("/api/v1/"):
+            authorization: str = request.headers.get("Authorization")
+            if not authorization or not authorization.lower().startswith("bearer "):
+                from fastapi.responses import JSONResponse
+                return JSONResponse(status_code=401, content={"detail": "Not authenticated. Add 'Authorization: Bearer <token>' header."})
+        return await call_next(request)
+
+app.add_middleware(AuthRequiredMiddleware)
 
 def include_routers():
     modules = ["auth", "users", "org", "leave", "files", "analytics"]
