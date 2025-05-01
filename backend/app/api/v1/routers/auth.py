@@ -33,14 +33,21 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not user or user.hashed_password != form_data.password:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     claims = {
-        "sub": str(user.id),
-        "user_id": str(user.id),
-        "role_band": user.role_band,
-        "role_title": user.role_title,
-        "org_unit_id": str(user.org_unit_id) if user.org_unit_id else None,
-        "manager_id": str(user.manager_id) if user.manager_id else None,
-        "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    }
+            "sub": str(user.id),
+            "user_id": str(user.id),
+            "id": str(user.id),
+            "name": user.name,
+            "email": user.email,
+            "role_band": user.role_band,
+            "role_title": user.role_title,
+            "org_unit_id": str(user.org_unit_id) if user.org_unit_id else None,
+            "manager_id": str(user.manager_id) if user.manager_id else None,
+            "passport_or_id_number": user.passport_or_id_number,
+            "profile_image_url": user.profile_image_url,
+            "extra_metadata": user.extra_metadata,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        }
     token = jwt.encode(claims, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
 
@@ -53,9 +60,11 @@ def require_hr_admin(current_user: User = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return current_user
 
-@router.post("/invite", tags=["auth"], response_model=UserRead)
-def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_user: User = Depends(require_hr_admin)):
-    # In a real app, send invite email and create user with temp password
+from app.deps.permissions import get_current_user, require_role
+
+@router.post("/invite", tags=["auth"], response_model=UserRead, dependencies=[Depends(require_role(["HR", "Manager"]))])
+def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    # Only HR or Manager can invite
     existing = db.query(User).filter(User.email == invite.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="User with this email already exists")

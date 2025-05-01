@@ -9,7 +9,13 @@ from alembic import context
 from app.db.session import engine
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app')))
 from app.db.base import Base
-from app.models import *
+from app.models.user import User
+from app.models.leave_type import LeaveType
+from app.models.leave_policy import LeavePolicy
+from app.models.leave_request import LeaveRequest
+from app.models.leave_document import LeaveDocument
+from app.models.org_unit import OrgUnit
+from app.models.audit_log import AuditLog
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

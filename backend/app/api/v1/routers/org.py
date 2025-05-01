@@ -27,7 +27,7 @@ def create_org_unit(unit: OrgUnitCreate, db: Session = Depends(get_db), current_
             raise HTTPException(status_code=400, detail="Org unit with this name already exists")
         raise HTTPException(status_code=500, detail="Internal server error")
     from app.deps.permissions import log_permission_denied
-    log_permission_denied(db, current_user.user_id, "create_org_unit", "org_unit", str(db_unit.id))
+    log_permission_denied(db, current_user.id, "create_org_unit", "org_unit", str(db_unit.id), message="Org unit creation failed or duplicate", http_status=400)
     return OrgUnitRead.from_orm(db_unit)
 
 @router.get("/{unit_id}", tags=["org"], response_model=OrgUnitRead, dependencies=[Depends(require_role(["HR", "Admin"]))])
@@ -51,5 +51,5 @@ def update_org_unit(unit_id: UUID, unit_update: OrgUnitCreate, db: Session = Dep
         db.rollback()
         raise HTTPException(status_code=500, detail="Could not update org unit")
     from app.deps.permissions import log_permission_denied
-    log_permission_denied(db, current_user.user_id, "update_org_unit", "org_unit", str(unit_id))
+    log_permission_denied(db, current_user.id, "update_org_unit", "org_unit", str(unit_id), message="Org unit update failed", http_status=500)
     return OrgUnitRead.from_orm(unit)

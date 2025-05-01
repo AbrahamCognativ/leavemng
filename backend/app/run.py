@@ -41,9 +41,16 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
 app.add_middleware(AuthRequiredMiddleware)
 
 def include_routers():
-    modules = ["auth", "users", "org", "leave", "files", "analytics"]
+    modules = ["auth", "users", "org", "leave", "files", "analytics", "leave_types"]
     for m in modules:
         router = import_module(f"app.api.v1.routers.{m}")
         app.include_router(router.router, prefix=f"/api/v1/{m}")
 
 include_routers()
+
+# Start the leave accrual scheduler (monthly)
+try:
+    from app.utils.scheduler import run_accrual_scheduler
+    run_accrual_scheduler()
+except Exception as e:
+    print(f"[WARN] Could not start accrual scheduler: {e}")

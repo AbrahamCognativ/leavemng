@@ -5,7 +5,7 @@ from sqlalchemy.engine.url import URL
 
 from .base import Base
 
-DATABASE_URL = "postgresql://postgres:qwertyuiop@localhost:5433/leavemanager"
+DATABASE_URL = "postgresql://postgres:qwertyuiop@localhost:5433/leavemanagerone"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

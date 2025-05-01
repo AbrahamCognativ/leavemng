@@ -11,15 +11,9 @@ class LeaveStatusEnum(str, Enum):
     cancelled = "cancelled"
 
 class LeaveRequestBase(BaseModel):
-    user_id: UUID
     leave_type_id: UUID
     start_date: date
     end_date: date
-    total_days: float
-    status: LeaveStatusEnum
-    applied_at: datetime
-    decision_at: Optional[datetime] = None
-    decided_by: Optional[UUID] = None
     comments: Optional[str] = None
 
 class LeaveRequestCreate(LeaveRequestBase):
@@ -27,6 +21,12 @@ class LeaveRequestCreate(LeaveRequestBase):
 
 class LeaveRequestRead(LeaveRequestBase):
     id: UUID
+    status: LeaveStatusEnum
+    applied_at: datetime
+    total_days: float
+    decided_at: Optional[datetime] = None
+    decided_by: Optional[UUID] = None
+    comments: Optional[str] = None
 
     class Config:
         orm_mode = True

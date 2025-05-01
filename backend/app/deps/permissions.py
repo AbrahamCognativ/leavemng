@@ -18,6 +18,7 @@ class UserInToken(UserRead):
     org_unit_id: Optional[str]
     manager_id: Optional[str]
 
+
 # 1. Extract current user from JWT
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInToken:
@@ -35,10 +36,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInToken:
 def require_role(allowed_bands: List[str] = None, allowed_titles: List[str] = None):
     def verifier(current: UserInToken = Depends(get_current_user), db: Session = Depends(get_db)):
         if allowed_bands and current.role_band not in allowed_bands:
-            log_permission_denied(db, current.user_id, "require_role", "", 0)
+            log_permission_denied(db, current.id, "require_role", "", "00000000-0000-0000-0000-000000000000", message="Insufficient band permissions", http_status=403)
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient band permissions")
         if allowed_titles and current.role_title not in allowed_titles:
-            log_permission_denied(db, current.user_id, "require_role", "", 0)
+            log_permission_denied(db, current.id, "require_role", "", "00000000-0000-0000-0000-000000000000", message="Insufficient title permissions", http_status=403)
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient title permissions")
         return current
     return verifier
@@ -50,21 +51,26 @@ def require_direct_manager(request_user_id: str, db: Session = Depends(get_db), 
     if current.role_band in ("HR", "Admin"):
         return current
     target = db.query(User).filter(User.id == request_user_id).first()
-    if not target or str(target.manager_id) != str(current.user_id):
-        log_permission_denied(db, current.user_id, "require_direct_manager", "user", request_user_id)
+    if not target or str(target.manager_id) != str(current.id):
+        log_permission_denied(db, current.id, "require_direct_manager", "user", request_user_id, message="Only the reporting manager (or HR/Admin) may perform this action", http_status=403)
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the reporting manager (or HR/Admin) may perform this action")
     return current
 
 # 4. Audit logging for permission failures
 
-def log_permission_denied(db: Session, user_id: str, action: str, resource: str, resource_id: str):
+def log_permission_denied(db: Session, user_id: str, action: str, resource: str, resource_id: str, message: str = None, http_status: int = None):
     from app.models.audit_log import AuditLog
+    meta = {"attempted_action": action}
+    if message:
+        meta["message"] = message
+    if http_status:
+        meta["http_status"] = http_status
     entry = AuditLog(
         user_id=user_id,
         action="permission_denied",
         resource_type=resource,
         resource_id=resource_id,
-        metadata={"attempted_action": action}
+        metadata=meta
     )
     db.add(entry)
     db.commit()
