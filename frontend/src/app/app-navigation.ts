@@ -5,6 +5,20 @@ export const navigation = [
     icon: 'home'
   },
   {
+    text: 'Leave Management',
+    icon: 'description',
+    items: [
+      {
+        text: 'Apply',
+        path: '/leave/apply',
+      },
+      {
+        text: 'Leave History',
+        path: '/leave/history',
+      }
+    ]
+  },
+  {
     text: 'Admin',
     path: '/admin',
     icon: 'preferences'
@@ -15,3 +29,4 @@ export const navigation = [
     icon: 'user'
   }
 ];
+

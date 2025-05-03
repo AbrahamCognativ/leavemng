@@ -1,0 +1,142 @@
+<div class="leave-request-container">
+  <h2>Apply for Leave</h2>
+  <dx-form [formData]="leave" [colCount]="2">
+    <dxi-item
+      dataField="leaveType"
+      editorType="dxSelectBox"
+      [editorOptions]="{
+        items: leaveTypes,
+        placeholder: 'Select leave type',
+        searchEnabled: true
+      }">
+      <dxo-label text="Leave Type"></dxo-label>
+      <dxi-validation-rule type="required" message="Leave type is required"></dxi-validation-rule>
+    </dxi-item>
+    <dxi-item
+      dataField="startDate"
+      editorType="dxDateBox"
+      [editorOptions]="{
+        type: 'date',
+        displayFormat: 'dd/MM/yyyy',
+        min: minDate
+      }">
+      <dxo-label text="Start Date"></dxo-label>
+      <dxi-validation-rule type="required" message="Start date is required"></dxi-validation-rule>
+    </dxi-item>
+    <dxi-item
+      dataField="endDate"
+      editorType="dxDateBox"
+      [editorOptions]="{
+        type: 'date',
+        displayFormat: 'dd/MM/yyyy',
+        min: leave.startDate || minDate
+      }">
+      <dxo-label text="End Date"></dxo-label>
+      <dxi-validation-rule type="required" message="End date is required"></dxi-validation-rule>
+    </dxi-item>
+    <dxi-item
+      dataField="reason"
+      editorType="dxTextArea"
+      [colSpan]="2"
+      [editorOptions]="{
+        height: 100,
+        placeholder: 'Please provide details about your leave request'
+      }">
+      <dxo-label text="Reason"></dxo-label>
+      <dxi-validation-rule type="required" message="Reason is required"></dxi-validation-rule>
+    </dxi-item>
+
+    <!-- Document Upload Section -->
+    <dxi-item
+      [colSpan]="2">
+      <dxo-label text="Supporting Documents"></dxo-label>
+      <div *dxTemplate>
+        <dx-file-uploader
+          selectButtonText="Select Document"
+          labelText="Drag files here or click to browse"
+          accept=".pdf,.doc,.docx,.jpg,.png"
+          [multiple]="true"
+          [showFileList]="true"
+          [(value)]="uploadedFiles"
+          (onValueChanged)="onFileUploaded($event)"
+          uploadMode="useForm">
+        </dx-file-uploader>
+
+        <div class="document-hints mt-2">
+          <p class="text-muted small">
+            <i class="dx-icon-info"></i>
+            For sick leave requests, please attach a doctor's note or medical certificate.
+            Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB per file)
+          </p>
+        </div>
+      </div>
+    </dxi-item>
+
+    <!-- Preview uploaded documents -->
+    <dxi-item [colSpan]="2" *ngIf="leave.documents && leave.documents.length > 0">
+      <div *dxTemplate>
+        <h4>Uploaded Documents</h4>
+        <div class="document-list">
+          <div class="document-item" *ngFor="let doc of leave.documents; let i = index">
+            <span>{{ doc.name }}</span>
+            <dx-button
+              icon="trash"
+              stylingMode="text"
+              type="danger"
+              (onClick)="removeDocument(i)">
+            </dx-button>
+          </div>
+        </div>
+      </div>
+    </dxi-item>
+
+    <!-- Leave Balance Information -->
+    <dxi-item [colSpan]="2">
+      <div *dxTemplate>
+        <div class="leave-balance-info mt-3 mb-3">
+          <h4>Your Leave Balance</h4>
+          <div class="balance-grid">
+            <div *ngFor="let balance of leaveBalances" class="balance-item">
+              <span class="balance-type">{{ balance.type }}:</span>
+              <span class="balance-days">{{ balance.available }} days available</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dxi-item>
+
+    <dxi-item [colSpan]="2">
+      <div *dxTemplate>
+        <div class="calculated-days mt-2 mb-3" *ngIf="calculatedDays > 0">
+          <p><strong>Total days requested:</strong> {{ calculatedDays }} working days</p>
+        </div>
+      </div>
+    </dxi-item>
+
+    <dxi-item itemType="button" [colSpan]="2" horizontalAlignment="right">
+      <div *dxTemplate>
+        <dx-button
+          text="Reset"
+          type="normal"
+          stylingMode="outlined"
+          [width]="120"
+          class="mr-2"
+          (onClick)="resetForm()">
+        </dx-button>
+        <dx-button
+          text="Submit Leave Request"
+          type="default"
+          [width]="200"
+          [disabled]="submitting"
+          (onClick)="onSubmit()">
+          <dx-load-indicator
+            *ngIf="submitting"
+            [width]="20"
+            [height]="20"
+            [visible]="true">
+          </dx-load-indicator>
+        </dx-button>
+      </div>
+    </dxi-item>
+  </dx-form>
+</div>

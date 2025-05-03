@@ -3,13 +3,24 @@ import { Routes, RouterModule } from '@angular/router';
 import { LoginFormComponent, ResetPasswordFormComponent, ChangePasswordFormComponent } from './shared/components';
 import { AuthGuardService } from './shared/services';
 import { ProfileComponent } from './pages/profile/profile.component';
-import { DxDataGridModule, DxFormModule } from 'devextreme-angular';
 import {DashboardComponent} from './pages/dashboard/dashboard.component';
+import {LeaveRequestComponent} from './pages/leave-request/leave-request.component';
+import {LeaveHistoryComponent} from './pages/leave-history/leave-history.component';
 
 const routes: Routes = [
   {
     path: 'profile',
     component: ProfileComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'leave/apply',
+    component: LeaveRequestComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'leave/history',
+    component: LeaveHistoryComponent,
     canActivate: [ AuthGuardService ]
   },
   {
@@ -39,12 +50,10 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes, { useHash: true }), DxDataGridModule, DxFormModule],
+  imports: [RouterModule.forRoot(routes, {useHash: true})],
   providers: [AuthGuardService],
   exports: [RouterModule],
   declarations: [
-    DashboardComponent,
-    ProfileComponent,
   ]
 })
 export class AppRoutingModule { }

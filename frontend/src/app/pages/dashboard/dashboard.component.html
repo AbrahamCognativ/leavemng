@@ -1,1 +1,31 @@
-<h6>DashBoard</h6>
+<div class="dashboard-container">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>Pending Leaves</h3>
+      <div class="stat-value">{{pendingLeaves}}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Approved Leaves</h3>
+      <div class="stat-value">{{approvedLeaves}}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Rejected Leaves</h3>
+      <div class="stat-value">{{rejectedLeaves}}</div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-container">
+      <dx-pie-chart
+        id="leaveTypeChart"
+        [dataSource]="leaveTypeCounts"
+        [legend]="{ visible: true, customizeText: customizeLeaveTypeText }"
+        [title]="{ text: 'Leave Type Distribution' }">
+        <dxi-series
+          argumentField="type"
+          valueField="count">
+        </dxi-series>
+      </dx-pie-chart>
+    </div>
+  </div>
+</div>
