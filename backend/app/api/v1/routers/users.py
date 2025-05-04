@@ -12,6 +12,17 @@ router = APIRouter()
 
 from app.deps.permissions import get_current_user, require_role
 
+@router.patch("/{user_id}/softdelete", tags=["users"], dependencies=[Depends(require_role(["HR", "Admin"]))])
+def soft_delete_user(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="User is already inactive (soft-deleted)")
+    user.is_active = False
+    db.commit()
+    return {"detail": f"User {user.email} soft-deleted (marked as inactive)."}
+
 @router.get("/", tags=["users"], response_model=list[UserRead], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def list_users(db: Session = Depends(get_db)):
     users = db.query(User).all()

@@ -71,6 +71,12 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
         if hasattr(e, 'orig') and hasattr(e.orig, 'diag') and 'unique' in str(e.orig).lower():
             raise HTTPException(status_code=400, detail="Duplicate leave request")
         raise HTTPException(status_code=500, detail="Internal server error")
+    # Send notification to approver (manager)
+    from app.utils.email import send_leave_request_notification
+    manager = db.query(User).filter(User.id == current_user.manager_id).first() if current_user.manager_id else None
+    if manager:
+        leave_details = f"Type: {leave_type.code}, Start: {req.start_date}, End: {req.end_date}, Days: {total_days}"
+        send_leave_request_notification(manager.email, current_user.name, leave_details)
     return LeaveRequestRead.from_orm(db_req)
 
 
@@ -133,5 +139,11 @@ def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), curre
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Could not approve leave request")
+    # Notify user of approval
+    from app.utils.email import send_leave_approval_notification
+    user = db.query(User).filter(User.id == req.user_id).first()
+    leave_details = f"Type: {req.leave_type_id}, Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
+    if user:
+        send_leave_approval_notification(user.email, leave_details, approved=True)
     log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
     return LeaveRequestRead.from_orm(req)

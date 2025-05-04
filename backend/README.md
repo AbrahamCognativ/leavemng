@@ -53,6 +53,26 @@ uvicorn app.run:app --reload
 - `PUT /api/v1/leave/{request_id}` — Update leave request
 - `PATCH /api/v1/leave/{request_id}/approve` — Approve a leave request
 
+### File Management (Leave Documents)
+- `POST /api/v1/files/upload/{leave_request_id}` — Upload a file for a leave request
+- `GET /api/v1/files/list/{leave_request_id}` — List files for a leave request
+- `GET /api/v1/files/download/{leave_request_id}/{document_id}` — Download a file for a leave request
+- `DELETE /api/v1/files/delete/{leave_request_id}/{document_id}` — Delete a file for a leave request
+
+> **Access:** Only the leave requester, their manager, HR, or Admin can upload, list, download, or delete files for a leave request.
+
+### User Profile Images
+- `POST /api/v1/files/upload-profile-image/{user_id}` — Upload a user's profile image
+
+> **Access:** Only the user themselves, HR, or Admin can upload a profile image. Images are stored in `/uploads/profile_images/` and the user's `profile_image_url` is updated.
+
+### Analytics (HR/Admin only)
+- `GET /api/v1/analytics/summary` — Get overall summary statistics
+- `GET /api/v1/analytics/leave-stats` — Get leave request statistics
+- `GET /api/v1/analytics/user-growth` — Get user registration growth stats
+
+> **Access:** Only HR or Admin users can access analytics endpoints.
+
 ### Org Units
 - `GET /api/v1/org/` — List org units (HR/Admin)
 - `POST /api/v1/org/` — Create org unit (HR/Admin)
