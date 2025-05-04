@@ -1,12 +1,14 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router, ActivatedRouteSnapshot } from '@angular/router';
+import { HttpClient} from '@angular/common/http';
+import {firstValueFrom} from 'rxjs';
 
 export interface IUser {
   email: string;
   avatarUrl?: string;
 }
 
-const defaultPath = '/';
+const defaultPath = '/dashboard';
 const defaultUser = {
   email: 'sandra@example.com',
   avatarUrl: 'https://js.devexpress.com/Demos/WidgetsGallery/JSDemos/images/employees/06.png'
@@ -14,7 +16,9 @@ const defaultUser = {
 
 @Injectable()
 export class AuthService {
-  private _user: IUser | null = defaultUser;
+  private _user: IUser | null = null;
+  private API_URL = 'http://localhost:8000/api/v1';
+
   get loggedIn(): boolean {
     return !!this._user;
   }
@@ -24,18 +28,25 @@ export class AuthService {
     this._lastAuthenticatedPath = value;
   }
 
-  constructor(private router: Router) { }
+  constructor(private router: Router, private http: HttpClient,) { }
 
   async logIn(email: string, password: string) {
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
 
     try {
-      // Send request
-      this._user = { ...defaultUser, email };
-      this.router.navigate([this._lastAuthenticatedPath]);
+      const response = await firstValueFrom(
+        this.http.post(`${this.API_URL}/auth/login`, formData)
+      );
+      this._user = { email }; // mock, replace with actual data if needed
+
+      const target = this._lastAuthenticatedPath || defaultPath;
+      await this.router.navigateByUrl(target); // ensures full route match
 
       return {
         isOk: true,
-        data: this._user
+        data: response
       };
     }
     catch {

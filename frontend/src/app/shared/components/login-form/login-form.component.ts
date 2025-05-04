@@ -26,9 +26,11 @@ export class LoginFormComponent {
     this.loading = true;
 
     const result = await this.authService.logIn(email, password);
-    if (!result.isOk) {
+    if (result.isOk) {
       this.loading = false;
-      notify(result.message, 'error', 2000);
+      notify("Login Successful", 'success', 2000);
+    }else {
+      notify(result.message, "error", 2000)
     }
   }
 
