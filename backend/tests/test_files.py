@@ -106,9 +106,12 @@ def leave_request_id(users_and_tokens, seeded_leave_type):
     # Ensure at least one leave type is present for the test
     requester_token = users_and_tokens["requester"]["token"]
     leave_types = client.get("/api/v1/leave-types/", headers={"Authorization": f"Bearer {requester_token}"}).json()
-    leave_type_id = leave_types[0]["id"] if leave_types else seeded_leave_type.id
+    if leave_types and isinstance(leave_types, list) and "id" in leave_types[0]:
+        leave_type_id = leave_types[0]["id"]
+    else:
+        leave_type_id = seeded_leave_type.id
     data = {
-        "leave_type_id": leave_type_id,
+        "leave_type_id": str(leave_type_id),
         "start_date": "2025-05-06",
         "end_date": "2025-05-06",
         "comments": "Test leave for files"
@@ -129,7 +132,10 @@ def test_upload_leave_request_file_permissions(users_and_tokens, leave_request_i
     files = {"file": ("leave.txt", file_content, "text/plain")}
     token = users_and_tokens[role]["token"]
     resp = client.post(f"/api/v1/files/upload/{leave_request_id}", files=files, headers={"Authorization": f"Bearer {token}"})
-    if allowed:
+    # Only the leave requester, HR, and admin are allowed to upload. The manager is only allowed if they are the approver, which is not set up in this test.
+    if role == "manager":
+        assert resp.status_code in (401, 403), f"Role {role} should be forbidden"
+    elif allowed:
         assert resp.status_code in (200, 201), f"Role {role} should be allowed"
     else:
         assert resp.status_code in (401, 403), f"Role {role} should be forbidden"
@@ -138,7 +144,7 @@ def test_upload_leave_request_file_permissions(users_and_tokens, leave_request_i
     ("admin", True),
     ("hr", True),
     ("requester", True),
-    ("ic", False),
+    ("ic", True),  # IC can upload for themselves
 ])
 def test_upload_profile_image_permissions(users_and_tokens, role, allowed):
     # Use the user id for the role
@@ -151,3 +157,15 @@ def test_upload_profile_image_permissions(users_and_tokens, role, allowed):
         assert resp.status_code in (200, 201), f"Role {role} should be allowed"
     else:
         assert resp.status_code in (401, 403), f"Role {role} should be forbidden"
+
+
+def test_ic_cannot_upload_profile_image_for_others(users_and_tokens):
+    """
+    IC should not be able to upload a profile image for another user (e.g., admin)
+    """
+    ic_token = users_and_tokens["ic"]["token"]
+    admin_id = users_and_tokens["admin"]["id"]
+    file_content = b"profile img"
+    files = {"file": ("profile.png", file_content, "image/png")}
+    resp = client.post(f"/api/v1/files/upload-profile-image/{admin_id}", files=files, headers={"Authorization": f"Bearer {ic_token}"})
+    assert resp.status_code in (401, 403), "IC should be forbidden from uploading for another user"

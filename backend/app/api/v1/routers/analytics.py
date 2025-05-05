@@ -18,7 +18,7 @@ def analytics_summary(db: Session = Depends(get_db)):
 @router.get("/leave-stats", tags=["analytics"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def leave_stats(db: Session = Depends(get_db)):
     last_30 = datetime.now(timezone.utc) - timedelta(days=30)
-    recent_leaves = db.query(LeaveRequest).filter(LeaveRequest.created_at >= last_30).count()
+    recent_leaves = db.query(LeaveRequest).filter(LeaveRequest.applied_at >= last_30).count()
     total_leaves = db.query(LeaveRequest).count()
     return {"last_30_days": recent_leaves, "total": total_leaves}
 

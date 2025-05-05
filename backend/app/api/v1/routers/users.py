@@ -142,7 +142,7 @@ def update_user(user_id: UUID, user_update: UserCreate, db: Session = Depends(ge
         from app.deps.permissions import log_permission_denied
         log_permission_denied(db, current_user.id, "update_user", "user", str(user_id))
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    for k, v in user_update.dict(exclude={"password"}).items():
+    for k, v in user_update.model_dump(exclude={"password"}).items():
         setattr(user, k, v)
     user.hashed_password = user_update.password  # In real app, hash this
     try:

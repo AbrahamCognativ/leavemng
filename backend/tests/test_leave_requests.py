@@ -12,20 +12,45 @@ def auth_token():
     return response.json()["access_token"]
 
 def test_leave_request_crud(auth_token):
+    import uuid
+    import random
+    from datetime import datetime, timedelta
+    import os
+    import jwt
+    from app.models.leave_request import LeaveRequest
+    from app.db.session import SessionLocal
+
     headers = {"Authorization": f"Bearer {auth_token}"}
     types = client.get("/api/v1/leave-types/", headers=headers).json()
     if not types:
         pytest.skip("No leave types to create leave request")
     leave_type_id = types[0]["id"]
-    today = "2025-05-05"
+    # Generate a unique date for each test run to avoid duplicates
+    offset = random.randint(1, 10000)
+    today_dt = datetime.now() + timedelta(days=offset)
+    today = today_dt.strftime("%Y-%m-%d")
     data = {
         "leave_type_id": leave_type_id,
         "start_date": today,
         "end_date": today,
         "comments": f"Test leave {uuid.uuid4()}"
     }
+    # Decode user_id from token for cleanup
+    SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+    payload = jwt.decode(auth_token, SECRET_KEY, algorithms=["HS256"])
+    user_id = payload["user_id"]
+    # Clean up any existing leave requests for this user/leave_type/date
+    db = SessionLocal()
+    db.query(LeaveRequest).filter(
+        LeaveRequest.user_id == user_id,
+        LeaveRequest.leave_type_id == leave_type_id,
+        LeaveRequest.start_date == today,
+        LeaveRequest.end_date == today
+    ).delete()
+    db.commit()
+    db.close()
     resp = client.post("/api/v1/leave/", json=data, headers=headers)
-    assert resp.status_code in (200, 201)
+    assert resp.status_code in (200, 201), f"Could not create leave request: {resp.text}"
     leave = resp.json()
     req_id = leave["id"]
     get_resp = client.get(f"/api/v1/leave/{req_id}", headers=headers)

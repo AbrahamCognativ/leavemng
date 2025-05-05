@@ -34,6 +34,16 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
     if not leave_type:
         raise HTTPException(status_code=400, detail="Invalid leave_type_id")
 
+    # Check for duplicate leave request
+    existing = db.query(LeaveRequest).filter(
+        LeaveRequest.user_id == current_user.id,
+        LeaveRequest.leave_type_id == req.leave_type_id,
+        LeaveRequest.start_date == req.start_date,
+        LeaveRequest.end_date == req.end_date
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Duplicate leave request")
+
     # Calculate total_days
     from datetime import timedelta, date, datetime as dt
     # Calculate total_days for annual leave (weekdays only) or all days otherwise
@@ -122,10 +132,10 @@ def update_leave_request(request_id: UUID, req_update: LeaveRequestCreate, db: S
 @router.patch("/{request_id}/approve", tags=["leave"], response_model=LeaveRequestRead)
 def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
-    sstt = req.status if hasattr(req.status, 'value') else str(req.status)
-    # leave_code = leave_type.code.value if hasattr(leave_type.code, 'value') else str(leave_type.code)
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")
+    sstt = req.status if hasattr(req.status, 'value') else str(req.status)
+    # leave_code = leave_type.code.value if hasattr(leave_type.code, 'value') else str(leave_type.code)
     if (sstt if not hasattr(req.status, 'value') else req.status.value) != "pending":
         # print(f"Leave status = {sstt if not hasattr(req.status, 'value') else req.status.value}")
         raise HTTPException(status_code=400, detail="Only pending requests can be approved")

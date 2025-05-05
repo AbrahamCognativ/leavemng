@@ -79,7 +79,27 @@ def test_analytics_user_growth(monkeypatch):
             assert 'total_users' in data
 
 # Permission error test for IC role (should be forbidden or unauthorized)
-def test_analytics_permission_denied():
+import pytest
+
+from tests.test_files import users_and_tokens
+
+@pytest.mark.parametrize("endpoint", [
+    "/api/v1/analytics/summary",
+    "/api/v1/analytics/leave-stats",
+    "/api/v1/analytics/user-growth",
+])
+@pytest.mark.parametrize("role,allowed", [
+    ("admin", True),
+    ("hr", True),
+    ("manager", False),
+    ("ic", False),
+    ("requester", False),
+])
+def test_analytics_dashboard_permissions(users_and_tokens, endpoint, role, allowed):
+    token = users_and_tokens[role]["token"]
     with TestClient(app) as client:
-        response = client.get('/api/v1/analytics/summary', headers={"Authorization": "Bearer ic-token"})
-        assert response.status_code in (401, 403, 404)
+        response = client.get(endpoint, headers={"Authorization": f"Bearer {token}"})
+        if allowed:
+            assert response.status_code == 200, f"Role {role} should be allowed on {endpoint}"
+        else:
+            assert response.status_code in (401, 403), f"Role {role} should be forbidden on {endpoint}"
