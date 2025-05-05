@@ -6,53 +6,33 @@ from app.db.session import get_db
 from app.schemas.leave_type import LeaveTypeCreate, LeaveTypeRead
 from app.schemas.leave_policy import LeavePolicyCreate, LeavePolicyRead
 from typing import List
+import datetime
 
 from app.deps.permissions import require_role
 
 router = APIRouter()
 
-@router.post("/types", response_model=LeaveTypeRead, tags=["leave-types"], dependencies=[Depends(require_role(["HR", "Admin"]))])
+@router.post("/", response_model=LeaveTypeRead, tags=["leave-types"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def create_leave_type(leave_type: LeaveTypeCreate, db: Session = Depends(get_db)):
-    db_leave_type = LeaveType(**leave_type.dict())
+    db_leave_type = LeaveType(**leave_type.model_dump())
     db.add(db_leave_type)
     db.commit()
     db.refresh(db_leave_type)
     return db_leave_type
 
-@router.get("/types", response_model=List[LeaveTypeRead], tags=["leave-types"], dependencies=[Depends(require_role(["HR", "Admin", "Manager", "IC"]))])
+@router.get("/", response_model=List[LeaveTypeRead], tags=["leave-types"], dependencies=[Depends(require_role(["HR", "Admin", "Manager", "IC"]))])
 def list_leave_types(db: Session = Depends(get_db)):
     return db.query(LeaveType).all()
 
-@router.put("/types/{leave_type_id}", response_model=LeaveTypeRead, tags=["leave-types"], dependencies=[Depends(require_role(["HR", "Admin"]))])
+@router.put("/{leave_type_id}", response_model=LeaveTypeRead, tags=["leave-types"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def update_leave_type(leave_type_id: str, update: LeaveTypeCreate, db: Session = Depends(get_db)):
     leave_type = db.query(LeaveType).filter(LeaveType.id == leave_type_id).first()
     if not leave_type:
         raise HTTPException(status_code=404, detail="Leave type not found")
-    for k, v in update.dict().items():
+    for k, v in update.model_dump().items():
         setattr(leave_type, k, v)
+    leave_type.updated_at = datetime.datetime.now(datetime.timezone.utc)
     db.commit()
     db.refresh(leave_type)
     return leave_type
 
-@router.post("/policies", response_model=LeavePolicyRead, tags=["leave-policies"], dependencies=[Depends(require_role(["HR", "Admin"]))])
-def create_leave_policy(policy: LeavePolicyCreate, db: Session = Depends(get_db)):
-    db_policy = LeavePolicy(**policy.dict())
-    db.add(db_policy)
-    db.commit()
-    db.refresh(db_policy)
-    return db_policy
-
-@router.get("/policies", response_model=List[LeavePolicyRead], tags=["leave-policies"], dependencies=[Depends(require_role(["HR", "Admin"]))])
-def list_leave_policies(db: Session = Depends(get_db)):
-    return db.query(LeavePolicy).all()
-
-@router.put("/policies/{policy_id}", response_model=LeavePolicyRead, tags=["leave-policies"], dependencies=[Depends(require_role(["HR", "Admin"]))])
-def update_leave_policy(policy_id: str, update: LeavePolicyCreate, db: Session = Depends(get_db)):
-    policy = db.query(LeavePolicy).filter(LeavePolicy.id == policy_id).first()
-    if not policy:
-        raise HTTPException(status_code=404, detail="Leave policy not found")
-    for k, v in update.dict().items():
-        setattr(policy, k, v)
-    db.commit()
-    db.refresh(policy)
-    return policy

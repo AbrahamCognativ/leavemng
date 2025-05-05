@@ -26,11 +26,11 @@ def soft_delete_user(user_id: UUID, db: Session = Depends(get_db), current_user=
 @router.get("/", tags=["users"], response_model=list[UserRead], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def list_users(db: Session = Depends(get_db)):
     users = db.query(User).all()
-    return [UserRead.from_orm(user) for user in users]
+    return [UserRead.model_validate(user) for user in users]
 
 @router.post("/", tags=["users"], response_model=UserRead, dependencies=[Depends(require_role(["HR", "Admin"]))])
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = User(**user.dict(exclude={"password"}), hashed_password=user.password)
+    db_user = User(**user.model_dump(exclude={"password"}), hashed_password=user.password)
     db.add(db_user)
     try:
         db.commit()
@@ -43,7 +43,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     # Audit: log user creation
     from app.deps.permissions import log_permission_denied
     log_permission_denied(db, db_user.id, "create_user", "user", db_user.id)
-    return UserRead.from_orm(db_user)
+    return UserRead.model_validate(db_user)
 
 @router.get("/{user_id}", tags=["users"], response_model=UserRead)
 def get_user(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
@@ -58,7 +58,7 @@ def get_user(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(
         from app.deps.permissions import log_permission_denied
         log_permission_denied(db, current_user.id, "get_user", "user", str(user_id), message="Insufficient permissions to view user", http_status=403)
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    return UserRead.from_orm(user)
+    return UserRead.model_validate(user)
 
 @router.get("/{user_id}/leave", tags=["users"])
 def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
@@ -154,4 +154,4 @@ def update_user(user_id: UUID, user_update: UserCreate, db: Session = Depends(ge
     # Audit: log user update
     from app.deps.permissions import log_permission_denied
     log_permission_denied(db, current_user.id, "update_user", "user", str(user_id))
-    return UserRead.from_orm(user)
+    return UserRead.model_validate(user)

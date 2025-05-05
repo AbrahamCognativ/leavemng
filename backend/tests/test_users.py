@@ -19,6 +19,79 @@ def auth_token():
     return token
 
 # Sample valid user data
+
+def test_soft_delete_user(auth_token, created_user_cleanup):
+    data = valid_user_data()
+    import uuid
+    data["passport_or_id_number"] = str(uuid.uuid4())
+    data["email"] = f"softdelete.{data['passport_or_id_number']}@example.com"
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert resp.status_code == 200
+    user_id = resp.json()["id"]
+    created_user_cleanup[0].append(user_id)
+    # Soft delete
+    del_resp = client.patch(f"/api/v1/users/{user_id}/softdelete", headers=headers)
+    assert del_resp.status_code == 200
+    assert "soft-deleted" in del_resp.json()["detail"]
+    # Try soft deleting again
+    del_resp2 = client.patch(f"/api/v1/users/{user_id}/softdelete", headers=headers)
+    assert del_resp2.status_code == 400
+    assert "already inactive" in del_resp2.json()["detail"]
+
+def test_list_users(auth_token):
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    resp = client.get("/api/v1/users/", headers=headers)
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+    # Should contain dicts with at least 'id' and 'email'
+    if resp.json():
+        assert "id" in resp.json()[0]
+        assert "email" in resp.json()[0]
+
+def test_get_user_permission_denied(auth_token):
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    # Try to get a user that isn't self or allowed by role
+    # Use a random UUID that isn't the test user
+    import uuid
+    random_id = str(uuid.uuid4())
+    resp = client.get(f"/api/v1/users/{random_id}", headers=headers)
+    # Should be 403 or 404
+    assert resp.status_code in (403, 404)
+
+def test_update_user(auth_token, created_user_cleanup):
+    data = valid_user_data()
+    import uuid
+    data["passport_or_id_number"] = str(uuid.uuid4())
+    data["email"] = f"update.{data['passport_or_id_number']}@example.com"
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert resp.status_code == 200
+    user_id = resp.json()["id"]
+    created_user_cleanup[0].append(user_id)
+    update_data = data.copy()
+    update_data["name"] = "Updated Name"
+    update_data["password"] = "newpassword123"
+    upd_resp = client.put(f"/api/v1/users/{user_id}", json=update_data, headers=headers)
+    assert upd_resp.status_code == 200
+    assert upd_resp.json()["name"] == "Updated Name"
+
+def test_get_user_leave(auth_token, created_user_cleanup):
+    data = valid_user_data()
+    import uuid
+    data["passport_or_id_number"] = str(uuid.uuid4())
+    data["email"] = f"leave.{data['passport_or_id_number']}@example.com"
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert resp.status_code == 200
+    user_id = resp.json()["id"]
+    created_user_cleanup[0].append(user_id)
+    leave_resp = client.get(f"/api/v1/users/{user_id}/leave", headers=headers)
+    # Should be 200 or 404 if no leave balance
+    assert leave_resp.status_code in (200, 404)
+    if leave_resp.status_code == 200:
+        assert "leave_balance" in leave_resp.json()
+        assert "leave_request" in leave_resp.json()
 def valid_user_data():
     return {
         "name": "John Doe",

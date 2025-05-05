@@ -5,18 +5,24 @@ from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
 from app.schemas.leave_policy import LeavePolicyCreate, LeavePolicyRead
 from typing import List
 import uuid
+from app.deps.permissions import require_role
+from app.models.leave_type import LeaveType
 
 router = APIRouter()
 
-@router.post("/", response_model=LeavePolicyRead, tags=["leave-policy"])
+@router.post("/", response_model=LeavePolicyRead, tags=["leave-policy"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def create_leave_policy(policy: LeavePolicyCreate, db: Session = Depends(get_db)):
-    db_policy = LeavePolicy(**policy.dict())
+    # Ensure leave_type_id exists
+    leave_type = db.query(LeaveType).filter(LeaveType.id == policy.leave_type_id).first()
+    if not leave_type:
+        raise HTTPException(status_code=400, detail="leave_type_id does not exist")
+    db_policy = LeavePolicy(**policy.model_dump())
     db.add(db_policy)
     db.commit()
     db.refresh(db_policy)
     return db_policy
 
-@router.get("/", response_model=List[LeavePolicyRead], tags=["leave-policy"])
+@router.get("/", response_model=List[LeavePolicyRead], tags=["leave-policy"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def list_leave_policies(db: Session = Depends(get_db)):
     return db.query(LeavePolicy).all()
 
