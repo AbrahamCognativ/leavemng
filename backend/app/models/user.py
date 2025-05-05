@@ -19,6 +19,7 @@ class User(Base):
     org_unit_id = Column(UUID(as_uuid=True), ForeignKey("org_units.id"), nullable=True)
     extra_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column("is_active", default=True, nullable=False)
 
     manager = relationship("User", remote_side=[id], backref="direct_reports")
     org_unit = relationship("OrgUnit", back_populates="users")
