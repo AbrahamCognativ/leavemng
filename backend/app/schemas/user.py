@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     role_band: str
     role_title: str
     passport_or_id_number: str
+    gender: str  # Required: 'male' or 'female'
     profile_image_url: Optional[str] = None
     manager_id: Optional[UUID] = None
     org_unit_id: Optional[UUID] = None

@@ -92,3 +92,53 @@ def test_leave_balance_validation(auth_token):
     if resp.status_code in (404, 405, 501):
         pytest.skip("Leave balance direct creation not implemented")
     assert resp.status_code == 422
+
+
+def test_annual_leave_carry_forward_logic():
+    """
+    Test that annual leave balances above 5 are reset to 5 at year end, others are unchanged.
+    """
+    from app.utils.accrual import reset_annual_leave_carry_forward
+    from app.models.leave_balance import LeaveBalance
+    from app.models.leave_type import LeaveType, LeaveCodeEnum
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from decimal import Decimal
+    import uuid
+
+    # Setup in-memory SQLite DB
+    engine = create_engine('sqlite:///:memory:')
+    Session = sessionmaker(bind=engine)
+    from app.db.base import Base
+    Base.metadata.create_all(engine)
+    db = Session()
+
+    # Create annual leave type
+    annual_type = LeaveType(id=uuid.uuid4(), code=LeaveCodeEnum.annual, description="Annual", default_allocation_days=19)
+    db.add(annual_type)
+    db.commit()
+
+    # Add balances for 3 users: above, at, and below 5
+    balances = [
+        LeaveBalance(id=uuid.uuid4(), user_id=uuid.uuid4(), leave_type_id=annual_type.id, balance_days=Decimal(10)),
+        LeaveBalance(id=uuid.uuid4(), user_id=uuid.uuid4(), leave_type_id=annual_type.id, balance_days=Decimal(5)),
+        LeaveBalance(id=uuid.uuid4(), user_id=uuid.uuid4(), leave_type_id=annual_type.id, balance_days=Decimal(3)),
+    ]
+    for bal in balances:
+        db.add(bal)
+    db.commit()
+
+    # Run carry forward logic
+    reset_annual_leave_carry_forward(db)
+    db.commit()
+
+    # Check results
+    updated = db.query(LeaveBalance).filter(LeaveBalance.leave_type_id == annual_type.id).all()
+    for bal in updated:
+        if bal.balance_days > 5:
+            assert bal.balance_days == 5
+        elif bal.balance_days == 5:
+            assert bal.balance_days == 5
+        else:
+            assert bal.balance_days == 3
+    db.close()
