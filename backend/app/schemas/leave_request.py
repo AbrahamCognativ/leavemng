@@ -23,6 +23,7 @@ class LeaveRequestRead(LeaveRequestBase):
     id: UUID
     status: LeaveStatusEnum
     applied_at: datetime
+    user_id: UUID
     total_days: float
     decided_at: Optional[datetime] = None
     decided_by: Optional[UUID] = None

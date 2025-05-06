@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from importlib import import_module
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, SecuritySchemeType
 from fastapi import Security
@@ -22,6 +22,29 @@ app = FastAPI(title="Leave Management API",
     ]
 )
 
+origins = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    "http://localhost:4200/"
+]
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    ## expose_headers=["Content-Length", "Content-Type", "*"],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight responses for 10 minutes
+)
 # Add a global dependency to require Authorization except for /login
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware

@@ -1,5 +1,5 @@
 import { Leave, Document } from '../../models/leave.model';
-import { LeaveService } from '../../leave.service';
+import {LeaveService} from '../../shared/services/leave.service';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
@@ -69,23 +69,23 @@ export class LeaveRequestComponent implements OnInit {
 
   ngOnInit(): void {
     // Get the current employee ID from a service or authentication context
-    this.leave.employeeId = this.leaveService.getCurrentEmployeeId();
+    //this.leave.employeeId = this.leaveService.getCurrentEmployeeId();
 
     // Load leave balances for the current employee
     this.loadLeaveBalances();
   }
 
   loadLeaveBalances(): void {
-    this.leaveService.getEmployeeLeaveBalances(this.leave.employeeId).subscribe({
-      next: (balances) => {
-        if (balances) {
-          this.leaveBalances = balances;
-        }
-      },
-      error: (err) => {
-        console.error('Error loading leave balances:', err);
-      }
-    });
+    // this.leaveService.getEmployeeLeaveBalances(this.leave.employeeId).subscribe({
+    //   next: (balances) => {
+    //     if (balances) {
+    //       this.leaveBalances = balances;
+    //     }
+    //   },
+    //   error: (err) => {
+    //     console.error('Error loading leave balances:', err);
+    //   }
+    // });
   }
 
   onFileUploaded(e: any): void {
@@ -120,10 +120,10 @@ export class LeaveRequestComponent implements OnInit {
 
   calculateWorkingDays(): void {
     if (this.leave.startDate && this.leave.endDate) {
-      this.leaveService.calculateWorkingDays(this.leave.startDate, this.leave.endDate)
-        .subscribe(days => {
-          this.calculatedDays = days;
-        });
+      // this.leaveService.calculateWorkingDays(this.leave.startDate, this.leave.endDate)
+      //   .subscribe(days => {
+      //     this.calculatedDays = days;
+      //   });
     }
   }
 
@@ -140,32 +140,32 @@ export class LeaveRequestComponent implements OnInit {
     this.calculateWorkingDays();
 
     this.submitting = true;
-    this.leaveService.createLeave(this.leave).subscribe({
-      next: (response) => {
-        // Show success notification
-        this.leaveService.showNotification({
-          message: 'Leave request submitted successfully!',
-          type: 'success',
-          duration: 5000
-        });
-
-        // Reset the form
-        this.resetForm();
-
-        // Refresh leave balances
-        this.loadLeaveBalances();
-      },
-      error: (err) => {
-        this.leaveService.showNotification({
-          message: 'Error submitting leave request: ' + err.message,
-          type: 'error',
-          duration: 5000
-        });
-      },
-      complete: () => {
-        this.submitting = false;
-      }
-    });
+    // this.leaveService.createLeave(this.leave).subscribe({
+    //   next: (response) => {
+    //     // Show success notification
+    //     this.leaveService.showNotification({
+    //       message: 'Leave request submitted successfully!',
+    //       type: 'success',
+    //       duration: 5000
+    //     });
+    //
+    //     // Reset the form
+    //     this.resetForm();
+    //
+    //     // Refresh leave balances
+    //     this.loadLeaveBalances();
+    //   },
+    //   error: (err) => {
+    //     this.leaveService.showNotification({
+    //       message: 'Error submitting leave request: ' + err.message,
+    //       type: 'error',
+    //       duration: 5000
+    //     });
+    //   },
+    //   complete: () => {
+    //     this.submitting = false;
+    //   }
+    // });
   }
 
   resetForm(): void {

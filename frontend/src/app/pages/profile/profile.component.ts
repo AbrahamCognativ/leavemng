@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {DxFormModule} from 'devextreme-angular/ui/form';
 
 @Component({
@@ -8,23 +8,10 @@ import {DxFormModule} from 'devextreme-angular/ui/form';
   imports: [DxFormModule]
 })
 
-export class ProfileComponent {
+export class ProfileComponent implements OnInit{
   employee: any;
   colCountByScreen: object;
-
   constructor() {
-    this.employee = {
-      ID: 7,
-      FirstName: 'Sandra',
-      LastName: 'Johnson',
-      Prefix: 'Mrs.',
-      Position: 'Software Developer',
-      Picture: 'images/employees/06.png',
-      BirthDate: new Date('1974/11/5'),
-      HireDate: new Date('2005/05/11'),
-      /* tslint:disable-next-line:max-line-length */
-      Address: '4600 N Virginia Rd.'
-    };
     this.colCountByScreen = {
       xs: 1,
       sm: 2,
@@ -32,4 +19,26 @@ export class ProfileComponent {
       lg: 4
     };
   }
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const rawUser = localStorage.getItem("current_user");
+      const parsedUser = rawUser ? JSON.parse(rawUser) : null;
+
+      if (parsedUser) {
+        this.employee = {
+          id: parsedUser.id,
+          name: parsedUser.name,
+          email: parsedUser.email,
+          passport_or_id_number: parsedUser.passport_or_id_number,
+          manager_id: parsedUser.manager_id,
+          role_band: parsedUser.role_band,
+        };
+
+      }
+    } catch (err) {
+      console.error('Failed to load user data:', err);
+    }
+  }
+
 }

@@ -18,6 +18,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user: UserRead
 
 class InviteRequest(BaseModel):
     email: EmailStr
@@ -49,7 +50,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         }
     token = jwt.encode(claims, SECRET_KEY, algorithm=ALGORITHM)
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer", "user": UserRead.from_orm(user)}
 
 # Dummy permission dependency for HR/Admin
 from fastapi import Security

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { DxListModule } from 'devextreme-angular/ui/list';
 import { DxDropDownButtonModule } from 'devextreme-angular/ui/drop-down-button';
 import { DxContextMenuModule } from 'devextreme-angular/ui/context-menu';
+import {IUser} from '../../services';
 
 @Component({
   selector: 'app-user-panel',
@@ -18,6 +19,7 @@ export class UserPanelComponent {
 
   @Input()
   menuMode = 'context';
+  @Input() user!: IUser | null;
 }
 
 @NgModule({

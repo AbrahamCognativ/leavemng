@@ -1,11 +1,21 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router, ActivatedRouteSnapshot } from '@angular/router';
-import { HttpClient} from '@angular/common/http';
-import {firstValueFrom} from 'rxjs';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
+import {catchError, firstValueFrom, map, of} from 'rxjs';
 
 export interface IUser {
+  id: string;
   email: string;
   avatarUrl?: string;
+}
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: {
+    id: string;
+    email: string;
+    avatarUrl?: string;
+  };
 }
 
 const defaultPath = '/dashboard';
@@ -16,7 +26,7 @@ const defaultUser = {
 
 @Injectable()
 export class AuthService {
-  private _user: IUser | null = null;
+  private _user: IUser | null = {id: '', email: ''};
   private API_URL = 'http://localhost:8000/api/v1';
 
   get loggedIn(): boolean {
@@ -37,12 +47,13 @@ export class AuthService {
 
     try {
       const response = await firstValueFrom(
-        this.http.post(`${this.API_URL}/auth/login`, formData)
+        this.http.post<LoginResponse>(`${this.API_URL}/auth/login`, formData)
       );
-      this._user = { email }; // mock, replace with actual data if needed
-
+      this._user = { email: email, id: response.user.id };
+      localStorage.setItem('current_user', JSON.stringify(response.user))
+      localStorage.setItem('user_token', response.access_token)
       const target = this._lastAuthenticatedPath || defaultPath;
-      await this.router.navigateByUrl(target); // ensures full route match
+      await this.router.navigateByUrl(target);
 
       return {
         isOk: true,
@@ -59,7 +70,11 @@ export class AuthService {
 
   async getUser() {
     try {
-      // Send request
+      /* Send request
+      var current_user = localStorage.getItem("current_user");
+      if (current_user != null){
+        current_user = JSON.parse(current_user);
+      }*/
 
       return {
         isOk: true,

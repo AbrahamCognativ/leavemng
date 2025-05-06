@@ -25,7 +25,7 @@ export class HeaderComponent implements OnInit {
   @Input()
   title!: string;
 
-  user: IUser | null = { email: '' };
+  user: IUser | null = { email: '', id: '' };
 
   userMenuItems = [{
     text: 'Profile',
@@ -44,8 +44,14 @@ export class HeaderComponent implements OnInit {
 
   constructor(private authService: AuthService, private router: Router) { }
 
-  ngOnInit() {
-    this.authService.getUser().then((e) => this.user = e.data);
+   ngOnInit() {
+    try {
+      this.authService.getUser().then((e) => {
+        this.user = e.data;
+      });
+    } catch (err) {
+      console.error('Invalid user JSON in localStorage:', err);
+    }
   }
 
   toggleMenu = () => {
