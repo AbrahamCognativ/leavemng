@@ -4,7 +4,7 @@ from typing import List
 import os
 from sqlalchemy.orm import Session
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db.session import get_db
 from app.models.leave_document import LeaveDocument
 from app.models.leave_request import LeaveRequest
@@ -53,7 +53,7 @@ async def upload_file(
         request_id=leave_request_id,
         file_path=file_location,
         file_name=file.filename,
-        uploaded_at=datetime.utcnow(),
+        uploaded_at=datetime.now(timezone.utc),
     )
     db.add(leave_doc)
     db.commit()
@@ -116,12 +116,11 @@ async def upload_profile_image(
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     # Only the user themselves or HR/Admin can upload
-    if (
-        str(current_user.id) != str(user_id)
-        and current_user.role_band not in ("HR", "Admin")
-        and current_user.role_title not in ("HR", "Admin")
-    ):
-        raise HTTPException(status_code=403, detail="Not permitted.")
+    # ICs can only upload for themselves
+    if str(current_user.id) != str(user_id):
+        # Only HR or Admin can upload for others
+        if current_user.role_band not in ("HR", "Admin") and current_user.role_title not in ("HR", "Admin"):
+            raise HTTPException(status_code=403, detail="Not permitted.")
     # Save profile image
     ext = os.path.splitext(file.filename)[1]
     filename = f"{user_id}{ext}"

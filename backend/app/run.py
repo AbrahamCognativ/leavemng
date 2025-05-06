@@ -64,10 +64,18 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
 app.add_middleware(AuthRequiredMiddleware)
 
 def include_routers():
-    modules = ["auth", "users", "org", "leave", "files", "analytics", "leave_types"]
+    modules = ["auth", "users", "org", "leave", "files", "analytics", "leave_types", "leave_policy"]
     for m in modules:
         router = import_module(f"app.api.v1.routers.{m}")
-        app.include_router(router.router, prefix=f"/api/v1/{m}")
+        # Use kebab-case for leave-policy and leave-types
+        if m == "leave_policy":
+            prefix = "/api/v1/leave-policy"
+        elif m == "leave_types":
+            prefix = "/api/v1/leave-types"
+        else:
+            prefix = f"/api/v1/{m}"
+        app.include_router(router.router, prefix=prefix)
+
 
 include_routers()
 

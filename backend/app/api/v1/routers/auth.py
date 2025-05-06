@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr
 from jose import jwt
 from datetime import datetime, timedelta
 import os
+from datetime import timezone
 
 router = APIRouter()
 
@@ -47,7 +48,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             "profile_image_url": user.profile_image_url,
             "extra_metadata": user.extra_metadata,
             "created_at": user.created_at.isoformat() if user.created_at else None,
-            "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         }
     token = jwt.encode(claims, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer", "user": UserRead.from_orm(user)}

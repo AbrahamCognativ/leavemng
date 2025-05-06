@@ -29,6 +29,4 @@ class LeaveRequestRead(LeaveRequestBase):
     decided_by: Optional[UUID] = None
     comments: Optional[str] = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = {"from_attributes": True}

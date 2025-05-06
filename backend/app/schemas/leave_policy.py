@@ -14,7 +14,7 @@ class LeavePolicyBase(BaseModel):
     leave_type_id: uuid.UUID
     allocation_days_per_year: float
     accrual_frequency: AccrualFrequencyEnum
-    accrual_amount_per_period: Optional[float]
+    accrual_amount_per_period: Optional[float] = None
 
 class LeavePolicyCreate(LeavePolicyBase):
     pass
@@ -22,5 +22,4 @@ class LeavePolicyCreate(LeavePolicyBase):
 class LeavePolicyRead(LeavePolicyBase):
     id: uuid.UUID
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
