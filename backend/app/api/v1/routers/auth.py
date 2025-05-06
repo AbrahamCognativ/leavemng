@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -7,12 +7,12 @@ from app.schemas.user import UserRead
 from pydantic import BaseModel, EmailStr
 from jose import jwt
 from datetime import datetime, timedelta
-import os
 from datetime import timezone
+from app.settings import get_settings
+from uuid import UUID
 
 router = APIRouter()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -25,6 +25,8 @@ class InviteRequest(BaseModel):
     name: str
     role_band: str
     role_title: str
+    gender: str
+    passport_or_id_number: str
     org_unit_id: str = None
     manager_id: str = None
 
@@ -40,6 +42,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             "name": user.name,
             "email": user.email,
             "role_band": user.role_band,
+            "gender": user.gender,
             "role_title": user.role_title,
             "org_unit_id": str(user.org_unit_id) if user.org_unit_id else None,
             "manager_id": str(user.manager_id) if user.manager_id else None,
@@ -49,7 +52,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         }
-    token = jwt.encode(claims, SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(claims, get_settings().SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
 
 # Dummy permission dependency for HR/Admin
@@ -63,20 +66,47 @@ def require_hr_admin(current_user: User = Depends(get_db)):
 
 from app.deps.permissions import get_current_user, require_role
 
-@router.post("/invite", tags=["auth"], response_model=UserRead, dependencies=[Depends(require_role(["HR", "Manager"]))])
-def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    # Only HR or Manager can invite
+@router.post("/invite", tags=["auth"], response_model=UserRead, dependencies=[Depends(require_role(["HR", "Admin"]))])
+
+def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None):
+    # Only HR or Manager/Admin can invite
     existing = db.query(User).filter(User.email == invite.email).first()
+    passport_exist = db.query(User).filter(User.passport_or_id_number == invite.passport_or_id_number).first()
     if existing:
         raise HTTPException(status_code=400, detail="User with this email already exists")
+    if passport_exist:
+        raise HTTPException(status_code=400, detail="User with this passport or ID number already exists")
+    # Validate passport_or_id_number is provided
+    if not getattr(invite, 'passport_or_id_number', None):
+        raise HTTPException(status_code=422, detail="Field 'passport_or_id_number' is required and cannot be null or empty.")
+    # Validate manager_id and org_unit_id are valid UUIDs or None
+    manager_id = invite.manager_id
+    org_unit_id = invite.org_unit_id
+    for field_name, field_value in [("manager_id", manager_id), ("org_unit_id", org_unit_id)]:
+        if field_value not in (None, "", "null"):
+            try:
+                field_value = str(UUID(field_value))
+            except Exception:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Field '{field_name}' must be a valid UUID or null. Got: '{field_value}'. Example: 'e7b8e9b9-8e6e-4e3a-9e3a-9e3a9e3a9e3a'"
+                )
+            if field_name == "manager_id":
+                manager_id = field_value
+            else:
+                org_unit_id = field_value
+    # Require gender, default to 'male' if not provided
+    gender = getattr(invite, 'gender', None) or 'male'
     user = User(
         name=invite.name,
         email=invite.email,
         hashed_password="secret123",  # In real app, generate/send temp password
         role_band=invite.role_band,
         role_title=invite.role_title,
-        org_unit_id=invite.org_unit_id,
-        manager_id=invite.manager_id
+        passport_or_id_number=invite.passport_or_id_number,
+        org_unit_id=org_unit_id,
+        manager_id=manager_id,
+        gender=gender
     )
     db.add(user)
     db.commit()
@@ -84,5 +114,5 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     # Send invite email
     from app.utils.email import send_invite_email
     invite_link = f"https://your-app-url/register?email={user.email}"  # TODO: Replace with real link
-    send_invite_email(user.email, invite_link)
+    send_invite_email(user.email, invite_link, request=request)
     return UserRead.from_orm(user)
