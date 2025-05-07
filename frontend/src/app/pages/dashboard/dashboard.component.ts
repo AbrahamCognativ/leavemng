@@ -42,9 +42,7 @@ export class DashboardComponent {
       this.isLoading = true;
 
       const userResp = await this.authService.getUser();
-      console.log('userResp', userResp);
       const currentUserId = userResp?.data?.id;
-
       if (!currentUserId) {
         console.error("Current user not found");
         return;
@@ -53,7 +51,6 @@ export class DashboardComponent {
       const allRequests = await this.leaveService.getLeaveRequests();
       const requests = allRequests.filter(r => r.user_id === currentUserId);
       this.leaveRequests = requests;
-
       this.pendingLeaves = requests.filter(r => r.status === 'pending').length;
       this.approvedLeaves = requests.filter(r => r.status === 'approved').length;
       this.rejectedLeaves = requests.filter(r => r.status === 'rejected').length;
@@ -62,19 +59,24 @@ export class DashboardComponent {
       this.leaveTypes = types;
 
       const typeCounts: { [key: string]: number } = {};
-      for (const req of requests) {
-        const typeName = req.leave_type?.description || 'Unknown';
+      for (const type of types) {
+        const typeName = type.description || 'Unknown';
         typeCounts[typeName] = (typeCounts[typeName] || 0) + 1;
       }
-
       this.leaveTypeCounts = Object.entries(typeCounts).map(([type, count]) => ({
         type,
         count
       }));
-
       // Optional: Only fetch balances if needed for the same user
-      const balances = requests; // or await service if balances are different
+      const balances = requests;
       this.leaveBalances = balances;
+
+      // update each leave Request with the leave type description
+      for (const request of requests) {
+        const leaveType = types.find(t => t.id === request.leave_type_id);
+        request.leave_type_description = leaveType?.description || 'Unknown';
+      }
+      this.leaveRequests = requests;
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);

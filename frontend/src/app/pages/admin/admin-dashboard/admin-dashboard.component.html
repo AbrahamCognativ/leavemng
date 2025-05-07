@@ -1,0 +1,59 @@
+<div class="content-block">
+  <div class="dx-card">
+    <h2>Admin Dashboard</h2>
+    <dx-load-indicator *ngIf="isLoading"></dx-load-indicator>
+    <div class="statistics-container" *ngIf="!isLoading">
+      <div class="stat-card">
+        <h3>Total Requests</h3>
+        <div class="stat-value">{{statistics.totalRequests}}</div>
+      </div>
+      <div class="stat-card">
+        <h3>Pending Requests</h3>
+        <div class="stat-value">{{statistics.pendingRequests}}</div>
+      </div>
+      <div class="stat-card">
+        <h3>Approved Requests</h3>
+        <div class="stat-value">{{statistics.approvedRequests}}</div>
+      </div>
+      <div class="stat-card">
+        <h3>Rejected Requests</h3>
+        <div class="stat-value">{{statistics.rejectedRequests}}</div>
+      </div>
+    </div>
+    <div class="recent-requests" *ngIf="!isLoading">
+      <h3>Recent Leave Requests</h3>
+      <div class="toolbar-container">
+      </div>
+      <dx-data-grid
+        [dataSource]="dataSource"
+        [showBorders]="true"
+        [columnAutoWidth]="true"
+        [remoteOperations]="false"
+        (onRowClick)="onRowClick($event)">
+        <dxo-paging [pageSize]="10"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
+        <dxo-search-panel
+          [visible]="true"
+          [width]="250"
+          placeholder="Search...">
+        </dxo-search-panel>
+        <dxi-column dataField="employee_name" caption="Employee Name"></dxi-column>
+        <dxi-column dataField="leave_type_description" caption="Leave Type"></dxi-column>
+        <dxi-column dataField="start_date" caption="Start Date" dataType="date"></dxi-column>
+        <dxi-column dataField="end_date" caption="End Date" dataType="date"></dxi-column>
+        <dxi-column dataField="status" caption="Status"></dxi-column>
+        <dxi-column type="buttons">
+          <dxi-button
+            name="view"
+            icon="eye"
+            [onClick]="viewRequest">
+          </dxi-button>
+        </dxi-column>
+      </dx-data-grid>
+    </div>
+  </div>
+</div>

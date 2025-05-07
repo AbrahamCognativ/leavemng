@@ -20,8 +20,17 @@ export const navigation = [
   },
   {
     text: 'Admin',
-    path: '/admin',
-    icon: 'preferences'
+    icon: 'preferences',
+    items: [
+      {
+        text: 'Dashboard',
+        path: '/admin/leave-requests',
+      },
+      {
+        text: 'Leave Types',
+        path: '/admin/leave-types',
+      }
+    ]
   },
   {
     text: 'Profile',

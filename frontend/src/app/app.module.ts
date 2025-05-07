@@ -13,7 +13,7 @@ import { LeaveCalendarComponent } from './leave-calendar/leave-calendar.componen
 import {DxButtonModule} from 'devextreme-angular/ui/button';
 import {UserService} from './shared/services/user.service';
 import {LeaveService} from './shared/services/leave.service';
-import {DxiSeriesModule} from 'devextreme-angular/ui/nested';
+import {DxiItemModule, DxiSeriesModule} from 'devextreme-angular/ui/nested';
 import {DashboardModule} from './pages/dashboard/dashboard.component';
 import {AuthInterceptor} from './shared/services/authinceptor.service';
 
@@ -44,7 +44,8 @@ import {AuthInterceptor} from './shared/services/authinceptor.service';
     DashboardModule,
     UnauthenticatedContentModule,
     AppRoutingModule,
-    DxLoadIndicatorModule
+    DxLoadIndicatorModule,
+    DxiItemModule
   ],
   providers: [
     {provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true},

@@ -1,0 +1,41 @@
+.leave-types-container {
+  padding: 20px;
+
+  .dx-datagrid {
+    margin-top: 20px;
+  }
+
+  .form-popup {
+    .dx-form {
+      padding: 20px;
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .dx-button {
+    &.dx-button-success {
+      background-color: #5cb85c;
+      border-color: #4cae4c;
+      color: white;
+
+      &:hover {
+        background-color: #4cae4c;
+      }
+    }
+
+    &.dx-button-danger {
+      background-color: #d9534f;
+      border-color: #d43f3a;
+      color: white;
+
+      &:hover {
+        background-color: #d43f3a;
+      }
+    }
+  }
+} 

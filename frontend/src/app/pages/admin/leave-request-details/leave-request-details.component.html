@@ -1,0 +1,112 @@
+<div class="leave-request-details">
+  <dx-load-indicator *ngIf="isLoading"></dx-load-indicator>
+
+  <div class="content-block" *ngIf="!isLoading && leaveRequest">
+    <div class="dx-card leave-request-details">
+      <div class="header">
+        <h2>Leave Request Details</h2>
+        <div class="status-badge" [ngClass]="getStatusClass(leaveRequest.status)">
+          {{ leaveRequest.status | titlecase }}
+        </div>
+      </div>
+
+      <dx-scroll-view>
+        <div class="details-container">
+          <div class="section">
+            <h3>Employee Information</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Employee Name</label>
+                <span>{{ leaveRequest.user_name }}</span>
+              </div>
+              <div class="info-item">
+                <label>Employee ID</label>
+                <span>{{ leaveRequest.user_id }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Leave Information</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Leave Type</label>
+                <span>{{ leaveRequest.leave_type_description }}</span>
+              </div>
+              <div class="info-item">
+                <label>Start Date</label>
+                <span>{{ leaveRequest.start_date | date:'mediumDate' }}</span>
+              </div>
+              <div class="info-item">
+                <label>End Date</label>
+                <span>{{ leaveRequest.end_date | date:'mediumDate' }}</span>
+              </div>
+              <div class="info-item">
+                <label>Duration</label>
+                <span>{{ leaveRequest.duration }} days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Request Details</h3>
+            <div class="info-grid">
+              <div class="info-item full-width">
+                <label>Reason</label>
+                <span>{{ leaveRequest.reason }}</span>
+              </div>
+              <div class="info-item">
+                <label>Requested On</label>
+                <span>{{ leaveRequest.created_at | date:'medium' }}</span>
+              </div>
+              <div class="info-item" *ngIf="leaveRequest.updated_at">
+                <label>Last Updated</label>
+                <span>{{ leaveRequest.updated_at | date:'medium' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section" *ngIf="documents.length > 0">
+            <h3>Supporting Documents</h3>
+            <div class="documents-list">
+              <div class="document-item" *ngFor="let doc of documents">
+                <div class="document-info">
+                  <i class="dx-icon-file"></i>
+                  <span>{{ doc.file_name }}</span>
+                </div>
+                <dx-button
+                  icon="download"
+                  stylingMode="text"
+                  (onClick)="downloadDocument(doc.id)">
+                </dx-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </dx-scroll-view>
+
+      <div class="actions" *ngIf="leaveRequest.status === 'pending'">
+        <dx-button
+          text="Approve"
+          type="success"
+          stylingMode="contained"
+          [disabled]="isApproving || isRejecting"
+          (onClick)="approveRequest()">
+          <div *ngIf="isApproving" class="button-loading">
+            <dx-load-indicator width="24" height="24"></dx-load-indicator>
+          </div>
+        </dx-button>
+        <dx-button
+          text="Reject"
+          type="danger"
+          stylingMode="contained"
+          [disabled]="isApproving || isRejecting"
+          (onClick)="rejectRequest()">
+          <div *ngIf="isRejecting" class="button-loading">
+            <dx-load-indicator width="24" height="24"></dx-load-indicator>
+          </div>
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</div> 

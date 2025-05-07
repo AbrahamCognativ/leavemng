@@ -29,6 +29,11 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ]
   },
   {
+    path: 'admin',
+    loadChildren: () => import('./pages/admin/admin.module').then(m => m.AdminModule),
+    canActivate: [ AuthGuardService ]
+  },
+  {
     path: 'login-form',
     component: LoginFormComponent,
     canActivate: [ AuthGuardService ]

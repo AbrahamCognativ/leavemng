@@ -1,0 +1,70 @@
+<div class="content-block">
+  <div class="dx-card">
+    <h2>Leave Types Management</h2>
+    
+    <dx-load-indicator *ngIf="isLoading"></dx-load-indicator>
+
+    <div *ngIf="!isLoading">
+      <dx-button
+        text="Add New Leave Type"
+        type="default"
+        stylingMode="contained"
+        icon="plus"
+        (onClick)="showAddPopup()"
+        class="add-button">
+      </dx-button>
+
+      <dx-data-grid
+        [dataSource]="leaveTypes"
+        [showBorders]="true"
+        [columnAutoWidth]="true"
+        [editing]="{ mode: 'popup', allowUpdating: true, allowDeleting: true }">
+        
+        <dxi-column dataField="description" caption="Leave Type"></dxi-column>
+        <dxi-column dataField="max_days" caption="Max Days" dataType="number"></dxi-column>
+        <dxi-column dataField="requires_approval" caption="Requires Approval" dataType="boolean"></dxi-column>
+        
+        <dxi-column type="buttons">
+          <dxi-button
+            name="edit"
+            icon="edit"
+            [onClick]="showEditPopup">
+          </dxi-button>
+          <dxi-button
+            name="delete"
+            icon="trash"
+            [onClick]="deleteLeaveType">
+          </dxi-button>
+        </dxi-column>
+      </dx-data-grid>
+    </div>
+  </div>
+</div>
+
+<dx-popup
+  [visible]="isPopupVisible"
+  [showTitle]="true"
+  [title]="currentLeaveType.id ? 'Edit Leave Type' : 'Add Leave Type'"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="true"
+  (onHiding)="isPopupVisible = false">
+  
+  <dx-form
+    [formData]="currentLeaveType"
+    labelLocation="top"
+    [showColonAfterLabel]="true">
+    
+    <dxi-item dataField="description" editorType="dxTextBox">
+      <dxi-validation-rule type="required" message="Description is required"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item dataField="max_days" editorType="dxNumberBox">
+      <dxi-validation-rule type="required" message="Max days is required"></dxi-validation-rule>
+      <dxi-validation-rule type="range" [min]="1" [max]="365" message="Max days must be between 1 and 365"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item dataField="requires_approval" editorType="dxCheckBox"></dxi-item>
+    
+    <dxi-item itemType="button" [buttonOptions]="{ text: 'Save', type: 'success', onClick: saveLeaveType }"></dxi-item>
+  </dx-form>
+</dx-popup> 
