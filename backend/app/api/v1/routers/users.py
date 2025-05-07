@@ -170,8 +170,10 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
     }
     return resp
 
+from app.schemas.user import UserUpdate
+
 @router.put("/{user_id}", tags=["users"], response_model=UserRead)
-def update_user(user_id: UUID, user_update: UserCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def update_user(user_id: UUID, user_update: UserUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -182,9 +184,14 @@ def update_user(user_id: UUID, user_update: UserCreate, db: Session = Depends(ge
         from app.deps.permissions import log_permission_denied
         log_permission_denied(db, current_user.id, "update_user", "user", str(user_id))
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    for k, v in user_update.model_dump(exclude={"password"}).items():
-        setattr(user, k, v)
-    user.hashed_password = user_update.password  # In real app, hash this
+    update_data = user_update.model_dump(exclude_unset=True)
+    if 'email' in update_data:
+        raise HTTPException(status_code=400, detail="Email cannot be updated.")
+    for k, v in update_data.items():
+        if k == "password":
+            user.hashed_password = v  # In real app, hash this
+        else:
+            setattr(user, k, v)
     try:
         db.commit()
         db.refresh(user)

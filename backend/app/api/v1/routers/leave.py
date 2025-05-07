@@ -6,7 +6,8 @@ from app.models.leave_type import LeaveType
 from app.models.user import User
 from app.db.session import get_db
 from uuid import UUID
-from datetime import timezone
+from fastapi import Request
+from datetime import datetime, timezone
 from app.deps.permissions import get_current_user, require_role, require_direct_manager, log_permission_denied
 
 router = APIRouter()
@@ -223,7 +224,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
     manager = db.query(User).filter(User.id == current_user.manager_id).first() if current_user.manager_id else None
     if manager:
         leave_details = f"Type: {leave_type.code}, Start: {req.start_date}, End: {req.end_date}, Days: {total_days}"
-        send_leave_request_notification(manager.email, current_user.name, leave_details)
+        send_leave_request_notification(manager.email, current_user.name, leave_details, request)
     return LeaveRequestRead.model_validate(db_req)
 
 
@@ -265,20 +266,16 @@ def update_leave_request(request_id: UUID, req_update: LeaveRequestCreate, db: S
     return LeaveRequestRead.model_validate(req)
 
 @router.patch("/{request_id}/approve", tags=["leave"], response_model=LeaveRequestRead)
-def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def approve_leave_request(request_id: UUID,db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None ):
     req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")
     sstt = req.status if hasattr(req.status, 'value') else str(req.status)
-    # leave_code = leave_type.code.value if hasattr(leave_type.code, 'value') else str(leave_type.code)
     if (sstt if not hasattr(req.status, 'value') else req.status.value) != "pending":
-        # print(f"Leave status = {sstt if not hasattr(req.status, 'value') else req.status.value}")
         raise HTTPException(status_code=400, detail="Only pending requests can be approved")
-    # Only direct manager or HR/Admin can approve
     if (current_user.role_band not in ("HR", "Admin") and current_user.role_title not in ("HR", "Admin") and str(req.user_id) != str(current_user.id)):
         log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
         raise HTTPException(status_code=403, detail="Only direct manager or HR/Admin can approve")
-    
     try:
         req.status = 'approved'
         req.decision_at = datetime.now(timezone.utc)
@@ -287,12 +284,31 @@ def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), curre
         db.refresh(req)
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Could not approve leave request")
-    # Notify user of approval
+        import logging
+        logging.error(f"Error during leave approval DB commit: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not approve leave request: {e}")
+    
     from app.utils.email import send_leave_approval_notification
     user = db.query(User).filter(User.id == req.user_id).first()
     leave_details = f"Type: {req.leave_type_id}, Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
-    if user:
-        send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
-    log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
-    return LeaveRequestRead.model_validate(req)
+    try:
+        if user:
+            send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
+        log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
+    except Exception as e:
+        # Optionally log the error but don't fail the approval
+        import logging
+        logging.error(f"Error in approval post-processing: {e}")
+        pass
+    from pydantic import ValidationError
+    import logging
+    logging.debug(f"LeaveRequest DB object before validation: {req.__dict__}")
+    try:
+        return LeaveRequestRead.model_validate(req)
+    except ValidationError as ve:
+        logging.error(f"LeaveRequestRead validation error: {ve}")
+        raise HTTPException(status_code=500, detail="Internal error during approval response formatting")
+    except Exception as e:
+        logging.error(f"Unexpected error in approval endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Internal error during approval")
+

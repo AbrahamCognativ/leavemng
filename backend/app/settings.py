@@ -2,20 +2,19 @@ import os
 from pydantic_settings import BaseSettings
 from pydantic import Field, EmailStr
 from typing import Optional
+from pydantic import ConfigDict
 
 class BaseAppSettings(BaseSettings):
-    APP_ENV: str = Field(..., env="APP_ENV")
-    DB_URL: str = Field(..., env="DB_URL")
-    EMAIL_HOST: str = Field(..., env="EMAIL_HOST")
-    EMAIL_PORT: int = Field(..., env="EMAIL_PORT")
-    EMAIL_USER: Optional[str] = Field(None, env="EMAIL_USER")
-    EMAIL_PASSWORD: Optional[str] = Field(None, env="EMAIL_PASSWORD")
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")
+    APP_ENV: str = Field(..., json_schema_extra={"env": "APP_ENV"})
+    DB_URL: str = Field(..., json_schema_extra={"env": "DB_URL"})
+    EMAIL_HOST: str = Field(..., json_schema_extra={"env": "EMAIL_HOST"})
+    EMAIL_PORT: int = Field(..., json_schema_extra={"env": "EMAIL_PORT"})
+    EMAIL_USER: Optional[str] = Field(None, json_schema_extra={"env": "EMAIL_USER"})
+    EMAIL_PASSWORD: Optional[str] = Field(None, json_schema_extra={"env": "EMAIL_PASSWORD"})
+    SECRET_KEY: str = Field(..., json_schema_extra={"env": "SECRET_KEY"})
     # Add other common settings here
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = ConfigDict(env_file=".env", case_sensitive=True)
 
 class DevelopmentSettings(BaseAppSettings):
     APP_ENV: str = "development"
@@ -38,11 +37,11 @@ class TestingSettings(BaseAppSettings):
 class ProductionSettings(BaseAppSettings):
     APP_ENV: str = "production"
     DB_URL: str = "postgresql://ogol:qwertyuiop@localhost:5432/leavemanager"
-    EMAIL_HOST: str = Field(..., env="EMAIL_HOST")
-    EMAIL_PORT: int = Field(..., env="EMAIL_PORT")
-    EMAIL_USER: Optional[str] = Field(None, env="EMAIL_USER")
-    EMAIL_PASSWORD: Optional[str] = Field(None, env="EMAIL_PASSWORD")
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")
+    EMAIL_HOST: str = Field(..., json_schema_extra={"env": "EMAIL_HOST"})
+    EMAIL_PORT: int = Field(..., json_schema_extra={"env": "EMAIL_PORT"})
+    EMAIL_USER: Optional[str] = Field(None, json_schema_extra={"env": "EMAIL_USER"})
+    EMAIL_PASSWORD: Optional[str] = Field(None, json_schema_extra={"env": "EMAIL_PASSWORD"})
+    SECRET_KEY: str = Field(..., json_schema_extra={"env": "SECRET_KEY"})
 
 
 def get_settings() -> BaseAppSettings:
