@@ -29,6 +29,10 @@ export const navigation = [
       {
         text: 'Leave Types',
         path: '/admin/leave-types',
+      },
+      {
+        text: 'Org Units',
+        path: '/admin/org-units',
       }
     ]
   },

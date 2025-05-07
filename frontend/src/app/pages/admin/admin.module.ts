@@ -11,19 +11,28 @@ import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.compo
 import { LeaveApprovalComponent } from './leave-approval/leave-approval.component';
 import { LeaveTypesComponent } from './leave-types/leave-types.component';
 import { LeaveRequestDetailsComponent } from './leave-request-details/leave-request-details.component';
+import { OrgUnitsComponent } from './org-units/org-units.component';
 
 const routes: Routes = [
   {
-    path: 'leave-requests',
+    path: '',
     component: AdminDashboardComponent
   },
   {
-    path: 'leave-request/:id',
+    path: 'approvals',
+    component: LeaveApprovalComponent
+  },
+  {
+    path: 'approvals/:id',
     component: LeaveRequestDetailsComponent
   },
   {
     path: 'leave-types',
     component: LeaveTypesComponent
+  },
+  {
+    path: 'org-units',
+    component: OrgUnitsComponent
   }
 ];
 
@@ -40,7 +49,8 @@ const routes: Routes = [
     AdminDashboardComponent,
     LeaveApprovalComponent,
     LeaveTypesComponent,
-    LeaveRequestDetailsComponent
+    LeaveRequestDetailsComponent,
+    OrgUnitsComponent
   ]
 })
 export class AdminModule { } 

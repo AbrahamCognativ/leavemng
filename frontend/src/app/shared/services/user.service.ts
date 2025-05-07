@@ -23,17 +23,6 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  async getUserById2(userId: string): Promise<IUser | null> {
-    try {
-      const user = await firstValueFrom(
-        this.http.get<IUser>(`${this.API_URL}/users/${userId}`)
-      );
-      return user;
-    } catch (error) {
-      console.error('Failed to fetch user by ID:', error);
-      return null;
-    }
-  }
 
   async getUserById(id: string): Promise<IUser | null> {
     const token = this.getToken();

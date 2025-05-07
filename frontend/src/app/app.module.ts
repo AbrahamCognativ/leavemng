@@ -7,6 +7,7 @@ import { DxHttpModule } from 'devextreme-angular/http';
 import { SideNavOuterToolbarModule, SingleCardModule } from './layouts';
 import { FooterModule, ResetPasswordFormModule, ChangePasswordFormModule, LoginFormModule } from './shared/components';
 import { AuthService, ScreenService, AppInfoService } from './shared/services';
+import { OrgUnitService } from './shared/services/org-unit.service';
 import { UnauthenticatedContentModule } from './unauthenticated-content';
 import { AppRoutingModule } from './app-routing.module';
 import { LeaveCalendarComponent } from './leave-calendar/leave-calendar.component';
@@ -53,7 +54,8 @@ import {AuthInterceptor} from './shared/services/authinceptor.service';
     ScreenService,
     AppInfoService,
     UserService,
-    LeaveService
+    LeaveService,
+    OrgUnitService
   ],
   exports: [
   ],

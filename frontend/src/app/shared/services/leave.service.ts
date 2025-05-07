@@ -34,16 +34,79 @@ export class LeaveService {
 
   // Get leave types
   async getLeaveTypes(): Promise<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/types`)
+    return this.http.get<any[]>(`${this.apiUrl}/leave-types`)
       .pipe(
         retry(1),
         catchError(this.handleError)
       ).toPromise() as Promise<any[]>;
   }
 
+  // creates a leave type
+  async createLeaveType(leaveType: any): Promise<any> {
+    return this.http.post<any>(`${this.apiUrl}/leave-types`, leaveType)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
+  // updates a leave type
+  async updateLeaveType(id: string, leaveType: any): Promise<any> {
+    return this.http.put<any>(`${this.apiUrl}/leave-types/${id}`, leaveType)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
+  // deletes a leave type
+  async deleteLeaveType(id: string): Promise<any> {
+    return this.http.delete<any>(`${this.apiUrl}/leave-types/${id}`)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+  
   // Get leave policies
   async getLeavePolicies(): Promise<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/leave-types/policies`)
+    return this.http.get<any[]>(`${this.apiUrl}/leave-policy`)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any[]>;
+  }
+
+  // Create leave policy
+  async createLeavePolicy(policy: any): Promise<any> {
+    return this.http.post<any>(`${this.apiUrl}/leave-policy`, policy)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
+  // Update leave policy
+  async updateLeavePolicy(id: string, policy: any): Promise<any> {
+    return this.http.put<any>(`${this.apiUrl}/leave-policy/${id}`, policy)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
+  // Delete leave policy
+  async deleteLeavePolicy(id: string): Promise<any> {
+    return this.http.delete<any>(`${this.apiUrl}/leave-policy/${id}`)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
+  // Get organization units
+  async getOrgUnits(): Promise<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/org`)
       .pipe(
         retry(1),
         catchError(this.handleError)
