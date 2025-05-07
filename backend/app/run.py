@@ -1,5 +1,11 @@
 from fastapi import FastAPI
 from importlib import import_module
+from app.settings import get_settings
+
+# Load environment-specific settings
+settings = get_settings()
+
+# Make settings available globally via app.state
 
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, SecuritySchemeType
@@ -7,11 +13,20 @@ from fastapi import Security
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
-app = FastAPI(title="Leave Management API", 
+app = FastAPI(
+    title=f"Leave Management API [{get_settings().APP_ENV.upper()}]",
+    description=f"API for managing employee leave requests and approvals.\n\n**Environment:** `{get_settings().APP_ENV}`",
+    version="1.0.0",
     swagger_ui_init_oauth={
         "usePkceWithAuthorizationCodeGrant": True,
         "clientId": "swagger-ui-client"
     },
+    # swagger_ui_parameters={
+    #     "docExpansion": "none",
+    #     "defaultModelsExpandDepth": -1,
+    #     "displayRequestDuration": True,
+    #     "persistAuthorization": True,
+    # },
     openapi_tags=[
         {"name": "auth", "description": "Authentication and authorization endpoints"},
         {"name": "users", "description": "User management endpoints"},
@@ -21,6 +36,10 @@ app = FastAPI(title="Leave Management API",
         {"name": "analytics", "description": "Analytics endpoints"},
     ]
 )
+
+# Attach settings to app.state so they are available everywhere
+app.state.settings = settings
+# Usage: from fastapi import Request; settings = request.app.state.settings
 
 # Add a global dependency to require Authorization except for /login
 from fastapi import Request
