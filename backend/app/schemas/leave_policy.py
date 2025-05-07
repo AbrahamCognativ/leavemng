@@ -10,7 +10,7 @@ class AccrualFrequencyEnum(str, Enum):
     one_time = "one_time"
 
 class LeavePolicyBase(BaseModel):
-    org_unit_id: uuid.UUID
+    org_unit_id: Optional[uuid.UUID]
     leave_type_id: uuid.UUID
     allocation_days_per_year: float
     accrual_frequency: AccrualFrequencyEnum

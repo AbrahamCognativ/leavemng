@@ -1,9 +1,10 @@
 import uuid
-from sqlalchemy import Column, String, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, String, ForeignKey, DateTime, JSON, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
+from app.settings import get_settings
 
 class User(Base):
     __tablename__ = "users"
@@ -17,9 +18,10 @@ class User(Base):
     profile_image_url = Column(String, nullable=True)
     manager_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     org_unit_id = Column(UUID(as_uuid=True), ForeignKey("org_units.id"), nullable=True)
+    gender = Column(String, nullable=False, index=True)  # Required: 'male' or 'female' for gender-specific leave
     extra_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    is_active = Column("is_active", default=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
 
     manager = relationship("User", remote_side=[id], backref="direct_reports")
     org_unit = relationship("OrgUnit", back_populates="users")

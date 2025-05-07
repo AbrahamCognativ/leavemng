@@ -77,22 +77,62 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
     balances = db.query(LeaveBalance).filter(LeaveBalance.user_id == user.id).all()
     leave_types = {lt.id: lt.code.value for lt in db.query(LeaveType).all()}
     leave_balance = {}
-    gender = None
-    if hasattr(user, 'extra_metadata') and user.extra_metadata:
-        import json
-        try:
-            meta = json.loads(user.extra_metadata)
-            gender = meta.get('gender')
-        except Exception:
-            pass
+    gender = getattr(user, 'gender', None)
+    from datetime import date, timedelta
+    leave_balance = {}
+    today = date.today()
+    join_date = user.created_at.date() if hasattr(user.created_at, 'date') else user.created_at
+    accrual_year_start = join_date.replace(year=today.year)
+    if accrual_year_start > today:
+        accrual_year_start = join_date.replace(year=today.year-1)
+    accrual_year_end = accrual_year_start.replace(year=accrual_year_start.year+1)
+    # Gather all leave requests for calculations
+    all_requests = db.query(LeaveRequest).filter(LeaveRequest.user_id == user.id, LeaveRequest.status == 'approved').all()
+    # Annual leave
+    if 'annual' in leave_types.values():
+        taken = [r for r in all_requests if leave_types.get(r.leave_type_id) == 'annual' and accrual_year_start <= r.start_date < accrual_year_end]
+        entitlement = 19
+        carry_forward = 5
+        # Carry forward logic: if previous year balance > 5, only 5 carried
+        # For simplicity, assume balance is up-to-date in DB
+        taken_days = sum(r.total_days for r in taken)
+        leave_balance['annual'] = max(entitlement - taken_days, 0)
+    # Sick leave
+    if 'sick' in leave_types.values():
+        taken = [r for r in all_requests if leave_types.get(r.leave_type_id) == 'sick' and accrual_year_start <= r.start_date < accrual_year_end]
+        SICK_FULL_DAYS = 30
+        SICK_HALF_DAYS = 15
+        SICK_TOTAL = SICK_FULL_DAYS + SICK_HALF_DAYS * 0.5
+        taken_days = sum(r.total_days for r in taken)
+        leave_balance['sick'] = max(SICK_TOTAL - taken_days, 0)
+    # Paternity
+    if 'paternity' in leave_types.values() and gender == 'male':
+        PATERNITY_DAYS = 14
+        taken = [r for r in all_requests if leave_types.get(r.leave_type_id) == 'paternity' and accrual_year_start <= r.start_date < accrual_year_end]
+        taken_days = sum(r.total_days for r in taken)
+        leave_balance['paternity'] = max(PATERNITY_DAYS - taken_days, 0)
+    # Maternity
+    if 'maternity' in leave_types.values() and gender == 'female':
+        MATERNITY_DAYS = 90
+        taken = [r for r in all_requests if leave_types.get(r.leave_type_id) == 'maternity' and accrual_year_start <= r.start_date < accrual_year_end]
+        taken_days = sum(r.total_days for r in taken)
+        leave_balance['maternity'] = max(MATERNITY_DAYS - taken_days, 0)
+    # Compassionate leave: 10 days per quarter
+    if 'compassionate' in leave_types.values():
+        quarter = (today.month - 1) // 3 + 1
+        quarter_start = date(today.year, 3 * (quarter - 1) + 1, 1)
+        if quarter == 4:
+            quarter_end = date(today.year, 12, 31)
+        else:
+            quarter_end = date(today.year, 3 * quarter + 1, 1) - timedelta(days=1)
+        taken = [r for r in all_requests if leave_types.get(r.leave_type_id) == 'compassionate' and quarter_start <= r.start_date <= quarter_end]
+        taken_days = sum(r.total_days for r in taken)
+        leave_balance['compassionate'] = max(10 - taken_days, 0)
+    # Add any static leave types from balances
     for bal in balances:
         code = leave_types.get(bal.leave_type_id)
-        # Eligibility check
-        if code == 'maternity' and gender != 'female':
-            continue
-        if code == 'paternity' and gender != 'male':
-            continue
-        leave_balance[code] = float(bal.balance_days)
+        if code not in leave_balance:
+            leave_balance[code] = float(bal.balance_days)
     # Get leave requests
     requests = db.query(LeaveRequest).filter(LeaveRequest.user_id == user.id).all()
     leave_request = [
@@ -130,8 +170,10 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
     }
     return resp
 
+from app.schemas.user import UserUpdate
+
 @router.put("/{user_id}", tags=["users"], response_model=UserRead)
-def update_user(user_id: UUID, user_update: UserCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def update_user(user_id: UUID, user_update: UserUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -142,9 +184,14 @@ def update_user(user_id: UUID, user_update: UserCreate, db: Session = Depends(ge
         from app.deps.permissions import log_permission_denied
         log_permission_denied(db, current_user.id, "update_user", "user", str(user_id))
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    for k, v in user_update.model_dump(exclude={"password"}).items():
-        setattr(user, k, v)
-    user.hashed_password = user_update.password  # In real app, hash this
+    update_data = user_update.model_dump(exclude_unset=True)
+    if 'email' in update_data:
+        raise HTTPException(status_code=400, detail="Email cannot be updated.")
+    for k, v in update_data.items():
+        if k == "password":
+            user.hashed_password = v  # In real app, hash this
+        else:
+            setattr(user, k, v)
     try:
         db.commit()
         db.refresh(user)

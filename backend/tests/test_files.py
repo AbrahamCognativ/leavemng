@@ -58,7 +58,8 @@ def users_and_tokens(org_unit_id, seeded_admin):
     hr_data = {
         "name": "HR User", "email": hr_email, "password": "adminpass",
         "role_band": "HR", "role_title": "HR",
-        "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id
+        "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
+        "gender": "male"
     }
     hr_id = create_user(hr_data, admin_token)
     hr_token = login(hr_email, "adminpass")
@@ -68,7 +69,8 @@ def users_and_tokens(org_unit_id, seeded_admin):
     manager_data = {
         "name": "Manager User", "email": manager_email, "password": "adminpass",
         "role_band": "", "role_title": "Manager",
-        "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id
+        "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
+        "gender": "male"
     }
     manager_id = create_user(manager_data, admin_token)
     manager_token = login(manager_email, "adminpass")
@@ -78,7 +80,8 @@ def users_and_tokens(org_unit_id, seeded_admin):
     ic_data = {
         "name": "IC User", "email": ic_email, "password": "adminpass",
         "role_band": "", "role_title": "IC",
-        "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id
+        "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
+        "gender": "male"
     }
     ic_id = create_user(ic_data, admin_token)
     ic_token = login(ic_email, "adminpass")
@@ -88,7 +91,8 @@ def users_and_tokens(org_unit_id, seeded_admin):
     requester_data = {
         "name": "Requester User", "email": requester_email, "password": "adminpass",
         "role_band": "", "role_title": "IC",
-        "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id
+        "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
+        "gender": "male"
     }
     requester_id = create_user(requester_data, admin_token)
     requester_token = login(requester_email, "adminpass")

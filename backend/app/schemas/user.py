@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     role_band: str
     role_title: str
     passport_or_id_number: str
+    gender: str  # Required: 'male' or 'female'
     profile_image_url: Optional[str] = None
     manager_id: Optional[UUID] = None
     org_unit_id: Optional[UUID] = None
@@ -22,3 +23,16 @@ class UserRead(UserBase):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    role_band: Optional[str] = None
+    role_title: Optional[str] = None
+    passport_or_id_number: Optional[str] = None
+    gender: Optional[str] = None
+    profile_image_url: Optional[str] = None
+    manager_id: Optional[UUID] = None
+    org_unit_id: Optional[UUID] = None
+    extra_metadata: Optional[Any] = None
+    password: Optional[str] = None
+    # email is intentionally omitted to prevent editing

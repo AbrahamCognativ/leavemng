@@ -6,9 +6,10 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import UserRead
 from sqlalchemy.orm import Session
-import os
+from app.settings import get_settings
 
-SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+SECRET_KEY = get_settings().SECRET_KEY
+
 ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
