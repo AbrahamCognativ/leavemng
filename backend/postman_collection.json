@@ -1,0 +1,205 @@
+{
+  "info": {
+    "_postman_id": "leavemng-collection-001",
+    "name": "LeaveMng API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Auto-generated collection for LeaveMng FastAPI endpoints."
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] },
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "username", "value": "user@example.com", "type": "text" },
+              { "key": "password", "value": "string", "type": "text" }
+            ] }
+          }
+        },
+        {
+          "name": "Invite User",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/invite", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "invite"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"invitee@example.com\",\n  \"name\": \"Invitee Name\",\n  \"role_band\": \"HR\",\n  \"role_title\": \"Manager\",\n  \"passport_or_id_number\": \"12345\",\n  \"gender\": \"M\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/users/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", ""] } }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/users/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"name\": \"New User\",\n  \"role_band\": \"IC\",\n  \"role_title\": \"Employee\",\n  \"passport_or_id_number\": \"67890\",\n  \"gender\": \"F\",\n  \"password\": \"string\"\n}" }
+          }
+        },
+        {
+          "name": "Get User",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/users/:user_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", ":user_id"] } }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/users/:user_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", ":user_id"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"updated@example.com\",\n  \"name\": \"Updated Name\",\n  \"role_band\": \"IC\",\n  \"role_title\": \"Employee\",\n  \"passport_or_id_number\": \"67890\",\n  \"gender\": \"F\",\n  \"password\": \"string\"\n}" }
+          }
+        },
+        {
+          "name": "Soft Delete User",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/:user_id/softdelete", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", ":user_id", "softdelete"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leave",
+      "item": [
+        {
+          "name": "List Leave Requests",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/leave/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave", ""] } }
+        },
+        {
+          "name": "Create Leave Request",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/leave/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"leave_type_id\": \"type_id\",\n  \"start_date\": \"2025-05-07\",\n  \"end_date\": \"2025-05-10\",\n  \"reason\": \"Vacation\"\n}" }
+          }
+        },
+        {
+          "name": "Get Leave Request",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/leave/:request_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave", ":request_id"] } }
+        },
+        {
+          "name": "Update Leave Request",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/leave/:request_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave", ":request_id"] },
+            "body": { "mode": "raw", "raw": "{\n  \"leave_type_id\": \"type_id\",\n  \"start_date\": \"2025-05-07\",\n  \"end_date\": \"2025-05-10\",\n  \"reason\": \"Vacation\"\n}" }
+          }
+        },
+        {
+          "name": "Approve Leave Request",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/leave/:request_id/approve", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave", ":request_id", "approve"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/files/upload/:leave_request_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "files", "upload", ":leave_request_id"] },
+            "body": { "mode": "formdata", "formdata": [ { "key": "file", "type": "file", "src": "" } ] }
+          }
+        },
+        {
+          "name": "List Files",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/files/list/:leave_request_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "files", "list", ":leave_request_id"] } }
+        },
+        {
+          "name": "Download File",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/files/download/:leave_request_id/:document_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "files", "download", ":leave_request_id", ":document_id"] } }
+        },
+        {
+          "name": "Delete File",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/v1/files/delete/:leave_request_id/:document_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "files", "delete", ":leave_request_id", ":document_id"] } }
+        },
+        {
+          "name": "Upload Profile Image",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/files/upload-profile-image/:user_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "files", "upload-profile-image", ":user_id"] },
+            "body": { "mode": "formdata", "formdata": [ { "key": "file", "type": "file", "src": "" } ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Org Units",
+      "item": [
+        {
+          "name": "List Org Units",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/org/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "org", ""] } }
+        },
+        {
+          "name": "Create Org Unit",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/org/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "org", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Unit Name\"\n}" }
+          }
+        },
+        {
+          "name": "Get Org Unit",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/org/:unit_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "org", ":unit_id"] } }
+        },
+        {
+          "name": "Update Org Unit",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "url": { "raw": "{{baseUrl}}/api/v1/org/:unit_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "org", ":unit_id"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Unit\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leave Types",
+      "item": [
+        { "name": "List Leave Types", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/leave-types/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave-types", ""] } } },
+        { "name": "Create Leave Type", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/v1/leave-types/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave-types", ""] }, "body": { "mode": "raw", "raw": "{\n  \"name\": \"Annual\"\n}" } } },
+        { "name": "Update Leave Type", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/v1/leave-types/:leave_type_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave-types", ":leave_type_id"] }, "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Type\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Leave Policy",
+      "item": [
+        { "name": "List Leave Policies", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/leave-policy/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave-policy", ""] } } },
+        { "name": "Create Leave Policy", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/v1/leave-policy/", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave-policy", ""] }, "body": { "mode": "raw", "raw": "{\n  \"leave_type_id\": \"type_id\",\n  \"accrual_frequency\": \"monthly\"\n}" } } },
+        { "name": "Get Leave Policy", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/leave-policy/:policy_id", "host": ["{{baseUrl}}"], "path": ["api", "v1", "leave-policy", ":policy_id"] } } }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        { "name": "Summary", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/analytics/summary", "host": ["{{baseUrl}}"], "path": ["api", "v1", "analytics", "summary"] } } },
+        { "name": "User Growth", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/analytics/user-growth", "host": ["{{baseUrl}}"], "path": ["api", "v1", "analytics", "user-growth"] } } },
+        { "name": "Leave Stats", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/analytics/leave-stats", "host": ["{{baseUrl}}"], "path": ["api", "v1", "analytics", "leave-stats"] } } }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" }
+  ]
+}
