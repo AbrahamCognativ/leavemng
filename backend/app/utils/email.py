@@ -1,8 +1,10 @@
 import smtplib
+import socket
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List, Optional
-from fastapi import Request
+from fastapi import Request, HTTPException
 
 # SMTP config will be loaded from app.state.settings
 
