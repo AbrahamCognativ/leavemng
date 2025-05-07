@@ -92,3 +92,16 @@ Desktop.ini
 
 # Ignore test outputs
 test-output/
+
+# Ignore uploads folder and its contents (images, documents, etc.)
+app/api/uploads/
+
+# Common Python ignores
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.env
+
+# VSCode settings
+.vscode/

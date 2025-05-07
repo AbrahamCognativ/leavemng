@@ -140,7 +140,8 @@ def test_leave_request_duplicate(auth_token, db_session):
     from app.models.leave_request import LeaveRequest
     import jwt
     import os
-    SECRET_KEY = os.getenv("SECRET_KEY", "secret")  # Adjust if your secret is different
+    from app.settings import get_settings
+    SECRET_KEY = get_settings().SECRET_KEY
     payload = jwt.decode(auth_token, SECRET_KEY, algorithms=["HS256"])
     user_id = payload["user_id"]
     import uuid

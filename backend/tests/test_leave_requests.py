@@ -36,7 +36,8 @@ def test_leave_request_crud(auth_token):
         "comments": f"Test leave {uuid.uuid4()}"
     }
     # Decode user_id from token for cleanup
-    SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+    from app.settings import get_settings
+    SECRET_KEY = get_settings().SECRET_KEY
     payload = jwt.decode(auth_token, SECRET_KEY, algorithms=["HS256"])
     user_id = payload["user_id"]
     # Clean up any existing leave requests for this user/leave_type/date
