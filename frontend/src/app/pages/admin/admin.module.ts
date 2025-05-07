@@ -15,15 +15,11 @@ import { OrgUnitsComponent } from './org-units/org-units.component';
 
 const routes: Routes = [
   {
-    path: '',
+    path: 'leave-requests',
     component: AdminDashboardComponent
   },
   {
-    path: 'approvals',
-    component: LeaveApprovalComponent
-  },
-  {
-    path: 'approvals/:id',
+    path: 'leave-request/:id',
     component: LeaveRequestDetailsComponent
   },
   {

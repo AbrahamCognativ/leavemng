@@ -1,67 +1,68 @@
 .org-units-container {
-  padding: 20px;
-
-  .section {
-    margin-bottom: 30px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 20px;
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    
+    h2 {
       margin-bottom: 20px;
-
-      h2 {
-        margin: 0;
-        font-size: 1.5rem;
-        color: #333;
-      }
     }
-  }
 
-  .dx-datagrid {
-    margin-top: 20px;
-  }
+    
+    .toolbar {
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    dx-load-indicator {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+    }
+    
+    .popup-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 16px;
 
-  ::ng-deep {
-    .dx-datagrid {
-      .dx-datagrid-headers {
-        background-color: #f5f5f5;
-      }
 
-      .dx-row-alt {
-        background-color: #fafafa;
-      }
-
-      .dx-button {
-        &.dx-button-has-icon {
-          padding: 4px;
+        dx-button{
+            margin-right: 10px;
         }
-      }
     }
-
-    .dx-popup-wrapper {
-      .dx-popup-title {
-        background-color: #f5f5f5;
-        border-bottom: 1px solid #ddd;
+  
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+  
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+  
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.05);
       }
-
-      .dx-toolbar {
-        background-color: #f5f5f5;
-        border-top: 1px solid #ddd;
-        padding: 10px;
+  
+      &.edit-btn {
+        color: #3498db;
       }
-
-      .dx-form {
-        padding: 20px;
-
-        .dx-field-item-label {
-          font-weight: 500;
-        }
+  
+      &.delete-btn {
+        color: #e74c3c;
+      }
+  
+      .dx-icon-edit, .dx-icon-trash {
+        font-size: 18px;
       }
     }
   }
-} 

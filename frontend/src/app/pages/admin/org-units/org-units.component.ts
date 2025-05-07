@@ -30,12 +30,9 @@ export class OrgUnitsComponent implements OnInit {
   isLoading: boolean = false;
   isPopupVisible: boolean = false;
   selectedUnit: OrgUnit | null = null;
-
   formData: Partial<OrgUnit> = {
     name: '',
-    code: '',
-    description: '',
-    parent_id: undefined
+    parent_unit_id: undefined
   };
 
   constructor(private orgUnitService: OrgUnitService) {}
@@ -47,9 +44,7 @@ export class OrgUnitsComponent implements OnInit {
   async loadData() {
     try {
       this.isLoading = true;
-      // Wait for the promise to resolve
       this.orgUnits = await this.orgUnitService.getOrgUnits();
-      console.log("orgUnits", this.orgUnits);
     } catch (error) {
       console.error('Error loading organization units:', error);
     } finally {
@@ -60,8 +55,7 @@ export class OrgUnitsComponent implements OnInit {
   onAdd() {
     this.formData = {
       name: '',
-      description: '',
-      parent_id: undefined
+      parent_unit_id: undefined
     };
     this.selectedUnit = null;
     this.isPopupVisible = true;
@@ -74,10 +68,12 @@ export class OrgUnitsComponent implements OnInit {
   }
 
   async save() {
+    console.log("formData", this.formData);
     try {
       this.isLoading = true;
       if (this.selectedUnit) {
         await this.orgUnitService.updateOrgUnit(this.selectedUnit.id, this.formData);
+        console.log("updated org unit", this.formData);
       } else {
         await this.orgUnitService.createOrgUnit(this.formData);
       }
@@ -105,8 +101,9 @@ export class OrgUnitsComponent implements OnInit {
   getParentName(parentId: string | undefined): string {
     if (!parentId) return 'None';
     if (!this.orgUnits || this.orgUnits.length === 0) return '';
-    
+    console.log("parentId", parentId);
+    console.log("orgUnits", this.orgUnits);
     const parent = this.orgUnits.find(u => u.id === parentId);
     return parent ? parent.name : 'Unknown';
   }
-} 
+}

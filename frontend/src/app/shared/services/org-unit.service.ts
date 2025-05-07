@@ -6,10 +6,8 @@ import { catchError, retry } from 'rxjs/operators';
 export interface OrgUnit {
   id: string;
   name: string;
-  description?: string;
-  parent_id?: string;
-  created_at: string;
-  updated_at: string;
+  parent_unit_id?: string;
+  children?: OrgUnit[];
 }
 
 @Injectable({
