@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from importlib import import_module
 from app.settings import get_settings
+from fastapi.staticfiles import StaticFiles
+import os
+from pathlib import Path
 
 # Load environment-specific settings
 settings = get_settings()
@@ -91,6 +94,21 @@ def include_routers():
 
 
 include_routers()
+
+# Mount uploads directory as static files
+try:
+    # Get the path to the uploads directory
+    from app.api.v1.routers.files import UPLOAD_DIR
+    uploads_path = Path(UPLOAD_DIR)
+    
+    # Create the directory if it doesn't exist
+    os.makedirs(uploads_path, exist_ok=True)
+    
+    # Mount the directory to serve static files
+    app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+    print(f"[INFO] Mounted uploads directory: {uploads_path}")
+except Exception as e:
+    print(f"[WARN] Could not mount uploads directory: {e}")
 
 # Start the leave accrual scheduler (monthly)
 try:
