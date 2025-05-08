@@ -8,7 +8,6 @@ import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxiItemModule } from 'devextreme-angular/ui/nested';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
-import { LeaveApprovalComponent } from './leave-approval/leave-approval.component';
 import { LeaveTypesComponent } from './leave-types/leave-types.component';
 import { LeaveRequestDetailsComponent } from './leave-request-details/leave-request-details.component';
 import { OrgUnitsComponent } from './org-units/org-units.component';
@@ -43,7 +42,6 @@ const routes: Routes = [
     DxPopupModule,
     DxiItemModule,
     AdminDashboardComponent,
-    LeaveApprovalComponent,
     LeaveTypesComponent,
     LeaveRequestDetailsComponent,
     OrgUnitsComponent
