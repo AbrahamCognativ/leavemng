@@ -1,1 +1,102 @@
-<p>leave-history works!</p>
+<h2>Your Leave History</h2>
+
+<div class="content-block dx-card responsive-paddings">
+  <div class="leave-history-header">
+    <p>View your past leave requests</p>
+  </div>
+  
+  <div *ngIf="isLoading" class="loading-container">
+    <dx-load-indicator width="50" height="50"></dx-load-indicator>
+    <p>Loading leave history...</p>
+  </div>
+  
+  <div *ngIf="errorMessage" class="error-message">
+    <p>{{ errorMessage }}</p>
+  </div>
+  
+  <div *ngIf="!isLoading && !errorMessage">
+    <dx-data-grid
+      [dataSource]="leaveHistory"
+      [showBorders]="true"
+      [columnAutoWidth]="true"
+      [wordWrapEnabled]="true"
+      [showRowLines]="true"
+      [showColumnLines]="true"
+      [rowAlternationEnabled]="true"
+      [allowColumnReordering]="true"
+      [allowColumnResizing]="true"
+      [noDataText]="'No past leave records found'"
+    >
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20]"
+        [showInfo]="true"
+      ></dxo-pager>
+      
+      <dxi-column
+        dataField="leave_type"
+        caption="Leave Type"
+        [width]="120"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="start_date"
+        caption="Start Date"
+        [width]="120"
+        cellTemplate="startDateTemplate"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="end_date"
+        caption="End Date"
+        [width]="120"
+        cellTemplate="endDateTemplate"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="total_days"
+        caption="Days Taken"
+        [width]="100"
+        alignment="center"
+      ></dxi-column>
+      
+      <!-- Temporarily hiding Approved On column due to data inconsistency issue
+      <dxi-column
+        dataField="decided_at"
+        caption="Approved On"
+        [width]="120"
+        cellTemplate="approvedDateTemplate"
+      ></dxi-column>
+      -->
+      
+      <dxi-column
+        dataField="approver_name"
+        caption="Approved By"
+        [width]="150"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="comments"
+        caption="Comments"
+        [minWidth]="200"
+      ></dxi-column>
+      
+      <div *dxTemplate="let data of 'startDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+      
+      <div *dxTemplate="let data of 'endDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+      
+      <div *dxTemplate="let data of 'approvedDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+    </dx-data-grid>
+  </div>
+  
+  <div *ngIf="!isLoading && !errorMessage && leaveHistory.length === 0" class="no-data">
+    <p>No past approved leave records found.</p>
+  </div>
+</div>
