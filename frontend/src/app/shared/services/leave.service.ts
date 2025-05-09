@@ -32,6 +32,15 @@ export class LeaveService {
       ).toPromise() as Promise<any>;
   }
 
+  // Get leave data (balances + requests) for a user
+  async getUserLeave(userId: string): Promise<any> {
+    return this.http.get<any>(`${this.apiUrl}/users/${userId}/leave`)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
   // Get leave types
   async getLeaveTypes(): Promise<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/leave-types`)

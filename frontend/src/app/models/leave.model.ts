@@ -8,12 +8,12 @@ export interface Document {
   uploadDate: Date;
 }
 export interface Leave {
-  id: number;
-  employeeId: number;
+  id: string;
+  employeeId: string;
   leaveType: string;
   startDate: Date;
   endDate: Date;
-  reason: string;
+  comments: string;
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   createdAt: Date;
   updatedAt: Date;
@@ -21,9 +21,12 @@ export interface Leave {
 }
 
 export interface LeaveBalance {
-  type: string;
-  available: number;
-  total: number;
+  id: string;
+  user_id: string;
+  leave_type: string;
+  balance_days: number;
+  total_days: number;
+  updated_at: Date;
 }
 
 export interface NotificationConfig {
