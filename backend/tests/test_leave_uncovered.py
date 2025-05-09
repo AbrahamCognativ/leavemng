@@ -52,7 +52,6 @@ def leave_type_fixture():
     if created:
         delete_leave_type(leave_type_id, admin_token)
 
-
 import uuid
 
 def create_user_and_login(username, password, role, gender="male", admin_token=None):
@@ -89,14 +88,47 @@ def create_user_and_login(username, password, role, gender="male", admin_token=N
     assert reg_resp.status_code in (200, 201, 409), reg_resp.text
     login_resp = client.post("/api/v1/auth/login", data={"username": unique_email, "password": password})
     assert login_resp.status_code == 200, login_resp.text
-    return login_resp.json()["access_token"]
+    return login_resp.json()["access_token"], reg_resp.json()["id"], unique_email
+
+@pytest.fixture
+def create_user_and_login_fixture():
+    admin_token = get_admin_token()
+    created_users = []
+    def _create_user(username, password, role, gender="male"):
+        token, user_id, email = create_user_and_login(username, password, role, gender, admin_token)
+        created_users.append((user_id, token))
+        return token, user_id, email
+    yield _create_user
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    from app.db.session import SessionLocal
+    from sqlalchemy import text
+    db = SessionLocal()
+    for user_id, token in created_users:
+        # Delete all audit_logs for this user
+        try:
+            db.execute(text("DELETE FROM audit_logs WHERE user_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"[WARN] Could not delete audit_logs for user {user_id}: {e}")
+        # Directly delete all leave_requests for this user
+        try:
+            db.execute(text("DELETE FROM leave_requests WHERE user_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"[WARN] Could not delete leave_requests for user {user_id}: {e}")
+        # Now delete the user
+        resp = client.delete(f"/api/v1/users/{user_id}", headers=headers)
+        assert resp.status_code in (200, 204, 404), resp.text
+    db.close()
 
 # 1. list_leave_requests: Manager sees direct reports, IC sees only own
 
 # def test_list_leave_requests_manager_and_ic():
 #     admin_token = get_admin_token()
-#     ic_token = create_user_and_login("ic2@example.com", "secret123", "IC", admin_token=admin_token)
-#     manager_token = create_user_and_login("manager3@example.com", "secret123", "Manager", admin_token=admin_token)
+#     ic_token, ic_id, ic_email = create_user_and_login_fixture("ic2@example.com", "secret123", "IC")
+#     manager_token, manager_id, manager_email = create_user_and_login_fixture("manager3@example.com", "secret123", "Manager")
 #     headers_ic = {"Authorization": f"Bearer {ic_token}"}
 #     headers_mgr = {"Authorization": f"Bearer {manager_token}"}
 
@@ -154,9 +186,8 @@ def create_user_and_login(username, password, role, gender="male", admin_token=N
 
 # 2. create_leave_request: Simulate DB error on leave_type lookup
 
-def test_create_leave_request_db_error():
-    admin_token = get_admin_token()
-    token = create_user_and_login("dbfail@example.com", "secret123", "IC", admin_token=admin_token)
+def test_create_leave_request_db_error(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("dbfail@example.com", "secret123", "IC")
     with patch("app.api.v1.routers.leave.Session.query") as mock_query:
         mock_query.side_effect = Exception("DB error")
         data = {"leave_type_id": str(uuid4()), "start_date": (date.today() + timedelta(days=4)).isoformat(), "end_date": (date.today() + timedelta(days=4)).isoformat(), "comments": "DB error"}
@@ -167,10 +198,10 @@ def test_create_leave_request_db_error():
 
 # 3. create_leave_request: annual leave edge cases
 
-def test_create_annual_leave_too_soon():
-    admin_token = get_admin_token()
-    token = create_user_and_login("soon@example.com", "secret123", "IC", admin_token=admin_token)
+def test_create_annual_leave_too_soon(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("soon@example.com", "secret123", "IC")
     headers = {"Authorization": f"Bearer {token}"}
+    admin_token = get_admin_token()
     # Use ensure_leave_type_exists to get or create the leave type
     leave_type_id, _ = ensure_leave_type_exists(admin_token)
     data = {
@@ -184,10 +215,10 @@ def test_create_annual_leave_too_soon():
     assert resp.status_code == 400
     assert "at least 3 days in advance" in resp.text
 
-def test_create_annual_leave_weekends_only():
-    admin_token = get_admin_token()
-    token = create_user_and_login("weekend@example.com", "secret123", "IC", admin_token=admin_token)
+def test_create_annual_leave_weekends_only(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("weekend@example.com", "secret123", "IC")
     headers = {"Authorization": f"Bearer {token}"}
+    admin_token = get_admin_token()
     leave_type_id, _ = ensure_leave_type_exists(admin_token)
     today = date.today()
     # Find the first Saturday that is at least 4 days from today
@@ -206,10 +237,10 @@ def test_create_annual_leave_weekends_only():
     assert resp.status_code == 200
     # Optionally, check that total_days == 0 in response
 
-def test_annual_leave_no_policy():
-    admin_token = get_admin_token()
-    token = create_user_and_login("nopolicy@example.com", "secret123", "IC", admin_token=admin_token)
+def test_annual_leave_no_policy(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("nopolicy@example.com", "secret123", "IC")
     headers = {"Authorization": f"Bearer {token}"}
+    admin_token = get_admin_token()
     leave_type_id, _ = ensure_leave_type_exists(admin_token)
     data = {
         "leave_type_id": leave_type_id,
@@ -221,10 +252,10 @@ def test_annual_leave_no_policy():
     assert resp.status_code == 200
     # Optionally, check entitlement logic in response
 
-def test_duplicate_leave_request():
-    admin_token = get_admin_token()
-    token = create_user_and_login("duplicate@example.com", "secret123", "IC", admin_token=admin_token)
+def test_duplicate_leave_request(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("duplicate@example.com", "secret123", "IC")
     headers = {"Authorization": f"Bearer {token}"}
+    admin_token = get_admin_token()
     leave_type_id, _ = ensure_leave_type_exists(admin_token)
     today = (date.today() + timedelta(days=4)).isoformat()
     data = {
@@ -240,9 +271,8 @@ def test_duplicate_leave_request():
     assert resp2.status_code == 400
     assert "Duplicate leave request" in resp2.text
 
-def test_create_leave_request_invalid_type():
-    admin_token = get_admin_token()
-    token = create_user_and_login("invalidtype@example.com", "secret123", "IC", admin_token=admin_token)
+def test_create_leave_request_invalid_type(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("invalidtype@example.com", "secret123", "IC")
     headers = {"Authorization": f"Bearer {token}"}
     data = {
         "leave_type_id": str(uuid4()),
@@ -254,10 +284,10 @@ def test_create_leave_request_invalid_type():
     assert resp.status_code == 400
     assert "Invalid leave_type_id" in resp.text
 
-def test_create_leave_request_commit_failure():
-    admin_token = get_admin_token()
-    token = create_user_and_login("commitfail@example.com", "secret123", "IC", admin_token=admin_token)
+def test_create_leave_request_commit_failure(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("commitfail@example.com", "secret123", "IC")
     headers = {"Authorization": f"Bearer {token}"}
+    admin_token = get_admin_token()
     leave_type_id, _ = ensure_leave_type_exists(admin_token)
     data = {
         "leave_type_id": leave_type_id,
@@ -269,12 +299,12 @@ def test_create_leave_request_commit_failure():
         resp = client.post("/api/v1/leave/", json=data, headers=headers)
         assert resp.status_code == 500 or resp.status_code == 400
 
-def test_get_leave_request_permission_denied():
-    admin_token = get_admin_token()
-    user1_token = create_user_and_login("user1@example.com", "secret123", "IC", admin_token=admin_token)
-    user2_token = create_user_and_login("user2@example.com", "secret123", "IC", admin_token=admin_token)
+def test_get_leave_request_permission_denied(create_user_and_login_fixture):
+    user1_token, _, _ = create_user_and_login_fixture("user1@example.com", "secret123", "IC")
+    user2_token, _, _ = create_user_and_login_fixture("user2@example.com", "secret123", "IC")
     headers1 = {"Authorization": f"Bearer {user1_token}"}
     headers2 = {"Authorization": f"Bearer {user2_token}"}
+    admin_token = get_admin_token()
     leave_type_id, _ = ensure_leave_type_exists(admin_token)
     today = (date.today() + timedelta(days=4)).isoformat()
     data = {
@@ -290,10 +320,10 @@ def test_get_leave_request_permission_denied():
     get_resp = client.get(f"/api/v1/leave/{leave_id}", headers=headers2)
     assert get_resp.status_code == 403
 
-def test_update_leave_request_commit_failure():
-    admin_token = get_admin_token()
-    token = create_user_and_login("updatefail@example.com", "secret123", "IC", admin_token=admin_token)
+def test_update_leave_request_commit_failure(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("updatefail@example.com", "secret123", "IC")
     headers = {"Authorization": f"Bearer {token}"}
+    admin_token = get_admin_token()
     leave_type_id, _ = ensure_leave_type_exists(admin_token)
     today = (date.today() + timedelta(days=4)).isoformat()
     data = {
@@ -311,10 +341,10 @@ def test_update_leave_request_commit_failure():
         upd_resp = client.put(f"/api/v1/leave/{leave_id}", json=upd_data, headers=headers)
         assert upd_resp.status_code == 500
 
-def test_approve_leave_request_commit_failure():
-    admin_token = get_admin_token()
-    token = create_user_and_login("approvefail@example.com", "secret123", "IC", admin_token=admin_token)
+def test_approve_leave_request_commit_failure(create_user_and_login_fixture):
+    token, _, _ = create_user_and_login_fixture("approvefail@example.com", "secret123", "IC")
     headers = {"Authorization": f"Bearer {token}"}
+    admin_token = get_admin_token()
     leave_type_id, _ = ensure_leave_type_exists(admin_token)
     today = (date.today() + timedelta(days=4)).isoformat()
     data = {

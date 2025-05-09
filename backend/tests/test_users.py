@@ -113,13 +113,39 @@ def created_user_cleanup():
     created_user_ids = []
     created_emails = []
     yield created_user_ids, created_emails
-    # Cleanup after test
+    # Robust cleanup after test
+    from sqlalchemy import text
     db = SessionLocal()
     for user_id in created_user_ids:
-        db.query(AuditLog).filter(AuditLog.user_id == user_id).delete()
+        try:
+            db.execute(text("DELETE FROM audit_logs WHERE user_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+        try:
+            db.execute(text("DELETE FROM leave_balances WHERE user_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+        try:
+            db.execute(text("DELETE FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+            remaining_requests = db.execute(text("SELECT id FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {"user_id": str(user_id)}).fetchall()
+            if remaining_requests:
+                for req_id, in remaining_requests:
+                    db.execute(text("DELETE FROM leave_documents WHERE request_id = :req_id"), {"req_id": str(req_id)})
+                    db.commit()
+                    db.execute(text("DELETE FROM leave_requests WHERE id = :id"), {"id": str(req_id)})
+                    db.commit()
+        try:
+            db.execute(text("UPDATE users SET manager_id = NULL WHERE manager_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
         db.query(User).filter(User.id == user_id).delete()
     for email in created_emails:
-        # Also remove any audit logs for this email if needed (if you log by email elsewhere)
         db.query(User).filter(User.email == email).delete()
     db.commit()
     db.close()
@@ -127,19 +153,29 @@ def created_user_cleanup():
 @pytest.mark.parametrize("missing_field", [
     "name", "email", "role_band", "role_title", "passport_or_id_number", "password", "gender"
 ])
-def test_create_user_validation_error(missing_field, auth_token):
+def test_create_user_validation_error(missing_field, auth_token, created_user_cleanup):
     data = valid_user_data()
     data.pop(missing_field)
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = client.post("/api/v1/users/", json=data, headers=headers)
+    # If creation succeeds, track for cleanup
+    if response.status_code in (200, 201):
+        resp_json = response.json()
+        created_user_cleanup[0].append(resp_json["id"])
+        created_user_cleanup[1].append(data.get("email", resp_json.get("email")))
     assert response.status_code == 422
 
 @pytest.mark.parametrize("invalid_email", ["not-an-email", "@no-user.com", "user@.com"])
-def test_create_user_invalid_email(invalid_email, auth_token):
+def test_create_user_invalid_email(invalid_email, auth_token, created_user_cleanup):
     data = valid_user_data()
     data["email"] = invalid_email
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = client.post("/api/v1/users/", json=data, headers=headers)
+    # If creation succeeds, track for cleanup
+    if response.status_code in (200, 201):
+        resp_json = response.json()
+        created_user_cleanup[0].append(resp_json["id"])
+        created_user_cleanup[1].append(data.get("email", resp_json.get("email")))
     assert response.status_code == 422
 
 def test_create_user_success(auth_token, created_user_cleanup):
@@ -162,7 +198,7 @@ def test_create_user_success(auth_token, created_user_cleanup):
     assert "id" in resp_json
     assert "created_at" in resp_json
 
-def test_create_user_duplicate(auth_token):
+def test_create_user_duplicate(auth_token, created_user_cleanup):
     data = valid_user_data()
     import uuid
     unique_id = str(uuid.uuid4())
@@ -172,6 +208,8 @@ def test_create_user_duplicate(auth_token):
     # First creation should succeed
     resp1 = client.post("/api/v1/users/", json=data, headers=headers)
     assert resp1.status_code == 200
+    created_user_cleanup[0].append(resp1.json()["id"])
+    created_user_cleanup[1].append(data["email"])
     # Second creation with same passport_or_id_number and email should fail
     resp2 = client.post("/api/v1/users/", json=data, headers=headers)
     assert resp2.status_code == 400
