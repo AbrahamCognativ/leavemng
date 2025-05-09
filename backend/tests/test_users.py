@@ -22,7 +22,6 @@ def auth_token():
 
 def test_soft_delete_user(auth_token, created_user_cleanup):
     data = valid_user_data()
-    data["gender"] = "male"
     import uuid
     data["passport_or_id_number"] = str(uuid.uuid4())
     data["email"] = f"softdelete.{data['passport_or_id_number']}@example.com"
@@ -62,7 +61,6 @@ def test_get_user_permission_denied(auth_token):
 
 def test_update_user(auth_token, created_user_cleanup):
     data = valid_user_data()
-    data["gender"] = "male"
     import uuid
     data["passport_or_id_number"] = str(uuid.uuid4())
     data["email"] = f"update.{data['passport_or_id_number']}@example.com"
@@ -80,11 +78,9 @@ def test_update_user(auth_token, created_user_cleanup):
 
 def test_get_user_leave(auth_token, created_user_cleanup):
     data = valid_user_data()
-    data["gender"] = "male"
     import uuid
     data["passport_or_id_number"] = str(uuid.uuid4())
     data["email"] = f"leave.{data['passport_or_id_number']}@example.com"
-    data["gender"] = "male"
     headers = {"Authorization": f"Bearer {auth_token}"}
     resp = client.post("/api/v1/users/", json=data, headers=headers)
     assert resp.status_code == 200
@@ -105,11 +101,11 @@ def valid_user_data():
         "role_title": "HR",
         "passport_or_id_number": "P1234567",
         "profile_image_url": None,
+        "gender": "male",
         "manager_id": None,
         "org_unit_id": None,
         "extra_metadata": None,
-        "password": "securepassword123",
-        "gender": "male"
+        "password": "securepassword123"
     }
 
 @pytest.fixture
@@ -133,7 +129,6 @@ def created_user_cleanup():
 ])
 def test_create_user_validation_error(missing_field, auth_token):
     data = valid_user_data()
-    data["gender"] = "male"
     data.pop(missing_field)
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = client.post("/api/v1/users/", json=data, headers=headers)
@@ -142,7 +137,6 @@ def test_create_user_validation_error(missing_field, auth_token):
 @pytest.mark.parametrize("invalid_email", ["not-an-email", "@no-user.com", "user@.com"])
 def test_create_user_invalid_email(invalid_email, auth_token):
     data = valid_user_data()
-    data["gender"] = "male"
     data["email"] = invalid_email
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = client.post("/api/v1/users/", json=data, headers=headers)
@@ -150,7 +144,6 @@ def test_create_user_invalid_email(invalid_email, auth_token):
 
 def test_create_user_success(auth_token, created_user_cleanup):
     data = valid_user_data()
-    data["gender"] = "male"
     import uuid
     data["passport_or_id_number"] = str(uuid.uuid4())
     data["email"] = f"john.doe.{data['passport_or_id_number']}@example.com"
@@ -171,7 +164,6 @@ def test_create_user_success(auth_token, created_user_cleanup):
 
 def test_create_user_duplicate(auth_token):
     data = valid_user_data()
-    data["gender"] = "male"
     import uuid
     unique_id = str(uuid.uuid4())
     data["passport_or_id_number"] = unique_id

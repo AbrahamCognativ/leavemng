@@ -52,10 +52,20 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
     total_days = 0
     current = req.start_date
     leave_code = leave_type.code.value if hasattr(leave_type.code, 'value') else str(leave_type.code)
-    if leave_code == "annual":
+    if leave_code.lower() == "annual":
         # 1. Enforce 3-day prior application rule
         today = date.today()
-        if (req.start_date - today).days < 3:
+        start_date = req.start_date
+        # Defensive conversion to date
+        if isinstance(start_date, str):
+            try:
+                start_date = dt.fromisoformat(start_date).date()
+            except Exception:
+                raise HTTPException(status_code=400, detail="Invalid start_date format.")
+        elif isinstance(start_date, dt):
+            start_date = start_date.date()
+        # print(f"[DEBUG] leave_code={leave_code}, start_date={start_date}, today={today}, delta_days={(start_date - today).days}")
+        if (start_date - today).days < 3:
             raise HTTPException(status_code=400, detail="Leave must be requested at least 3 days in advance.")
 
         # 2. Count only weekdays (Monday=0 to Friday=4)
