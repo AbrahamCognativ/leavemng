@@ -2,6 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.run import app
+from app.utils.password import hash_password
 
 client = TestClient(app)
 
@@ -29,6 +30,7 @@ import pytest
 from fastapi.testclient import TestClient
 from uuid import uuid4
 from app.run import app
+from app.utils.password import hash_password
 
 client = TestClient(app)
 

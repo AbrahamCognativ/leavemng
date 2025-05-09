@@ -3,9 +3,17 @@ from fastapi.testclient import TestClient
 from app.run import app
 from app.db.session import SessionLocal
 from app.models.user import User
+from app.utils.password import hash_password
 from app.models.audit_log import AuditLog
 
 client = TestClient(app)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _cleanup_seeded_admin_module(cleanup_seeded_admin):
+    # Ensures that seeded admin is cleaned up after all tests in this module
+    yield
+    cleanup_seeded_admin
 
 @pytest.fixture(scope="module")
 def auth_token():

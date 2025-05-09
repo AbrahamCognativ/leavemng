@@ -8,6 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.models.user import User
+from app.utils.password import hash_password
 from app.db.base import Base
 import uuid
 
@@ -23,7 +24,7 @@ FIRST_USER = {
     "id": uuid.UUID("4c6a745a-bb63-4a9a-8916-f27ffd1bd63d"),
     "name": "User User",
     "email": "user@example.com",
-    "hashed_password": "secret123",  # Replace with hashed password in production!
+    "hashed_password": hash_password("secret123"),  # Now hashed with bcrypt
     "role_band": "Admin",
     "role_title": "Developer",
     "gender": "male",
