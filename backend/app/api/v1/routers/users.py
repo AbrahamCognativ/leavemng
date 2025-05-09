@@ -23,9 +23,16 @@ def soft_delete_user(user_id: UUID, db: Session = Depends(get_db), current_user=
     db.commit()
     return {"detail": f"User {user.email} soft-deleted (marked as inactive)."}
 
-@router.get("/", tags=["users"], response_model=list[UserRead], dependencies=[Depends(require_role(["HR", "Admin"]))])
-def list_users(db: Session = Depends(get_db)):
-    users = db.query(User).all()
+@router.get("/", tags=["users"], response_model=list[UserRead], dependencies=[Depends(require_role(["Manager", "HR", "Admin"]))])
+def list_users(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """
+    HR/Admin: See all users.
+    Manager: See only users whose manager_id == current_user.id.
+    """
+    if current_user.role_band in ("HR", "Admin") or current_user.role_title in ("HR", "Admin"):
+        users = db.query(User).all()
+    else:
+        users = db.query(User).filter(User.manager_id == current_user.id).all()
     return [UserRead.model_validate(user) for user in users]
 
 @router.post("/", tags=["users"], response_model=UserRead, dependencies=[Depends(require_role(["HR", "Admin"]))])

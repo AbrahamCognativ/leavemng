@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from datetime import timezone
 from app.settings import get_settings
 from uuid import UUID
+from app.deps.permissions import get_current_user, require_role
 
 router = APIRouter()
 
@@ -33,7 +34,9 @@ class InviteRequest(BaseModel):
 @router.post("/login", tags=["auth"], response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
-    if not user or user.hashed_password != form_data.password:
+    # if not user or not user.is_active:
+    #     raise HTTPException(status_code=401, detail="User is not active")
+    if user.hashed_password != form_data.password:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     claims = {
             "sub": str(user.id),
@@ -67,7 +70,6 @@ def require_hr_admin(current_user: User = Depends(get_db)):
 from app.deps.permissions import get_current_user, require_role
 
 @router.post("/invite", tags=["auth"], response_model=UserRead, dependencies=[Depends(require_role(["HR", "Admin"]))])
-
 def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None):
     # Only HR or Manager/Admin can invite
     existing = db.query(User).filter(User.email == invite.email).first()

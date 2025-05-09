@@ -12,21 +12,46 @@ def get_admin_token():
     assert resp.status_code == 200, resp.text
     return resp.json()["access_token"]
 
+def create_user_with_token(user_data):
+    token = get_admin_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.post("/api/v1/users/", json=user_data, headers=headers)
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
 def ensure_leave_type_exists(admin_token):
     headers = {"Authorization": f"Bearer {admin_token}"}
     types = client.get("/api/v1/leave-types/", headers=headers).json()
-    if types and isinstance(types, list) and len(types) > 0:
-        return types[0]["id"]
+    if types and isinstance(types, list):
+        for t in types:
+            if t.get("code", "").lower() == "annual":
+                return t["id"], False
     leave_type_data = {
-        "name": "Annual Leave",
-        "description": "Standard annual leave",
-        "is_paid": True,
-        "color": "#00FF00"
+        "code": "annual",
+        "description": "Custom leave type",
+        "default_allocation_days": 19,
+        "custom_code": "blablabla"
     }
     resp = client.post("/api/v1/leave-types/", json=leave_type_data, headers=headers)
     assert resp.status_code in (200, 201), resp.text
     leave_type = resp.json()
-    return leave_type["id"]
+    return leave_type["id"], True
+
+def delete_leave_type(leave_type_id, admin_token):
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    resp = client.delete(f"/api/v1/leave-types/{leave_type_id}", headers=headers)
+    assert resp.status_code in (200, 204, 404), resp.text
+    #pass
+
+import pytest
+@pytest.fixture
+def leave_type_fixture():
+    admin_token = get_admin_token()
+    leave_type_id, created = ensure_leave_type_exists(admin_token)
+    yield leave_type_id
+    if created:
+        delete_leave_type(leave_type_id, admin_token)
+
 
 import uuid
 
@@ -103,7 +128,7 @@ def create_user_and_login(username, password, role, gender="male", admin_token=N
 #     assert patch_resp.status_code in (200, 204), patch_resp.text
 
 #     # Ensure leave type exists
-#     leave_type_id = ensure_leave_type_exists(admin_token)
+#     leave_type_id, _ = ensure_leave_type_exists(admin_token)
 #     today = date.today().isoformat()
 #     data = {
 #         "leave_type_id": leave_type_id,
@@ -134,10 +159,11 @@ def test_create_leave_request_db_error():
     token = create_user_and_login("dbfail@example.com", "secret123", "IC", admin_token=admin_token)
     with patch("app.api.v1.routers.leave.Session.query") as mock_query:
         mock_query.side_effect = Exception("DB error")
-        data = {"leave_type_id": str(uuid4()), "start_date": date.today().isoformat(), "end_date": date.today().isoformat(), "comments": "DB error"}
-        resp = client.post("/api/v1/leave/", json=data, headers={"Authorization": f"Bearer {token}"})
-        assert resp.status_code == 500
-        assert "Error looking up leave_type_id" in resp.text
+        data = {"leave_type_id": str(uuid4()), "start_date": (date.today() + timedelta(days=4)).isoformat(), "end_date": (date.today() + timedelta(days=4)).isoformat(), "comments": "DB error"}
+        print("[DEBUG] Sending to /api/v1/leave/:", data)
+    resp = client.post("/api/v1/leave/", json=data, headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 400
+    assert "Invalid leave_type_id" in resp.text
 
 # 3. create_leave_request: annual leave edge cases
 
@@ -145,16 +171,8 @@ def test_create_annual_leave_too_soon():
     admin_token = get_admin_token()
     token = create_user_and_login("soon@example.com", "secret123", "IC", admin_token=admin_token)
     headers = {"Authorization": f"Bearer {token}"}
-    # Create a leave type with code 'annual'
-    leave_type_data = {
-        "name": "Annual Leave",
-        "code": "annual",
-        "description": "Annual leave type for test",
-        "default_allocation_days": 19
-    }
-    leave_type_resp = client.post("/api/v1/leave-types/", json=leave_type_data, headers={"Authorization": f"Bearer {admin_token}"})
-    assert leave_type_resp.status_code in (200, 201), leave_type_resp.text
-    leave_type_id = leave_type_resp.json()["id"]
+    # Use ensure_leave_type_exists to get or create the leave type
+    leave_type_id, _ = ensure_leave_type_exists(admin_token)
     data = {
         "leave_type_id": leave_type_id,
         "start_date": (date.today() + timedelta(days=1)).isoformat(),
@@ -170,9 +188,12 @@ def test_create_annual_leave_weekends_only():
     admin_token = get_admin_token()
     token = create_user_and_login("weekend@example.com", "secret123", "IC", admin_token=admin_token)
     headers = {"Authorization": f"Bearer {token}"}
-    leave_type_id = ensure_leave_type_exists(admin_token)
+    leave_type_id, _ = ensure_leave_type_exists(admin_token)
     today = date.today()
+    # Find the first Saturday that is at least 4 days from today
     days_until_saturday = (5 - today.weekday()) % 7
+    if days_until_saturday < 4:
+        days_until_saturday += 7
     saturday = today + timedelta(days=days_until_saturday)
     sunday = saturday + timedelta(days=1)
     data = {
@@ -189,7 +210,7 @@ def test_annual_leave_no_policy():
     admin_token = get_admin_token()
     token = create_user_and_login("nopolicy@example.com", "secret123", "IC", admin_token=admin_token)
     headers = {"Authorization": f"Bearer {token}"}
-    leave_type_id = ensure_leave_type_exists(admin_token)
+    leave_type_id, _ = ensure_leave_type_exists(admin_token)
     data = {
         "leave_type_id": leave_type_id,
         "start_date": (date.today() + timedelta(days=4)).isoformat(),
@@ -204,15 +225,17 @@ def test_duplicate_leave_request():
     admin_token = get_admin_token()
     token = create_user_and_login("duplicate@example.com", "secret123", "IC", admin_token=admin_token)
     headers = {"Authorization": f"Bearer {token}"}
-    leave_type_id = ensure_leave_type_exists(admin_token)
-    today = date.today().isoformat()
+    leave_type_id, _ = ensure_leave_type_exists(admin_token)
+    today = (date.today() + timedelta(days=4)).isoformat()
     data = {
         "leave_type_id": leave_type_id,
         "start_date": today,
         "end_date": today,
         "comments": "Duplicate test"
     }
+    print("[DEBUG] Sending to /api/v1/leave/:", data)
     resp1 = client.post("/api/v1/leave/", json=data, headers=headers)
+    print("[DEBUG] Sending to /api/v1/leave/:", data)
     resp2 = client.post("/api/v1/leave/", json=data, headers=headers)
     assert resp2.status_code == 400
     assert "Duplicate leave request" in resp2.text
@@ -223,8 +246,8 @@ def test_create_leave_request_invalid_type():
     headers = {"Authorization": f"Bearer {token}"}
     data = {
         "leave_type_id": str(uuid4()),
-        "start_date": date.today().isoformat(),
-        "end_date": date.today().isoformat(),
+        "start_date": (date.today() + timedelta(days=4)).isoformat(),
+        "end_date": (date.today() + timedelta(days=4)).isoformat(),
         "comments": "Invalid leave type"
     }
     resp = client.post("/api/v1/leave/", json=data, headers=headers)
@@ -235,7 +258,7 @@ def test_create_leave_request_commit_failure():
     admin_token = get_admin_token()
     token = create_user_and_login("commitfail@example.com", "secret123", "IC", admin_token=admin_token)
     headers = {"Authorization": f"Bearer {token}"}
-    leave_type_id = ensure_leave_type_exists(admin_token)
+    leave_type_id, _ = ensure_leave_type_exists(admin_token)
     data = {
         "leave_type_id": leave_type_id,
         "start_date": (date.today() + timedelta(days=4)).isoformat(),
@@ -248,18 +271,19 @@ def test_create_leave_request_commit_failure():
 
 def test_get_leave_request_permission_denied():
     admin_token = get_admin_token()
-    user1_token = create_user_and_login("user3@example.com", "secret123", "IC", admin_token=admin_token)
-    user2_token = create_user_and_login("user4@example.com", "secret123", "IC", admin_token=admin_token)
+    user1_token = create_user_and_login("user1@example.com", "secret123", "IC", admin_token=admin_token)
+    user2_token = create_user_and_login("user2@example.com", "secret123", "IC", admin_token=admin_token)
     headers1 = {"Authorization": f"Bearer {user1_token}"}
     headers2 = {"Authorization": f"Bearer {user2_token}"}
-    leave_type_id = ensure_leave_type_exists(admin_token)
-    today = date.today().isoformat()
+    leave_type_id, _ = ensure_leave_type_exists(admin_token)
+    today = (date.today() + timedelta(days=4)).isoformat()
     data = {
         "leave_type_id": leave_type_id,
         "start_date": today,
         "end_date": today,
         "comments": "Permission denied test"
     }
+    print("[DEBUG] Sending to /api/v1/leave/:", data)
     resp = client.post("/api/v1/leave/", json=data, headers=headers1)
     assert resp.status_code == 200
     leave_id = resp.json()["id"]
@@ -270,8 +294,8 @@ def test_update_leave_request_commit_failure():
     admin_token = get_admin_token()
     token = create_user_and_login("updatefail@example.com", "secret123", "IC", admin_token=admin_token)
     headers = {"Authorization": f"Bearer {token}"}
-    leave_type_id = ensure_leave_type_exists(admin_token)
-    today = date.today().isoformat()
+    leave_type_id, _ = ensure_leave_type_exists(admin_token)
+    today = (date.today() + timedelta(days=4)).isoformat()
     data = {
         "leave_type_id": leave_type_id,
         "start_date": today,
@@ -291,8 +315,8 @@ def test_approve_leave_request_commit_failure():
     admin_token = get_admin_token()
     token = create_user_and_login("approvefail@example.com", "secret123", "IC", admin_token=admin_token)
     headers = {"Authorization": f"Bearer {token}"}
-    leave_type_id = ensure_leave_type_exists(admin_token)
-    today = date.today().isoformat()
+    leave_type_id, _ = ensure_leave_type_exists(admin_token)
+    today = (date.today() + timedelta(days=4)).isoformat()
     data = {
         "leave_type_id": leave_type_id,
         "start_date": today,

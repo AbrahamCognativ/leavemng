@@ -51,7 +51,8 @@ def seeded_admin(db_session: Session, org_unit_id):
             role_title="Admin",
             passport_or_id_number=str(uuid4()),
             org_unit_id=org_unit_id,
-            is_active=True
+            is_active=True,
+            gender="male"
         )
         db_session.add(admin)
         db_session.commit()

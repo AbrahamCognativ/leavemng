@@ -48,8 +48,8 @@ def login(email, password):
 @pytest.fixture(scope="module")
 def users_and_tokens(org_unit_id, seeded_admin):
     # Use the seeded admin
-    admin_email = seeded_admin["email"]
-    admin_password = seeded_admin["password"]
+    admin_email = "user@example.com"
+    admin_password = "secret123"
     admin_id = seeded_admin["id"]
     admin_token = login(admin_email, admin_password)
 
@@ -57,7 +57,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
     hr_email = f"hr_{uuid4()}@test.com"
     hr_data = {
         "name": "HR User", "email": hr_email, "password": "adminpass",
-        "role_band": "HR", "role_title": "HR",
+        "role_band": "HR", "role_title": "HR", "is_active": True,
         "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
         "gender": "male"
     }
@@ -68,7 +68,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
     manager_email = f"manager_{uuid4()}@test.com"
     manager_data = {
         "name": "Manager User", "email": manager_email, "password": "adminpass",
-        "role_band": "", "role_title": "Manager",
+        "role_band": "", "role_title": "Manager", "is_active": True,
         "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
         "gender": "male"
     }
@@ -79,7 +79,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
     ic_email = f"ic_{uuid4()}@test.com"
     ic_data = {
         "name": "IC User", "email": ic_email, "password": "adminpass",
-        "role_band": "", "role_title": "IC",
+        "role_band": "", "role_title": "IC", "is_active": True,
         "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
         "gender": "male"
     }
@@ -90,7 +90,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
     requester_email = f"requester_{uuid4()}@test.com"
     requester_data = {
         "name": "Requester User", "email": requester_email, "password": "adminpass",
-        "role_band": "", "role_title": "IC",
+        "role_band": "", "role_title": "IC", "is_active": True,
         "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
         "gender": "male"
     }
