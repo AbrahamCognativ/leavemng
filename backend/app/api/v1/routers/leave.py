@@ -322,3 +322,19 @@ def approve_leave_request(request_id: UUID,db: Session = Depends(get_db), curren
         logging.error(f"Unexpected error in approval endpoint: {e}")
         raise HTTPException(status_code=500, detail="Internal error during approval")
 
+
+@router.delete("/{request_id}", tags=["leave"], status_code=204)
+def delete_leave_request(request_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+    # Only the request owner, HR, or Admin can delete
+    if (str(current_user.id) != str(req.user_id)
+        and current_user.role_band not in ("HR", "Admin")
+        and current_user.role_title not in ("HR", "Admin")):
+        log_permission_denied(db, current_user.id, "delete_leave_request", "leave_request", str(request_id))
+        raise HTTPException(status_code=403, detail="Insufficient permissions to delete leave request")
+    db.delete(req)
+    db.commit()
+    return None
+

@@ -97,13 +97,67 @@ def users_and_tokens(org_unit_id, seeded_admin):
     requester_id = create_user(requester_data, admin_token)
     requester_token = login(requester_email, "adminpass")
 
-    return {
+    users_dict = {
         "admin": {"id": admin_id, "token": admin_token},
         "hr": {"id": hr_id, "token": hr_token},
         "manager": {"id": manager_id, "token": manager_token},
         "ic": {"id": ic_id, "token": ic_token},
         "requester": {"id": requester_id, "token": requester_token},
     }
+    yield users_dict
+    # Cleanup after tests
+    from app.db.session import SessionLocal
+    from sqlalchemy import text
+    db = SessionLocal()
+    for user_key in ["hr", "manager", "ic", "requester"]:
+        user_id = users_dict[user_key]["id"]
+        try:
+            db.execute(text("DELETE FROM audit_logs WHERE user_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+        try:
+            db.execute(text("DELETE FROM leave_balances WHERE user_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+        try:
+            db.execute(text("DELETE FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+            remaining_requests = db.execute( text("SELECT id FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {"user_id": str(user_id)}).fetchall()
+            if remaining_requests:
+                print(f"User {user_id} still referenced in leave_requests: {remaining_requests}")
+
+                if remaining_requests:
+                    for req_id, in remaining_requests:
+                        # Delete from leave_documents first
+                        db.execute(text("DELETE FROM leave_documents WHERE request_id = :req_id"), {"req_id": str(req_id)})
+                        db.commit()
+                        db.execute(text("DELETE FROM leave_requests WHERE id = :id"), {"id": str(req_id)})
+                        db.commit()
+            # Try deleting user
+            resp = client.delete(f"/api/v1/users/{user_id}", headers={"Authorization": f"Bearer {admin_token}"})
+            if resp.status_code not in (200, 204, 404):
+                print(f"Failed to delete user {user_id}, status: {resp.status_code}")
+
+        # Nullify manager_id for users managed by this user
+        try:
+            db.execute(text("UPDATE users SET manager_id = NULL WHERE manager_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+        # Debug: check for remaining leave_requests
+        remaining_requests = db.execute( text("SELECT id FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {"user_id": str(user_id)}).fetchall()
+        if remaining_requests:
+            print(f"User {user_id} still referenced in leave_requests: {remaining_requests}")
+        # Delete user via API (soft/hard)
+        resp = client.delete(f"/api/v1/users/{user_id}", headers={"Authorization": f"Bearer {admin_token}"})
+        if resp.status_code not in (200, 204, 404):
+            print(f"Failed to delete user {user_id}, status: {resp.status_code}")
+    db.close()
+
 
 @pytest.fixture(scope="module")
 def leave_request_id(users_and_tokens, seeded_leave_type):
