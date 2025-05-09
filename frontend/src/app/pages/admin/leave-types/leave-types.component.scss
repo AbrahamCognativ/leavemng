@@ -1,4 +1,31 @@
 .leave-types-container {
+  .action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    &.edit-btn {
+      color: #3498db;
+    }
+
+    &.delete-btn {
+      color: #e74c3c;
+    }
+
+    .dx-icon-edit, .dx-icon-trash {
+      font-size: 18px;
+    }
+  }
   padding: 20px;
 
   .section {
@@ -12,7 +39,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
 
       h2 {
         margin: 0;
@@ -97,5 +124,16 @@
         }
       }
     }
+  }
+}
+
+.dialog-content {
+  padding: 20px;
+  text-align: center;
+  
+  p {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
   }
 } 
