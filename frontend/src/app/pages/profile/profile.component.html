@@ -1,11 +1,53 @@
 <h2>Profile</h2>
 
-<div class="content-block dx-card responsive-paddings">
-  <div class="form-avatar">
-    <img src=""/>
+<div class="content-block dx-card responsive-paddings profile-header">
+  <div class="profile-header-content">
+    <div class="form-avatar">
+      <img 
+        [src]="profileImageSrc"
+        alt="Profile Image" 
+        class="profile-image" 
+        (error)="handleImageError($event)"
+      />
+      <div class="image-upload-overlay" *ngIf="isEditing" (click)="triggerFileInput()">
+        <span>Change Image</span>
+      </div>
+      <input type="file" #fileInput style="display: none" accept="image/*" (change)="handleFileInput($event)"/>
+    </div>
+    <div class="profile-info">
+      <h4>{{ employee.name }}</h4>
+      <p>{{ employee.role_title || employee.role_band }}</p>
+    </div>
   </div>
-  <div>
-    <h5>First Name employee.LastName - employee.Position</h5>
+  <div class="profile-actions">
+    <dx-button
+      *ngIf="!isEditing"
+      text="Edit Profile"
+      type="default"
+      (onClick)="toggleEdit()"
+      [disabled]="isLoading"
+    ></dx-button>
+    <ng-container *ngIf="isEditing">
+      <dx-button
+        [text]="isLoading ? 'Saving...' : 'Save'"
+        type="success"
+        (onClick)="saveChanges()"
+        [disabled]="isLoading"
+        class="action-button"
+      >
+        <div *dxTemplate="let data of 'content'">
+          <span *ngIf="isLoading" class="loading-spinner"></span>
+          <span>{{ isLoading ? 'Saving...' : 'Save' }}</span>
+        </div>
+      </dx-button>
+      <dx-button
+        text="Cancel"
+        type="normal"
+        (onClick)="toggleEdit()"
+        [disabled]="isLoading"
+        class="action-button"
+      ></dx-button>
+    </ng-container>
   </div>
 </div>
 
@@ -14,6 +56,23 @@
     [formData]="employee"
     labelLocation="top"
     [colCountByScreen]="colCountByScreen"
+    [readOnly]="!isEditing"
   >
+    <dxi-item dataField="name" [editorOptions]="{disabled: false}"></dxi-item>
+    <dxi-item dataField="email" [editorOptions]="{disabled: true}"></dxi-item>
+    <dxi-item dataField="passport_or_id_number" [editorOptions]="{disabled: false}"></dxi-item>
+    <dxi-item dataField="role_band" [editorOptions]="{disabled: true}"></dxi-item>
+    <dxi-item dataField="role_title" [editorOptions]="{disabled: true}"></dxi-item>
+    <dxi-item dataField="gender" [editorOptions]="{disabled: true}"></dxi-item>
   </dx-form>
 </div>
+
+<dx-file-uploader
+  *ngIf="false"
+  selectButtonText="Select Image"
+  labelText=""
+  accept="image/*"
+  uploadMode="instantly"
+  [uploadUrl]="uploadUrl"
+  (onUploaded)="handleUploadedEvent($event)"
+></dx-file-uploader>
