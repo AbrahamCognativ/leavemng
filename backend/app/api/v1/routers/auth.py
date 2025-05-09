@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.user import User
+from app.utils.password import hash_password, verify_password
 from app.schemas.user import UserRead
 from pydantic import BaseModel, EmailStr
 from jose import jwt
@@ -36,7 +37,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = db.query(User).filter(User.email == form_data.username).first()
     # if not user or not user.is_active:
     #     raise HTTPException(status_code=401, detail="User is not active")
-    if user.hashed_password != form_data.password:
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     claims = {
             "sub": str(user.id),
@@ -102,7 +103,7 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     user = User(
         name=invite.name,
         email=invite.email,
-        hashed_password="secret123",  # In real app, generate/send temp password
+        hashed_password=hash_password("secret123"),  # In real app, generate/send temp password
         role_band=invite.role_band,
         role_title=invite.role_title,
         passport_or_id_number=invite.passport_or_id_number,

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.user import UserRead, UserCreate
+from app.utils.password import hash_password
 from app.models.user import User
 from app.models.leave_balance import LeaveBalance
 from app.models.leave_type import LeaveType
@@ -46,7 +47,7 @@ def list_users(db: Session = Depends(get_db), current_user=Depends(get_current_u
 
 @router.post("/", tags=["users"], response_model=UserRead, dependencies=[Depends(require_role(["HR", "Admin"]))])
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = User(**user.model_dump(exclude={"password"}), hashed_password=user.password)
+    db_user = User(**user.model_dump(exclude={"password"}), hashed_password=hash_password(user.password))
     db.add(db_user)
     try:
         db.commit()
@@ -205,7 +206,7 @@ def update_user(user_id: UUID, user_update: UserUpdate, db: Session = Depends(ge
         raise HTTPException(status_code=400, detail="Email cannot be updated.")
     for k, v in update_data.items():
         if k == "password":
-            user.hashed_password = v  # In real app, hash this
+            user.hashed_password = hash_password(v)
         else:
             setattr(user, k, v)
     try:
