@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate
+from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate, LeaveRequestUpdate
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
 from app.models.user import User
@@ -243,7 +243,7 @@ def get_leave_request(request_id: UUID, db: Session = Depends(get_db), current_u
     return LeaveRequestRead.model_validate(req)
 
 @router.put("/{request_id}", tags=["leave"], response_model=LeaveRequestRead)
-def update_leave_request(request_id: UUID, req_update: LeaveRequestCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def update_leave_request(request_id: UUID, req_update: LeaveRequestUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")

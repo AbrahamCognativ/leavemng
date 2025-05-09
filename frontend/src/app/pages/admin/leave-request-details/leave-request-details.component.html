@@ -6,10 +6,11 @@
       <div class="header">
         <h2>Leave Request Details</h2>
         <div class="status-badge" [ngClass]="getStatusClass(leaveRequest.status)">
-          {{ leaveRequest.status | titlecase }}
+          {{ leaveRequest.status | titlecase }} <span *ngIf="leaveRequest.status === 'approved' && leaveRequest.decision_at">on {{ leaveRequest.decision_at | date:'medium' }}</span>
         </div>
+       
       </div>
-
+      
       <dx-scroll-view>
         <div class="details-container">
           <div class="section">
@@ -19,10 +20,6 @@
                 <label>Employee Name</label>
                 <span>{{ leaveRequest.user_name }}</span>
               </div>
-              <div class="info-item">
-                <label>Employee ID</label>
-                <span>{{ leaveRequest.user_id }}</span>
-              </div>
             </div>
           </div>
 
@@ -31,7 +28,7 @@
             <div class="info-grid">
               <div class="info-item">
                 <label>Leave Type</label>
-                <span>{{ leaveRequest.leave_type_description }}</span>
+                <span>{{ leaveRequestLeaveType.description }}</span>
               </div>
               <div class="info-item">
                 <label>Start Date</label>
@@ -41,10 +38,10 @@
                 <label>End Date</label>
                 <span>{{ leaveRequest.end_date | date:'mediumDate' }}</span>
               </div>
-              <div class="info-item">
+              <div class="info-item" v-if="leaveRequest.duration">
                 <label>Duration</label>
-                <span>{{ leaveRequest.duration }} days</span>
-              </div>
+                <span>{{ leaveRequest.duration }} {{ leaveRequest.duration > 1 ? 'days' : 'day' }}</span>
+              </div>              
             </div>
           </div>
 
@@ -53,11 +50,11 @@
             <div class="info-grid">
               <div class="info-item full-width">
                 <label>Reason</label>
-                <span>{{ leaveRequest.reason }}</span>
+                <span>{{ leaveRequest.reason ? leaveRequest.reason : 'No reason provided' }}</span>
               </div>
               <div class="info-item">
                 <label>Requested On</label>
-                <span>{{ leaveRequest.created_at | date:'medium' }}</span>
+                <span>{{ leaveRequest.applied_at | date:'medium' }}</span>
               </div>
               <div class="info-item" *ngIf="leaveRequest.updated_at">
                 <label>Last Updated</label>
@@ -66,9 +63,9 @@
             </div>
           </div>
 
-          <div class="section" *ngIf="documents.length > 0">
+          <div class="section" >
             <h3>Supporting Documents</h3>
-            <div class="documents-list">
+            <div class="documents-list" *ngIf="documents.length > 0">
               <div class="document-item" *ngFor="let doc of documents">
                 <div class="document-info">
                   <i class="dx-icon-file"></i>
@@ -81,30 +78,31 @@
                 </dx-button>
               </div>
             </div>
+            <div class="section" *ngIf="documents.length === 0">
+              <p>The employee did not upload any supporting documents for this leave request.</p>
+            </div>
+          </div>
+          
+          <div class="decided-by" *ngIf="leaveRequest.status === 'approved' && leaveRequest.decided_by">
+            Approved by: <span style="font-style: italic; font-weight: bold;">{{ leaveRequest.decided_by }}</span>
           </div>
         </div>
       </dx-scroll-view>
 
       <div class="actions" *ngIf="leaveRequest.status === 'pending'">
         <dx-button
-          text="Approve"
+          [text]="isApproving ? 'Approving...' : 'Approve'"
           type="success"
           stylingMode="contained"
           [disabled]="isApproving || isRejecting"
           (onClick)="approveRequest()">
-          <div *ngIf="isApproving" class="button-loading">
-            <dx-load-indicator width="24" height="24"></dx-load-indicator>
-          </div>
         </dx-button>
         <dx-button
-          text="Reject"
+          [text]="isRejecting ? 'Rejecting...' : 'Reject'"
           type="danger"
           stylingMode="contained"
           [disabled]="isApproving || isRejecting"
           (onClick)="rejectRequest()">
-          <div *ngIf="isRejecting" class="button-loading">
-            <dx-load-indicator width="24" height="24"></dx-load-indicator>
-          </div>
         </dx-button>
       </div>
     </div>
