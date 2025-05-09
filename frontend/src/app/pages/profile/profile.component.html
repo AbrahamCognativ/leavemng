@@ -2,15 +2,16 @@
 
 <div class="content-block dx-card responsive-paddings profile-header">
   <div class="profile-header-content">
-    <div class="form-avatar">
+    <div class="form-avatar" [class.editable]="isEditing" (click)="isEditing && triggerFileInput()">
       <img 
         [src]="profileImageSrc"
         alt="Profile Image" 
         class="profile-image" 
         (error)="handleImageError($event)"
       />
-      <div class="image-upload-overlay" *ngIf="isEditing" (click)="triggerFileInput()">
+      <div class="image-upload-overlay" *ngIf="isEditing">
         <span>Change Image</span>
+        <i class="dx-icon-photo"></i>
       </div>
       <input type="file" #fileInput style="display: none" accept="image/*" (change)="handleFileInput($event)"/>
     </div>
@@ -65,6 +66,52 @@
     <dxi-item dataField="role_title" [editorOptions]="{disabled: true}"></dxi-item>
     <dxi-item dataField="gender" [editorOptions]="{disabled: true}"></dxi-item>
   </dx-form>
+</div>
+
+<!-- Password Change Section -->
+<div class="content-block dx-card responsive-paddings">
+  <div class="section-header">
+    <h3>Change Password</h3>
+  </div>
+  
+  <div *ngIf="passwordSuccessMessage" class="success-message">
+    <p>{{ passwordSuccessMessage }}</p>
+  </div>
+  
+  <div *ngIf="passwordErrorMessage" class="error-message">
+    <p>{{ passwordErrorMessage }}</p>
+  </div>
+  
+  <dx-form id="passwordForm"
+    [formData]="passwordData"
+    labelLocation="top"
+    [colCountByScreen]="colCountByScreen"
+    [disabled]="isChangingPassword"
+  >
+    <dxi-item dataField="currentPassword" editorType="dxTextBox" [editorOptions]="{mode: 'password'}">
+      <dxi-validation-rule type="required" message="Current password is required"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item dataField="newPassword" editorType="dxTextBox" [editorOptions]="{mode: 'password'}">
+      <dxi-validation-rule type="required" message="New password is required"></dxi-validation-rule>
+      <dxi-validation-rule type="stringLength" [min]="8" message="Password must be at least 8 characters"></dxi-validation-rule>
+      <dxi-validation-rule type="pattern" [pattern]="passwordPattern" message="Password must include at least one uppercase letter, one lowercase letter, one number, and one special character"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item dataField="confirmPassword" editorType="dxTextBox" [editorOptions]="{mode: 'password'}">
+      <dxi-validation-rule type="required" message="Confirm password is required"></dxi-validation-rule>
+      <dxi-validation-rule type="compare" [comparisonTarget]="getComparePassword" message="Passwords do not match"></dxi-validation-rule>
+    </dxi-item>
+  </dx-form>
+  
+  <div class="password-actions">
+    <dx-button
+      text="Change Password"
+      type="default"
+      (onClick)="changePassword()"
+      [disabled]="isChangingPassword"
+    ></dx-button>
+  </div>
 </div>
 
 <dx-file-uploader

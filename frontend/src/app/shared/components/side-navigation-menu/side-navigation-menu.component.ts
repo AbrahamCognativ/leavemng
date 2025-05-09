@@ -38,8 +38,14 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
         if(item.path && !(/^\//.test(item.path))){
           item.path = `/${item.path}`;
         }
-         return { ...item, expanded: !this._compactMode }
-        });
+        
+        // Add debugging for Admin menu items
+        if (item.text === 'Admin' && item.items) {
+          console.log('Admin menu items:', JSON.stringify(item.items));
+        }
+        
+        return { ...item, expanded: !this._compactMode }
+      });
     }
 
     return this._items;

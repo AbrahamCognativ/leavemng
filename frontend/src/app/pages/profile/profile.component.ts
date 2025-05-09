@@ -2,8 +2,9 @@ import {Component, OnInit, ViewChild, ElementRef} from '@angular/core';
 import {DxFormModule} from 'devextreme-angular/ui/form';
 import {DxButtonModule} from 'devextreme-angular/ui/button';
 import {DxFileUploaderModule} from 'devextreme-angular/ui/file-uploader';
+import {DxTextBoxModule} from 'devextreme-angular/ui/text-box';
 import {CommonModule} from '@angular/common';
-import {HttpClient, HttpClientModule} from '@angular/common/http';
+import {HttpClient, HttpClientModule, HttpHeaders} from '@angular/common/http';
 
 interface Employee {
   id: string;
@@ -32,7 +33,7 @@ interface FileUploaderEvent {
   templateUrl: 'profile.component.html',
   styleUrls: [ './profile.component.scss' ],
   standalone: true,
-  imports: [DxFormModule, DxButtonModule, DxFileUploaderModule, CommonModule, HttpClientModule]
+  imports: [DxFormModule, DxButtonModule, DxFileUploaderModule, DxTextBoxModule, CommonModule, HttpClientModule]
 })
 
 export class ProfileComponent implements OnInit {
@@ -45,6 +46,17 @@ export class ProfileComponent implements OnInit {
   isLoading: boolean = false;
   uploadUrl: string = '';
   @ViewChild('fileInput') fileInput!: ElementRef;
+  
+  // Password change properties
+  passwordData = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  };
+  isChangingPassword: boolean = false;
+  passwordSuccessMessage: string = '';
+  passwordErrorMessage: string = '';
+  passwordPattern: RegExp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   
   constructor(private http: HttpClient) {
     this.colCountByScreen = {
@@ -99,6 +111,65 @@ export class ProfileComponent implements OnInit {
       endpoint = endpoint.substring(1);
     }
     return `${this.baseUrl}/api/${this.apiVersion}/${endpoint}`;
+  }
+  
+  // For password confirmation validation
+  getComparePassword = () => {
+    return this.passwordData.newPassword;
+  }
+  
+  // Change password functionality
+  changePassword(): void {
+    // Reset messages
+    this.passwordSuccessMessage = '';
+    this.passwordErrorMessage = '';
+    
+    // Validate passwords match
+    if (this.passwordData.newPassword !== this.passwordData.confirmPassword) {
+      this.passwordErrorMessage = 'Passwords do not match';
+      return;
+    }
+    
+    // Validate password complexity
+    if (!this.passwordPattern.test(this.passwordData.newPassword)) {
+      this.passwordErrorMessage = 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character';
+      return;
+    }
+    
+    this.isChangingPassword = true;
+    
+    // Get token from localStorage
+    const token = localStorage.getItem('user_token') || '';
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    
+    // Since there's no dedicated password change endpoint, we'll use the update user endpoint
+    // with the password field. In a production app, this should be a dedicated endpoint with proper validation.
+    const payload = {
+      password: this.passwordData.newPassword
+    };
+    
+    // Call API to update user with new password
+    this.http.put(this.getApiUrl(`users/${this.employee.id}`), payload, { headers })
+      .subscribe({
+        next: () => {
+          this.isChangingPassword = false;
+          this.passwordSuccessMessage = 'Password changed successfully';
+          
+          // Reset form
+          this.passwordData = {
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          };
+        },
+        error: (error) => {
+          this.isChangingPassword = false;
+          this.passwordErrorMessage = error.error?.detail || 'Failed to change password. Please try again.';
+          console.error('Error changing password:', error);
+        }
+      });
   }
   
   /**

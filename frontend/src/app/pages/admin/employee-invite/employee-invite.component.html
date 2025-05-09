@@ -1,0 +1,222 @@
+<div class="employee-invite-container">
+  <div class="section">
+    <div class="section-header">
+      <h2>Invite New User</h2>
+    </div>
+  <div class="form-header">
+    <p>Create a new user account</p>
+  </div>
+  
+  <div *ngIf="isLoading" class="loading-container">
+    <dx-load-indicator width="50" height="50"></dx-load-indicator>
+    <p>Processing invitation...</p>
+  </div>
+  
+  <div *ngIf="successMessage" class="success-message">
+    <p>{{ successMessage }}</p>
+  </div>
+  
+  <div *ngIf="errorMessage" class="error-message">
+    <p>{{ errorMessage }}</p>
+  </div>
+  
+  <dx-form id="employeeForm"
+    [formData]="newEmployee"
+    labelLocation="top"
+    [colCountByScreen]="colCountByScreen"
+    [disabled]="isLoading"
+  >
+    <!-- Basic Information -->
+    <dxi-item itemType="group" caption="Basic Information">
+      <dxi-item dataField="name" [isRequired]="true">
+        <dxi-validation-rule type="required" message="Name is required"></dxi-validation-rule>
+      </dxi-item>
+      
+      <dxi-item dataField="email" [isRequired]="true">
+        <dxi-validation-rule type="required" message="Email is required"></dxi-validation-rule>
+        <dxi-validation-rule type="email" message="Email is invalid"></dxi-validation-rule>
+      </dxi-item>
+      
+      <dxi-item dataField="password" [isRequired]="true" editorType="dxTextBox" [editorOptions]="{ mode: 'password' }">
+        <dxi-validation-rule type="required" message="Password is required"></dxi-validation-rule>
+      </dxi-item>
+      
+      <dxi-item dataField="passport_or_id_number" [isRequired]="true">
+        <dxi-validation-rule type="required" message="Passport/ID number is required"></dxi-validation-rule>
+      </dxi-item>
+      
+      <dxi-item dataField="gender" editorType="dxSelectBox" [editorOptions]="{ items: genderOptions }" [isRequired]="true">
+        <dxi-validation-rule type="required" message="Gender is required"></dxi-validation-rule>
+      </dxi-item>
+    </dxi-item>
+    
+    <!-- Role Information -->
+    <dxi-item itemType="group" caption="Role Information">
+      <dxi-item dataField="role_band" editorType="dxSelectBox" [editorOptions]="{ items: roleBands }" [isRequired]="true">
+        <dxi-validation-rule type="required" message="Role band is required"></dxi-validation-rule>
+      </dxi-item>
+      
+      <dxi-item dataField="role_title" [isRequired]="true">
+        <dxi-validation-rule type="required" message="Role title is required"></dxi-validation-rule>
+      </dxi-item>
+      
+      <dxi-item dataField="manager_id" editorType="dxSelectBox" 
+        [editorOptions]="{
+          items: managers,
+          displayExpr: 'name',
+          valueExpr: 'id',
+          searchEnabled: true,
+          placeholder: 'Select a manager'
+        }">
+      </dxi-item>
+      
+      <dxi-item dataField="org_unit_id" editorType="dxSelectBox" 
+        [editorOptions]="{
+          items: orgUnits,
+          displayExpr: 'name',
+          valueExpr: 'id',
+          searchEnabled: true,
+          placeholder: 'Select an organization unit'
+        }">
+      </dxi-item>
+    </dxi-item>
+  </dx-form>
+  
+  <div class="form-actions">
+    <dx-button
+      text="Invite User"
+      type="success"
+      (onClick)="inviteEmployee()"
+      [disabled]="isLoading"
+    ></dx-button>
+  </div>
+  </div>
+  
+  <!-- All Users Section -->
+  <div class="section users-section">
+    <div class="section-header">
+      <h2>All Users</h2>
+    </div>
+    
+    <div *ngIf="loadingUsers" class="loading-container">
+      <dx-load-indicator width="50" height="50"></dx-load-indicator>
+      <p>Loading users...</p>
+    </div>
+    
+    <dx-data-grid
+      *ngIf="!loadingUsers"
+      [dataSource]="allUsers"
+      [showBorders]="true"
+      [columnAutoWidth]="true"
+      [rowAlternationEnabled]="true"
+    >
+      <dxi-column dataField="name" caption="Name"></dxi-column>
+      <dxi-column dataField="email" caption="Email"></dxi-column>
+      <dxi-column dataField="role_band" caption="Role Band"></dxi-column>
+      <dxi-column dataField="role_title" caption="Role Title"></dxi-column>
+      <dxi-column dataField="gender" caption="Gender"></dxi-column>
+      <dxi-column dataField="created_at" caption="Created On" cellTemplate="dateTemplate"></dxi-column>
+      <dxi-column caption="Actions" cellTemplate="actionsTemplate" [width]="120"></dxi-column>
+      
+      <div *dxTemplate="let data of 'dateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+      
+      <div *dxTemplate="let user of 'actionsTemplate'">
+        <div class="action-buttons">
+          <dx-button
+            icon="edit"
+            type="default"
+            [stylingMode]="'text'"
+            (onClick)="editUser(user.data)"
+            [disabled]="isLoading"
+            hint="Edit User"
+          ></dx-button>
+        </div>
+      </div>
+    </dx-data-grid>
+  </div>
+  
+  <!-- Edit User Popup -->
+  <dx-popup
+    [width]="600"
+    [height]="'auto'"
+    [showTitle]="true"
+    title="Edit User"
+    [dragEnabled]="false"
+    [closeOnOutsideClick]="false"
+    [(visible)]="isEditMode"
+  >
+    <div *dxTemplate="let data of 'content'">
+      <dx-form
+        *ngIf="selectedUser"
+        [formData]="selectedUser"
+        labelLocation="top"
+        [colCountByScreen]="colCountByScreen"
+        [disabled]="isLoading"
+      >
+        <dxi-item dataField="name" [isRequired]="true">
+          <dxi-validation-rule type="required" message="Name is required"></dxi-validation-rule>
+        </dxi-item>
+        
+        <dxi-item dataField="email" [editorOptions]="{disabled: true}">
+          <dxi-validation-rule type="required" message="Email is required"></dxi-validation-rule>
+          <dxi-validation-rule type="email" message="Email is invalid"></dxi-validation-rule>
+        </dxi-item>
+        
+        <dxi-item dataField="passport_or_id_number" [isRequired]="true">
+          <dxi-validation-rule type="required" message="Passport/ID number is required"></dxi-validation-rule>
+        </dxi-item>
+        
+        <dxi-item dataField="gender" editorType="dxSelectBox" [editorOptions]="{ items: genderOptions }" [isRequired]="true">
+          <dxi-validation-rule type="required" message="Gender is required"></dxi-validation-rule>
+        </dxi-item>
+        
+        <dxi-item dataField="role_band" editorType="dxSelectBox" [editorOptions]="{ items: roleBands }" [isRequired]="true">
+          <dxi-validation-rule type="required" message="Role band is required"></dxi-validation-rule>
+        </dxi-item>
+        
+        <dxi-item dataField="role_title" [isRequired]="true">
+          <dxi-validation-rule type="required" message="Role title is required"></dxi-validation-rule>
+        </dxi-item>
+        
+        <dxi-item dataField="manager_id" editorType="dxSelectBox" 
+          [editorOptions]="{
+            items: managers,
+            displayExpr: 'name',
+            valueExpr: 'id',
+            searchEnabled: true,
+            placeholder: 'Select a manager'
+          }">
+        </dxi-item>
+        
+        <dxi-item dataField="org_unit_id" editorType="dxSelectBox" 
+          [editorOptions]="{
+            items: orgUnits,
+            displayExpr: 'name',
+            valueExpr: 'id',
+            searchEnabled: true,
+            placeholder: 'Select an organization unit'
+          }">
+        </dxi-item>
+      </dx-form>
+      
+      <div class="popup-buttons">
+        <dx-button
+          text="Save Changes"
+          type="success"
+          (onClick)="saveUserChanges()"
+          [disabled]="isLoading"
+        ></dx-button>
+        <dx-button
+          text="Cancel"
+          type="normal"
+          (onClick)="cancelEdit()"
+          [disabled]="isLoading"
+        ></dx-button>
+      </div>
+    </div>
+  </dx-popup>
+  
+  <!-- Delete functionality has been removed as requested -->
+</div>
