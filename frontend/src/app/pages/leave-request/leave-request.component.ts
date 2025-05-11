@@ -198,7 +198,7 @@ export class LeaveRequestComponent implements OnInit {
       this.resetForm();
       await this.loadLeaveBalances();
     } catch (error: any) {
-      this.showToast(error.message || 'Error submitting leave request', 'error');
+      this.showToast('Error submitting leave request', 'error');
     } finally {
       this.submitting = false;
     }

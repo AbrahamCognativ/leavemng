@@ -32,6 +32,7 @@ export class LeaveRequestDetailsComponent implements OnInit {
   isApproving: boolean = false;
   isRejecting: boolean = false;
   leaveRequestLeaveType: any = null;
+  isLeaveRequestOwner: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -84,6 +85,9 @@ export class LeaveRequestDetailsComponent implements OnInit {
 
       // Format decided_at
       this.leaveRequest.decision_at = this.leaveRequest.decision_at ? new Date(this.leaveRequest.decision_at).toLocaleString() : null;
+
+      // Check if the user is the owner of the leave request
+      this.isLeaveRequestOwner = this.leaveRequest.user_id === (await this.authService.getUser()).data?.id;
     } catch (error) {
       console.error('Error loading leave request details:', error);
     } finally {

@@ -6,6 +6,7 @@ import { ProfileComponent } from './pages/profile/profile.component';
 import {DashboardComponent} from './pages/dashboard/dashboard.component';
 import {LeaveRequestComponent} from './pages/leave-request/leave-request.component';
 import {LeaveHistoryComponent} from './pages/leave-history/leave-history.component';
+import {LeaveRequestDetailsComponent} from './pages/admin/leave-request-details/leave-request-details.component';
 
 const routes: Routes = [
   {
@@ -21,6 +22,11 @@ const routes: Routes = [
   {
     path: 'leave/history',
     component: LeaveHistoryComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'leave-request/:id',
+    component: LeaveRequestDetailsComponent,
     canActivate: [ AuthGuardService ]
   },
   {

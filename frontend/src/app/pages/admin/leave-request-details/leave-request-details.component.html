@@ -8,9 +8,9 @@
         <div class="status-badge" [ngClass]="getStatusClass(leaveRequest.status)">
           {{ leaveRequest.status | titlecase }} <span *ngIf="leaveRequest.status === 'approved' && leaveRequest.decision_at">on {{ leaveRequest.decision_at | date:'medium' }}</span>
         </div>
-       
+
       </div>
-      
+
       <dx-scroll-view>
         <div class="details-container">
           <div class="section">
@@ -41,7 +41,7 @@
               <div class="info-item" v-if="leaveRequest.duration">
                 <label>Duration</label>
                 <span>{{ leaveRequest.duration }} {{ leaveRequest.duration > 1 ? 'days' : 'day' }}</span>
-              </div>              
+              </div>
             </div>
           </div>
 
@@ -82,14 +82,14 @@
               <p>The employee did not upload any supporting documents for this leave request.</p>
             </div>
           </div>
-          
+
           <div class="decided-by" *ngIf="leaveRequest.status === 'approved' && leaveRequest.decided_by">
             Approved by: <span style="font-style: italic; font-weight: bold;">{{ leaveRequest.decided_by }}</span>
           </div>
         </div>
       </dx-scroll-view>
 
-      <div class="actions" *ngIf="leaveRequest.status === 'pending'">
+      <div class="actions" *ngIf="leaveRequest.status === 'pending' && !isLeaveRequestOwner">
         <dx-button
           [text]="isApproving ? 'Approving...' : 'Approve'"
           type="success"
@@ -107,4 +107,4 @@
       </div>
     </div>
   </div>
-</div> 
+</div>

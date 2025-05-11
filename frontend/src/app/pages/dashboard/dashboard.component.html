@@ -37,7 +37,14 @@
       <dx-data-grid
         [dataSource]="leaveRequests"
         [showBorders]="true"
-        [columnAutoWidth]="true">
+        [columnAutoWidth]="true"
+        (onRowClick)="onRowClick($event)">
+        <dxo-paging [pageSize]="10"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
         <dxi-column dataField="leave_type_description" caption="Leave Type"></dxi-column>
         <dxi-column dataField="start_date" caption="Start Date" dataType="date"></dxi-column>
         <dxi-column dataField="end_date" caption="End Date" dataType="date"></dxi-column>

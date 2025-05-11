@@ -6,6 +6,7 @@ import {AuthService} from '../../shared/services';
 import {CommonModule} from '@angular/common';
 import {DxLoadIndicatorModule} from 'devextreme-angular/ui/load-indicator';
 import {DxDataGridModule} from 'devextreme-angular/ui/data-grid';
+import {Router} from '@angular/router';
 
 @Component({
   templateUrl: 'dashboard.component.html',
@@ -23,19 +24,33 @@ export class DashboardComponent {
   leaveTypeCounts: any[] = [];
   leaveBalances: any[] = [];
   isLoading: boolean = false;
+  isAdmin: boolean = false;
 
   constructor(
     private leaveService: LeaveService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
     this.loadStatistics();
+    this.checkUserRole();
   }
 
-  customizeLeaveTypeText = (pointInfo: { pointColor: string; pointIndex: number; pointName: any }): string => {
+  private async checkUserRole() {
+    const user = await this.authService.getUser();
+    this.isAdmin = user?.data?.role_band === 'HR' || user?.data?.role_band === 'Admin';
+  }
+
+  customizeLeaveTypeText = (pointInfo: any) => {
     return `${pointInfo.pointName}`;
   };
+
+  onRowClick(e: any) {
+    if (e.rowType === 'data' && e.rowIndex >= 0) {
+      this.router.navigate(['/leave-request', e.data.id]);
+    }
+  }
 
   async loadStatistics(): Promise<void> {
     try {
