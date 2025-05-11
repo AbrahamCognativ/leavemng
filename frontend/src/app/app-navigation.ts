@@ -33,6 +33,10 @@ export const navigation = [
       {
         text: 'Org Units',
         path: '/admin/org-units',
+      },
+      {
+        text: 'Users',
+        path: '/admin/employee-invite',
       }
     ]
   },

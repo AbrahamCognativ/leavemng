@@ -11,6 +11,7 @@ import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.compo
 import { LeaveTypesComponent } from './leave-types/leave-types.component';
 import { LeaveRequestDetailsComponent } from './leave-request-details/leave-request-details.component';
 import { OrgUnitsComponent } from './org-units/org-units.component';
+import { EmployeeInviteComponent } from './employee-invite/employee-invite.component';
 
 const routes: Routes = [
   {
@@ -28,6 +29,10 @@ const routes: Routes = [
   {
     path: 'org-units',
     component: OrgUnitsComponent
+  },
+  {
+    path: 'employee-invite',
+    component: EmployeeInviteComponent
   }
 ];
 
@@ -44,7 +49,8 @@ const routes: Routes = [
     AdminDashboardComponent,
     LeaveTypesComponent,
     LeaveRequestDetailsComponent,
-    OrgUnitsComponent
+    OrgUnitsComponent,
+    EmployeeInviteComponent
   ]
 })
 export class AdminModule { } 

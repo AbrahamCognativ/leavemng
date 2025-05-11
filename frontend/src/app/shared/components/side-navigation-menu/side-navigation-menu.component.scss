@@ -22,11 +22,28 @@
         padding-left: 0;
         border-radius: 0;
         flex-direction: row-reverse;
-
+        
+        // Ensure consistent padding for all menu items
+        &.dx-state-focused {
+          background-color: transparent;
+        }
+        
         .dx-icon {
           width: var(--side-panel-min-width) !important;
           margin: 0 !important;
         }
+      }
+      
+      // Ensure consistent indentation for child items
+      .dx-treeview-node {
+        &.dx-treeview-node-is-leaf {
+          padding-left: 0 !important;
+        }
+      }
+      
+      // Fix padding for items in the Admin menu
+      .dx-treeview-toggle-item-visibility {
+        padding: 0;
       }
 
       // ##
