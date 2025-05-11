@@ -2,6 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.run import app
+from app.utils.password import hash_password
 
 client = TestClient(app)
 
@@ -29,6 +30,7 @@ import pytest
 from fastapi.testclient import TestClient
 from uuid import uuid4
 from app.run import app
+from app.utils.password import hash_password
 
 client = TestClient(app)
 
@@ -48,8 +50,8 @@ def login(email, password):
 @pytest.fixture(scope="module")
 def users_and_tokens(org_unit_id, seeded_admin):
     # Use the seeded admin
-    admin_email = seeded_admin["email"]
-    admin_password = seeded_admin["password"]
+    admin_email = "user@example.com"
+    admin_password = "secret123"
     admin_id = seeded_admin["id"]
     admin_token = login(admin_email, admin_password)
 
@@ -57,7 +59,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
     hr_email = f"hr_{uuid4()}@test.com"
     hr_data = {
         "name": "HR User", "email": hr_email, "password": "adminpass",
-        "role_band": "HR", "role_title": "HR",
+        "role_band": "HR", "role_title": "HR", "is_active": True,
         "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
         "gender": "male"
     }
@@ -68,7 +70,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
     manager_email = f"manager_{uuid4()}@test.com"
     manager_data = {
         "name": "Manager User", "email": manager_email, "password": "adminpass",
-        "role_band": "", "role_title": "Manager",
+        "role_band": "", "role_title": "Manager", "is_active": True,
         "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
         "gender": "male"
     }
@@ -79,7 +81,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
     ic_email = f"ic_{uuid4()}@test.com"
     ic_data = {
         "name": "IC User", "email": ic_email, "password": "adminpass",
-        "role_band": "", "role_title": "IC",
+        "role_band": "", "role_title": "IC", "is_active": True,
         "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
         "gender": "male"
     }
@@ -90,20 +92,74 @@ def users_and_tokens(org_unit_id, seeded_admin):
     requester_email = f"requester_{uuid4()}@test.com"
     requester_data = {
         "name": "Requester User", "email": requester_email, "password": "adminpass",
-        "role_band": "", "role_title": "IC",
+        "role_band": "", "role_title": "IC", "is_active": True,
         "passport_or_id_number": str(uuid4()), "org_unit_id": org_unit_id,
         "gender": "male"
     }
     requester_id = create_user(requester_data, admin_token)
     requester_token = login(requester_email, "adminpass")
 
-    return {
+    users_dict = {
         "admin": {"id": admin_id, "token": admin_token},
         "hr": {"id": hr_id, "token": hr_token},
         "manager": {"id": manager_id, "token": manager_token},
         "ic": {"id": ic_id, "token": ic_token},
         "requester": {"id": requester_id, "token": requester_token},
     }
+    yield users_dict
+    # Cleanup after tests
+    from app.db.session import SessionLocal
+    from sqlalchemy import text
+    db = SessionLocal()
+    for user_key in ["hr", "manager", "ic", "requester"]:
+        user_id = users_dict[user_key]["id"]
+        try:
+            db.execute(text("DELETE FROM audit_logs WHERE user_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+        try:
+            db.execute(text("DELETE FROM leave_balances WHERE user_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+        try:
+            db.execute(text("DELETE FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+            remaining_requests = db.execute( text("SELECT id FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {"user_id": str(user_id)}).fetchall()
+            if remaining_requests:
+                print(f"User {user_id} still referenced in leave_requests: {remaining_requests}")
+
+                if remaining_requests:
+                    for req_id, in remaining_requests:
+                        # Delete from leave_documents first
+                        db.execute(text("DELETE FROM leave_documents WHERE request_id = :req_id"), {"req_id": str(req_id)})
+                        db.commit()
+                        db.execute(text("DELETE FROM leave_requests WHERE id = :id"), {"id": str(req_id)})
+                        db.commit()
+            # Try deleting user
+            resp = client.delete(f"/api/v1/users/{user_id}", headers={"Authorization": f"Bearer {admin_token}"})
+            if resp.status_code not in (200, 204, 404):
+                print(f"Failed to delete user {user_id}, status: {resp.status_code}")
+
+        # Nullify manager_id for users managed by this user
+        try:
+            db.execute(text("UPDATE users SET manager_id = NULL WHERE manager_id = :user_id"), {"user_id": str(user_id)})
+            db.commit()
+        except Exception:
+            db.rollback()
+        # Debug: check for remaining leave_requests
+        remaining_requests = db.execute( text("SELECT id FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {"user_id": str(user_id)}).fetchall()
+        if remaining_requests:
+            print(f"User {user_id} still referenced in leave_requests: {remaining_requests}")
+        # Delete user via API (soft/hard)
+        resp = client.delete(f"/api/v1/users/{user_id}", headers={"Authorization": f"Bearer {admin_token}"})
+        if resp.status_code not in (200, 204, 404):
+            print(f"Failed to delete user {user_id}, status: {resp.status_code}")
+    db.close()
+
 
 @pytest.fixture(scope="module")
 def leave_request_id(users_and_tokens, seeded_leave_type):

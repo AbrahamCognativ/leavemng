@@ -25,10 +25,8 @@ def org_unit_id(db_session: Session):
 
 import hashlib
 from app.models.user import User
+from app.utils.password import hash_password
 
-def hash_password(password: str) -> str:
-    # Use the same hashing as your login expects (replace with real hash if needed)
-    return password  # If plain text, otherwise use hashlib.sha256(password.encode()).hexdigest()
 
 @pytest.fixture(scope="session")
 def seeded_admin(db_session: Session, org_unit_id):
@@ -51,12 +49,24 @@ def seeded_admin(db_session: Session, org_unit_id):
             role_title="Admin",
             passport_or_id_number=str(uuid4()),
             org_unit_id=org_unit_id,
-            is_active=True
+            is_active=True,
+            gender="male",
+            id=uuid4()  
         )
         db_session.add(admin)
         db_session.commit()
         db_session.refresh(admin)
     return {"id": str(admin.id), "email": admin_email, "password": "adminpass"}
+
+
+@pytest.fixture(scope="session", autouse=False)
+def cleanup_seeded_admin(db_session):
+    """Delete the seeded admin user after tests."""
+    admin_email = "admin_test@example.com"
+    admin = db_session.query(User).filter_by(email=admin_email).first()
+    if admin:
+        db_session.delete(admin)
+        db_session.commit()
 
 @pytest.fixture(scope="session")
 def seeded_leave_type(db_session):

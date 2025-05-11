@@ -10,10 +10,23 @@ import datetime
 
 from app.deps.permissions import require_role
 
+from app.models.leave_type import LeaveType, LeaveCodeEnum
+
 router = APIRouter()
 
 @router.post("/", response_model=LeaveTypeRead, tags=["leave-types"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def create_leave_type(leave_type: LeaveTypeCreate, db: Session = Depends(get_db)):
+    if leave_type.code in [
+        LeaveCodeEnum.annual,
+        LeaveCodeEnum.sick,
+        LeaveCodeEnum.compassionate,
+        LeaveCodeEnum.unpaid,
+        LeaveCodeEnum.maternity,
+        LeaveCodeEnum.paternity
+    ]:
+        if db.query(LeaveType).filter(LeaveType.code == leave_type.code).first():
+            raise HTTPException(status_code=400, detail="Leave type already exists")
+        leave_type.custom_code = None
     db_leave_type = LeaveType(**leave_type.model_dump())
     db.add(db_leave_type)
     db.commit()

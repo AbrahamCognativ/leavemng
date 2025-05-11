@@ -2,8 +2,14 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.run import app
+from app.utils.password import hash_password
 
 client = TestClient(app)
+
+def get_admin_token():
+    resp = client.post("/api/v1/auth/login", data={"username": "user@example.com", "password": "secret123"})
+    assert resp.status_code == 200, resp.text
+    return resp.json()["access_token"]
 
 import pytest
 
@@ -33,7 +39,8 @@ def test_analytics_summary_success(monkeypatch):
     from app.api.v1.routers import analytics
     monkeypatch.setattr(analytics, 'get_db', lambda: DummyDB())
     with TestClient(app) as client:
-        response = client.get('/api/v1/analytics/summary', headers={"Authorization": "Bearer admin-token"})
+        token = get_admin_token()
+        response = client.get('/api/v1/analytics/summary', headers={"Authorization": f"Bearer {token}"})
         assert response.status_code in (200, 401, 403)  # Depending on auth impl
         if response.status_code == 200:
             data = response.json()
@@ -52,7 +59,8 @@ def test_analytics_leave_stats(monkeypatch):
     from app.api.v1.routers import analytics
     monkeypatch.setattr(analytics, 'get_db', lambda: DummyDB())
     with TestClient(app) as client:
-        response = client.get('/api/v1/analytics/leave-stats', headers={"Authorization": "Bearer admin-token"})
+        token = get_admin_token()
+        response = client.get('/api/v1/analytics/leave-stats', headers={"Authorization": f"Bearer {token}"})
         assert response.status_code in (200, 401, 403)
         if response.status_code == 200:
             data = response.json()
@@ -71,7 +79,8 @@ def test_analytics_user_growth(monkeypatch):
     from app.api.v1.routers import analytics
     monkeypatch.setattr(analytics, 'get_db', lambda: DummyDB())
     with TestClient(app) as client:
-        response = client.get('/api/v1/analytics/user-growth', headers={"Authorization": "Bearer admin-token"})
+        token = get_admin_token()
+        response = client.get('/api/v1/analytics/user-growth', headers={"Authorization": f"Bearer {token}"})
         assert response.status_code in (200, 401, 403)
         if response.status_code == 200:
             data = response.json()
@@ -81,7 +90,7 @@ def test_analytics_user_growth(monkeypatch):
 # Permission error test for IC role (should be forbidden or unauthorized)
 import pytest
 
-from tests.test_files import users_and_tokens
+from tests.test_analytics_utils import analytics_users
 
 @pytest.mark.parametrize("endpoint", [
     "/api/v1/analytics/summary",
@@ -95,8 +104,8 @@ from tests.test_files import users_and_tokens
     ("ic", False),
     ("requester", False),
 ])
-def test_analytics_dashboard_permissions(users_and_tokens, endpoint, role, allowed):
-    token = users_and_tokens[role]["token"]
+def test_analytics_dashboard_permissions(analytics_users, endpoint, role, allowed):
+    token = analytics_users[role]["token"]
     with TestClient(app) as client:
         response = client.get(endpoint, headers={"Authorization": f"Bearer {token}"})
         if allowed:
