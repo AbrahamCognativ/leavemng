@@ -1,24 +1,23 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router, ActivatedRouteSnapshot } from '@angular/router';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import {catchError, firstValueFrom, map, of} from 'rxjs';
 
 export interface IUser {
   id: string;
   email: string;
   avatarUrl?: string;
+  role_band: string;
+  role_title: string;
 }
+
 interface LoginResponse {
   access_token: string;
   token_type: string;
-  user: {
-    id: string;
-    email: string;
-    avatarUrl?: string;
-  };
+  user: IUser;
 }
 
-const defaultPath = '/dashboard';
+const defaultPath = '/login-form';
 const defaultUser = {
   email: 'sandra@example.com',
   avatarUrl: 'https://js.devexpress.com/Demos/WidgetsGallery/JSDemos/images/employees/06.png'
@@ -26,11 +25,20 @@ const defaultUser = {
 
 @Injectable()
 export class AuthService {
-  private _user: IUser | null = {id: '', email: ''};
+  private _user: IUser | null = null;
   private API_URL = 'http://localhost:8000/api/v1';
 
   get loggedIn(): boolean {
     return !!this._user;
+  }
+
+  get user(): IUser | null {
+    return this._user;
+  }
+
+  get isAdmin(): boolean {
+    return this._user?.role_band === 'HR' || this._user?.role_band === 'Admin' || 
+           this._user?.role_title === 'HR' || this._user?.role_title === 'Admin';
   }
 
   private _lastAuthenticatedPath: string = defaultPath;
@@ -38,7 +46,12 @@ export class AuthService {
     this._lastAuthenticatedPath = value;
   }
 
-  constructor(private router: Router, private http: HttpClient,) { }
+  constructor(private router: Router, private http: HttpClient,) {
+    const storedUser = localStorage.getItem('current_user');
+    if (storedUser) {
+      this._user = JSON.parse(storedUser);
+    }
+  }
 
   async logIn(email: string, password: string) {
     const formData = new FormData();
@@ -49,10 +62,10 @@ export class AuthService {
       const response = await firstValueFrom(
         this.http.post<LoginResponse>(`${this.API_URL}/auth/login`, formData)
       );
-      this._user = { email: email, id: response.user.id };
-      localStorage.setItem('current_user', JSON.stringify(response.user))
-      localStorage.setItem('user_token', response.access_token)
-      const target = this._lastAuthenticatedPath || defaultPath;
+      this._user = response.user;
+      localStorage.setItem('current_user', JSON.stringify(response.user));
+      localStorage.setItem('user_token', response.access_token);
+      const target = this._lastAuthenticatedPath || '/dashboard';
       await this.router.navigateByUrl(target);
 
       return {
@@ -70,12 +83,6 @@ export class AuthService {
 
   async getUser() {
     try {
-      /* Send request
-      var current_user = localStorage.getItem("current_user");
-      if (current_user != null){
-        current_user = JSON.parse(current_user);
-      }*/
-
       return {
         isOk: true,
         data: this._user
@@ -91,8 +98,6 @@ export class AuthService {
 
   async createAccount(email: string, password: string) {
     try {
-      // Send request
-
       this.router.navigate(['/create-account']);
       return {
         isOk: true
@@ -108,8 +113,6 @@ export class AuthService {
 
   async changePassword(email: string, recoveryCode: string) {
     try {
-      // Send request
-
       return {
         isOk: true
       };
@@ -124,8 +127,6 @@ export class AuthService {
 
   async resetPassword(email: string) {
     try {
-      // Send request
-
       return {
         isOk: true
       };
@@ -140,6 +141,8 @@ export class AuthService {
 
   async logOut() {
     this._user = null;
+    localStorage.removeItem('current_user');
+    localStorage.removeItem('user_token');
     this.router.navigate(['/login-form']);
   }
 }
@@ -165,6 +168,12 @@ export class AuthGuardService implements CanActivate {
 
     if (!isLoggedIn && !isAuthForm) {
       this.router.navigate(['/login-form']);
+      return false;
+    }
+
+    if (route.routeConfig?.path?.startsWith('admin') && !this.authService.isAdmin) {
+      this.router.navigate(['/dashboard']);
+      return false;
     }
 
     if (isLoggedIn) {

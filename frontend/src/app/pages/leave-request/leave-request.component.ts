@@ -182,7 +182,7 @@ export class LeaveRequestComponent implements OnInit {
     try {
       const payload = {
         employeeId: this.leave.employeeId,
-        leave_type_id: this.getLeaveTypeId(this.leave.leaveType), // You must implement this
+        leave_type_id: this.getLeaveTypeId(this.leave.leaveType), 
         start_date: this.leave.startDate.toISOString().split('T')[0],
         end_date: this.leave.endDate.toISOString().split('T')[0],
         comments: this.leave.comments,

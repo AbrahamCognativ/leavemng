@@ -1,7 +1,7 @@
 import { Component, NgModule, Output, Input, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { DxTreeViewModule, DxTreeViewComponent, DxTreeViewTypes } from 'devextreme-angular/ui/tree-view';
 import { navigation } from '../../../app-navigation';
-
+import { AuthService } from '../../services';
 import * as events from 'devextreme/events';
 
 @Component({
@@ -34,16 +34,15 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
   private _items!: Record <string, unknown>[];
   get items() {
     if (!this._items) {
-      this._items = navigation.map((item) => {
+      // Filter out admin menu items for non-admin users
+      const filteredNavigation = this.authService.isAdmin ?
+        navigation :
+        navigation.filter(item => item.text !== 'Admin');
+
+      this._items = filteredNavigation.map((item) => {
         if(item.path && !(/^\//.test(item.path))){
           item.path = `/${item.path}`;
         }
-        
-        // Add debugging for Admin menu items
-        if (item.text === 'Admin' && item.items) {
-          console.log('Admin menu items:', JSON.stringify(item.items));
-        }
-        
         return { ...item, expanded: !this._compactMode }
       });
     }
@@ -70,7 +69,10 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  constructor(private elementRef: ElementRef) { }
+  constructor(
+    private elementRef: ElementRef,
+    private authService: AuthService
+  ) { }
 
   onItemClick(event: DxTreeViewTypes.ItemClickEvent) {
     this.selectedItemChanged.emit(event);

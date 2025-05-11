@@ -81,7 +81,18 @@
   [height]="360"
   [dragEnabled]="false"
   [closeOnOutsideClick]="true"
-  (onHiding)="isTypePopupVisible = false">
+  (onHiding)="isTypePopupVisible = false"
+  [toolbarItems]="[{
+    widget: 'dxButton',
+    toolbar: 'bottom',
+    location: 'after',
+    options: {
+      text: selectedType ? 'Update' : 'Save',
+      type: 'default',
+      stylingMode: 'contained',
+      onClick: saveType
+    }
+  }]">
 
   <dx-form
     [formData]="typeFormData"
@@ -90,23 +101,9 @@
     <dxi-item dataField="code" editorType="dxSelectBox" [editorOptions]="{ dataSource: availableCodes, displayExpr: 'text', valueExpr: 'value' }"></dxi-item>
     <dxi-item dataField="description" editorType="dxTextBox"></dxi-item>
     <dxi-item dataField="default_allocation_days" editorType="dxNumberBox"></dxi-item>
-
   </dx-form>
 
-  <dxi-popup-toolbar-item
-    widget="dxButton"
-    toolbar="bottom"
-    location="after"
-    [options]="{
-      text: selectedType ? 'Update' : 'Save',
-      type: 'default',
-      stylingMode: 'contained',
-      onClick: saveType
-    }">
-  </dxi-popup-toolbar-item>
-
 </dx-popup>
-
 
   <!-- Leave Policy Form Popup -->
   <dx-popup
@@ -117,13 +114,23 @@
   [height]="400"
   [dragEnabled]="false"
   [closeOnOutsideClick]="true"
-  (onHiding)="isPolicyPopupVisible = false">
+  (onHiding)="isPolicyPopupVisible = false"
+  [toolbarItems]="[{
+    widget: 'dxButton',
+    toolbar: 'bottom',
+    location: 'after',
+    options: {
+      text: 'Save',
+      type: 'default',
+      stylingMode: 'contained',
+      onClick: savePolicy
+    }
+  }]">
 
   <dx-form
     [formData]="policyFormData"
     labelLocation="top"
     [showColonAfterLabel]="true">
-
     <dxi-item
       dataField="org_unit_id"
       editorType="dxSelectBox"
@@ -157,20 +164,7 @@
     </dxi-item>
 
     <dxi-item dataField="accrual_amount_per_period" editorType="dxNumberBox"></dxi-item>
-
   </dx-form>
-
-  <dxi-popup-toolbar-item
-    widget="dxButton"
-    toolbar="bottom"
-    location="after"
-    [options]="{
-      text: 'Save',
-      type: 'default',
-      stylingMode: 'contained',
-      onClick: savePolicy
-    }">
-  </dxi-popup-toolbar-item>
 
 </dx-popup>
 </div>

@@ -5,7 +5,6 @@ import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
-import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 import { LeaveService } from '../../../shared/services/leave.service';
 import { DxiItemModule } from 'devextreme-angular/ui/nested';
 
@@ -32,7 +31,6 @@ const DEFAULT_LEAVE_TYPES = [
     DxFormModule,
     DxButtonModule,
     DxPopupModule,
-    DxToolbarModule,
     DxiItemModule
   ]
 })

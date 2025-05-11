@@ -33,7 +33,7 @@ def create_leave_type(leave_type: LeaveTypeCreate, db: Session = Depends(get_db)
     db.refresh(db_leave_type)
     return db_leave_type
 
-@router.get("/", response_model=List[LeaveTypeRead], tags=["leave-types"], dependencies=[Depends(require_role(["HR", "Admin", "Manager", "IC"]))])
+@router.get("/", response_model=List[LeaveTypeRead], tags=["leave-types"], dependencies=[])
 def list_leave_types(db: Session = Depends(get_db)):
     return db.query(LeaveType).all()
 
