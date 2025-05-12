@@ -73,3 +73,21 @@
   margin: 20px 0;
   text-align: center;
 }
+
+.status-active {
+  color: #5cb85c;
+  font-weight: 500;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(92, 184, 92, 0.1);
+}
+
+.status-inactive {
+  color: #d9534f;
+  font-weight: 500;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(217, 83, 79, 0.1);
+}
