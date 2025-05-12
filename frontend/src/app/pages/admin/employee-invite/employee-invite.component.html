@@ -114,8 +114,9 @@
       <dxi-column dataField="email" caption="Email"></dxi-column>
       <dxi-column dataField="role_band" caption="Role Band"></dxi-column>
       <dxi-column dataField="role_title" caption="Role Title"></dxi-column>
-      <dxi-column dataField="gender" caption="Gender"></dxi-column>
+      <!-- <dxi-column dataField="gender" caption="Gender"></dxi-column> -->
       <dxi-column dataField="created_at" caption="Created On" cellTemplate="dateTemplate"></dxi-column>
+      <dxi-column dataField="is_active" caption="Status" cellTemplate="statusTemplate"></dxi-column>
       <dxi-column caption="Actions" cellTemplate="actionsTemplate" [width]="120"></dxi-column>
       
       <div *dxTemplate="let data of 'dateTemplate'">
@@ -132,6 +133,20 @@
             [disabled]="isLoading"
             hint="Edit User"
           ></dx-button>
+          <dx-button
+            icon="trash"
+            type="danger"
+            [stylingMode]="'text'"
+            (onClick)="confirmDelete(user.data)"
+            [disabled]="isLoading"
+            hint="Deactivate User"
+          ></dx-button>
+        </div>
+      </div>
+      
+      <div *dxTemplate="let user of 'statusTemplate'">
+        <div [ngClass]="{'status-active': user.data.is_active, 'status-inactive': !user.data.is_active}">
+          {{ user.data.is_active ? 'Active' : 'Inactive' }}
         </div>
       </div>
     </dx-data-grid>
@@ -218,5 +233,37 @@
     </div>
   </dx-popup>
   
-  <!-- Delete functionality has been removed as requested -->
+  <!-- Delete Confirmation Popup -->
+  <dx-popup
+    [width]="400"
+    [height]="'auto'"
+    [showTitle]="true"
+    title="Confirm Deactivation"
+    [dragEnabled]="false"
+    [closeOnOutsideClick]="false"
+    [(visible)]="isDeleteConfirmVisible"
+  >
+    <div *dxTemplate="let data of 'content'">
+      <p class="confirm-message">
+        Are you sure you want to deactivate user <strong>{{ userToDelete?.name }}</strong>?
+        <br>
+        This action will make the user account inactive.
+      </p>
+      
+      <div class="popup-buttons">
+        <dx-button
+          text="Deactivate"
+          type="danger"
+          (onClick)="softDeleteUser()"
+          [disabled]="isLoading"
+        ></dx-button>
+        <dx-button
+          text="Cancel"
+          type="normal"
+          (onClick)="cancelDelete()"
+          [disabled]="isLoading"
+        ></dx-button>
+      </div>
+    </div>
+  </dx-popup>
 </div>

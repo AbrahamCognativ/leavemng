@@ -72,6 +72,8 @@ export class EmployeeInviteComponent implements OnInit {
   allUsers: IUser[] = [];
   selectedUser: IUser | null = null;
   isEditMode: boolean = false;
+  isDeleteConfirmVisible: boolean = false;
+  userToDelete: IUser | null = null;
   
   colCountByScreen: object;
   baseUrl: string = 'http://localhost:8000';
@@ -293,6 +295,50 @@ export class EmployeeInviteComponent implements OnInit {
           this.isLoading = false;
           this.errorMessage = error.error?.detail || 'Failed to update user. Please try again.';
           console.error('Error updating user:', error);
+        }
+      });
+  }
+
+  // Confirm delete
+  confirmDelete(user: IUser): void {
+    this.userToDelete = user;
+    this.isDeleteConfirmVisible = true;
+  }
+
+  // Cancel delete
+  cancelDelete(): void {
+    this.isDeleteConfirmVisible = false;
+    this.userToDelete = null;
+  }
+
+  // Deactivate user by setting is_active to false
+  softDeleteUser(): void {
+    if (!this.userToDelete) return;
+    
+    this.isLoading = true;
+    const token = localStorage.getItem('user_token') || '';
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    
+    // Use PUT to update the user's is_active status
+    const updateData = {
+      is_active: false
+    };
+    
+    this.http.put(`${this.getApiUrl('users')}/${this.userToDelete.id}`, updateData, { headers })
+      .subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.successMessage = `User ${this.userToDelete?.name} has been successfully deactivated.`;
+          this.isDeleteConfirmVisible = false;
+          this.userToDelete = null;
+          this.fetchAllUsers(); // Refresh the list
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.errorMessage = error.error?.detail || 'Failed to deactivate user. Please try again.';
+          console.error('Error deactivating user:', error);
         }
       });
   }
