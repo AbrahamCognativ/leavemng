@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { CanActivate, Router, ActivatedRouteSnapshot } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import {catchError, firstValueFrom, map, of} from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface IUser {
   id: string;
@@ -26,7 +27,7 @@ const defaultUser = {
 @Injectable()
 export class AuthService {
   private _user: IUser | null = null;
-  private API_URL = 'http://localhost:8000/api/v1';
+  private API_URL = environment.apiUrl;
 
   get loggedIn(): boolean {
     return !!this._user;

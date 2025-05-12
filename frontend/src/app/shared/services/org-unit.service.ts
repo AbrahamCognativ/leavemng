@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, retry } from 'rxjs/operators';
-
+import { environment } from '../../../environments/environment';
 export interface OrgUnit {
   id: string;
   name: string;
@@ -14,7 +14,7 @@ export interface OrgUnit {
   providedIn: 'root'
 })
 export class OrgUnitService {
-  private apiUrl = 'http://localhost:8000/api/v1';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

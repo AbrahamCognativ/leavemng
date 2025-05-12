@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface IUser {
   id: string;
@@ -19,7 +20,7 @@ export interface IUser {
 
 @Injectable()
 export class UserService {
-  private API_URL = 'http://localhost:8000/api/v1';
+  private API_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
