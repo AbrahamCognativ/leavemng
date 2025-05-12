@@ -23,6 +23,7 @@
     "devextreme": "24.2.6",
     "devextreme-angular": "24.2.6",
     "devextreme-schematics": "^1.10.1",
+    "file-saver": "^2.0.5",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -31,6 +32,7 @@
     "@angular-devkit/build-angular": "^19.2.10",
     "@angular/cli": "^19.2.10",
     "@angular/compiler-cli": "^19.2.0",
+    "@types/file-saver": "^2.0.7",
     "@types/jasmine": "~5.1.0",
     "devextreme-cli": "latest",
     "devextreme-themebuilder": "24.2.6",
