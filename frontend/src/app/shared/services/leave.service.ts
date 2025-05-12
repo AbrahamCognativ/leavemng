@@ -1,6 +1,6 @@
 // leave.service.ts
 import { Injectable } from '@angular/core';
-import {HttpClient, HttpErrorResponse} from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, retry } from 'rxjs/operators';
 //import { environment } from '../../../environments/environment';
@@ -76,6 +76,38 @@ export class LeaveService {
         catchError(this.handleError)
       ).toPromise() as Promise<any>;
   }
+
+  // Upload file for leave request
+  async uploadFile(leaveRequestId: string, file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('document', file);
+    return this.http.post<any>(`${this.apiUrl}/leave/${leaveRequestId}/documents`, formData)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
+  // Create leave request with documents
+  async createLeaveRequest(data: FormData | any): Promise<any> {
+    const options = {
+      headers: data instanceof FormData ? new HttpHeaders() : new HttpHeaders({ 'Content-Type': 'application/json' })
+    };
+    return this.http.post<any>(`${this.apiUrl}/leave`, data, options)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
+  // Delete leave document
+  async deleteLeaveDocument(leaveId: string, documentId: string): Promise<any> {
+    return this.http.delete<any>(`${this.apiUrl}/leave/${leaveId}/documents/${documentId}`)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
   
   // Get leave policies
   async getLeavePolicies(): Promise<any[]> {
@@ -122,10 +154,11 @@ export class LeaveService {
       ).toPromise() as Promise<any[]>;
   }
 
-  // Create leave request
-  async createLeaveRequest(leaveData: any): Promise<any> {
+  // Create simple leave request (without documents)
+  async createSimpleLeaveRequest(leaveData: any): Promise<any> {
     return this.http.post<any>(`${this.apiUrl}/leave`, leaveData)
       .pipe(
+        retry(1),
         catchError(this.handleError)
       ).toPromise() as Promise<any>;
   }
@@ -172,14 +205,6 @@ export class LeaveService {
     }).pipe(
       catchError(this.handleError)
     ).toPromise() as Promise<Blob>;
-  }
-
-  // Delete leave document
-  async deleteLeaveDocument(requestId: string, documentId: string): Promise<any> {
-    return this.http.delete<any>(`${this.apiUrl}/files/delete/${requestId}/${documentId}`)
-      .pipe(
-        catchError(this.handleError)
-      ).toPromise() as Promise<any>;
   }
 
   private handleError(error: HttpErrorResponse) {

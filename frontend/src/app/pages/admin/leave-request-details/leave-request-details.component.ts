@@ -77,6 +77,11 @@ export class LeaveRequestDetailsComponent implements OnInit {
 
       // Load documents
       this.documents = await this.leaveService.getLeaveDocuments(this.requestId);
+      // Validate and format document IDs
+      this.documents = this.documents.map(doc => ({
+        ...doc,
+        file_name: doc.file_name || 'unknown-document'
+      }));
 
       // Fetch decided_by info
       this.leaveRequest.decided_by = this.leaveRequest.decided_by ? this.capitalize((
@@ -146,18 +151,27 @@ export class LeaveRequestDetailsComponent implements OnInit {
   }
 
   async downloadDocument(documentId: string): Promise<void> {
-    if (!this.requestId) return;
+    if (!this.requestId) {
+      console.error('Request ID is not available');
+      return;
+    }
+
+    if (!documentId || typeof documentId !== 'string') {
+      console.error('Invalid document ID provided:', documentId);
+      return;
+    }
 
     try {
       const blob = await this.leaveService.downloadLeaveDocument(this.requestId, documentId);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `document-${documentId}`;
+      link.download = documentId;
       link.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading document:', error);
+      alert('Failed to download document. Please try again.');
     }
   }
 

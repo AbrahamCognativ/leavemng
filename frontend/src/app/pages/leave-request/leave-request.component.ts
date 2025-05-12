@@ -1,7 +1,10 @@
 import { Leave, Document, LeaveBalance } from '../../models/leave.model';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { LeaveService } from '../../shared/services/leave.service';
 import { AuthService } from '../../shared/services/auth.service';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { DxFormComponent } from 'devextreme-angular/ui/form';
+import { saveAs } from 'file-saver';
 import { CommonModule } from '@angular/common';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxFormModule } from 'devextreme-angular/ui/form';
@@ -12,6 +15,7 @@ import { DxDateBoxModule } from 'devextreme-angular/ui/date-box';
 import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { DxiItemModule, DxoLabelModule, DxiValidationRuleModule } from 'devextreme-angular/ui/nested';
 import { DxToastModule } from 'devextreme-angular/ui/toast';
+import { BytesPipe } from '../../pipes/bytes.pipe';
 
 @Component({
   selector: 'app-leave-request',
@@ -30,10 +34,12 @@ import { DxToastModule } from 'devextreme-angular/ui/toast';
     DxDateBoxModule,
     DxTextAreaModule,
     DxiValidationRuleModule,
-    DxToastModule
+    DxToastModule,
+    BytesPipe
   ],
 })
 export class LeaveRequestComponent implements OnInit {
+  @ViewChild(DxFormComponent) leaveForm!: DxFormComponent;
   leaveTypes: any[] = [];
   leaveTypesDescription: string[] = [];
   leaveBalances: LeaveBalance[] = [];
@@ -58,7 +64,11 @@ export class LeaveRequestComponent implements OnInit {
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' | 'warning' = 'info';
 
-  constructor(private leaveService: LeaveService, private authService: AuthService) { }
+  constructor(
+    private leaveService: LeaveService, 
+    private authService: AuthService,
+    private sanitizer: DomSanitizer
+  ) { }
 
   ngOnInit(): void {
     this.loadLeaveTypes();
@@ -99,37 +109,50 @@ export class LeaveRequestComponent implements OnInit {
 
   onFileUploaded(e: any): void {
     if (e.value && e.value.length > 0) {
-      const newDocuments = Array.from(e.value as File[]).map((file: File) => {
-        return {
-          name: file.name,
-          fileType: file.type,
-          size: file.size,
-          file: file,
-          uploadDate: new Date()
-        } as Document;
-      });
-
-      if (!this.leave.documents) {
-        this.leave.documents = [];
-      }
-
-      this.leave.documents = [...this.leave.documents, ...newDocuments];
+      this.uploadedFiles = e.value;
+      this.leave.documents = this.uploadedFiles.map((file, index) => ({
+        id: index.toString(), // Temporary ID until server assigns a real one
+        name: file.name,
+        type: file.type,
+        fileType: file.type,
+        size: file.size,
+        uploadDate: new Date()
+      }));
     }
   }
 
-  async removeDocument(index: number): Promise<void> {
-    if (this.leave.documents && this.leave.documents.length > index) {
+  // Convert document URL to safe URL for viewing
+  getSafeUrl(url: string): SafeUrl {
+    return this.sanitizer.bypassSecurityTrustUrl(url);
+  }
+
+  // Remove document from list
+  removeDocument(index: number): void {
+    if (this.leave.documents && index >= 0 && index < this.leave.documents.length) {
       const document = this.leave.documents[index];
       if (document.id) {
-        try {
-          await this.leaveService.deleteLeaveDocument(this.leave.id.toString(), document.id.toString());
-        } catch (error) {
-          this.showToast('Error deleting document', 'error');
-          return;
+        // If this is an existing document (not a new upload), try to delete it from server
+        if (this.leave.id && !document.id.startsWith('temp_')) {
+          this.leaveService.deleteLeaveDocument(this.leave.id, document.id)
+            .catch(error => {
+              console.error('Error deleting document:', error);
+              this.showToast('Error deleting document', 'error');
+            });
         }
       }
       this.leave.documents.splice(index, 1);
-      this.leave.documents = [...this.leave.documents];
+      this.uploadedFiles = this.uploadedFiles.filter((_, i) => i !== index);
+    }
+  }
+
+  // Download document
+  async downloadDocument(document: Document): Promise<void> {
+    try {
+      const response = await this.leaveService.downloadLeaveDocument(this.leave.id!, document.id!.toString());
+      const blob = new Blob([response], { type: document.fileType });
+      saveAs(blob, document.name);
+    } catch (error) {
+      this.showToast('Error downloading document', 'error');
     }
   }
 
@@ -164,40 +187,65 @@ export class LeaveRequestComponent implements OnInit {
 
   async onSubmit(): Promise<void> {
     if (this.submitting) return;
-  
-    if (this.leave.startDate > this.leave.endDate) {
-      this.showToast('End date cannot be before start date', 'error');
-      return;
-    }
-  
-    await this.calculateWorkingDays();
-    const user = await this.authService.getUser();
-    if(user.isOk){
-      const userId = user.data?.id;
-      if(userId){
-        this.leave.employeeId = userId;
-      }
-    }
     this.submitting = true;
+
     try {
-      const payload = {
-        employeeId: this.leave.employeeId,
-        leave_type_id: this.getLeaveTypeId(this.leave.leaveType), 
+      const user = await this.authService.getUser();
+      if (!user.isOk || !user.data?.id) {
+        throw new Error('User ID not found');
+      }
+
+      // Get the leave type ID from the selected leave type
+      const leaveTypeId = this.getLeaveTypeId(this.leave.leaveType);
+      if (!leaveTypeId) {
+        throw new Error('Invalid leave type selected');
+      }
+
+      // First create the leave request without documents
+      const leaveData = {
+        employeeId: user.data.id,
+        leave_type_id: leaveTypeId,
         start_date: this.leave.startDate.toISOString().split('T')[0],
         end_date: this.leave.endDate.toISOString().split('T')[0],
-        comments: this.leave.comments,
-        status: this.leave.status,
-        documents: this.leave.documents,
-        createdAt: this.leave.createdAt.toISOString(),
-        updatedAt: this.leave.updatedAt.toISOString(),
+        comments: this.leave.comments || '',
+        status: 'pending'
       };
-      console.log("payload", payload);
-      const response = await this.leaveService.createLeaveRequest(payload);
-      console.log("response", response);
-      this.showToast('Leave request submitted successfully!', 'success');
-      this.resetForm();
-      await this.loadLeaveBalances();
-    } catch (error: any) {
+
+      // Create the leave request
+      const response = await this.leaveService.createLeaveRequest(leaveData);
+      this.leave.id = response.id;
+
+      // Now upload any attached documents
+      if (response.id && this.uploadedFiles.length > 0) {
+        for (const file of this.uploadedFiles) {
+          const result = await this.leaveService.uploadLeaveDocument(this.leave.id, file);
+          if (result.id) {
+            this.leave.documents.push({
+              id: result.id,
+              name: file.name,
+              fileType: file.type,
+              size: file.size,
+              uploadDate: new Date()
+            });
+          }
+        }
+      }
+
+      this.showToast('Leave request submitted successfully', 'success');
+      this.uploadedFiles = []; 
+      this.leave = {
+        id: '',
+        employeeId: '',
+        leaveType: '',
+        startDate: new Date(),
+        endDate: new Date(),
+        comments: '',
+        status: 'pending',
+        documents: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    } catch (error) {
       this.showToast('Error submitting leave request', 'error');
     } finally {
       this.submitting = false;

@@ -99,18 +99,23 @@
 
               <!-- Document List -->
               <div class="document-list" *ngIf="leave.documents && leave.documents.length > 0">
-                <div class="document-item" *ngFor="let doc of leave.documents; let i = index">
+                <div class="document-item" *ngFor="let document of leave.documents; let i = index">
                   <div class="document-info">
-                    <i class="dx-icon-file"></i>
-                    <span class="document-name">{{ doc.name }}</span>
-                    <span class="document-size">({{ (doc.size / 1024 / 1024).toFixed(2) }} MB)</span>
+                    <span class="document-name">{{ document.name }}</span>
+                    <span class="document-size">{{ document.size | bytes }}</span>
+                    <span class="document-type">{{ document.fileType }}</span>
+                    <span class="document-date">{{ document.uploadDate | date:'medium' }}</span>
                   </div>
-                  <dx-button
-                    icon="trash"
-                    stylingMode="text"
-                    type="danger"
-                    (onClick)="removeDocument(i)">
-                  </dx-button>
+                  <div class="document-actions">
+                    <button class="download-btn" (click)="downloadDocument(document)">
+                      <i class="dx-icon-download"></i>
+                      Download
+                    </button>
+                    <button class="remove-btn" (click)="removeDocument(i)" *ngIf="!leave.id">
+                      <i class="dx-icon-remove"></i>
+                      Remove
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
