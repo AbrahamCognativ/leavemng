@@ -1,5 +1,7 @@
 .employee-invite-container {
   padding: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .section {
@@ -8,6 +10,11 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
+  
+  &.full-width {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 .users-section {
@@ -31,6 +38,28 @@
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+.full-width-form {
+  width: 100%;
+  
+  ::ng-deep .dx-layout-manager .dx-field-item {
+    padding: 10px 15px;
+  }
+  
+  ::ng-deep .form-section-title {
+    background-color: #f8f9fa;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    
+    .section-title-text h3 {
+      margin: 0;
+      padding: 10px 15px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
 }
 
 .loading-container {
