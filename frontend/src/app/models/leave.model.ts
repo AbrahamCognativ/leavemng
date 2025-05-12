@@ -1,5 +1,5 @@
 export interface Document {
-  id?: number;
+  id?: string;  // Use string ID to match server response
   name: string;
   fileType: string;
   size: number;
