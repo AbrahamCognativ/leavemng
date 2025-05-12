@@ -165,7 +165,6 @@ export class EmployeeInviteComponent implements OnInit {
             id: unit.id,
             name: unit.name
           }));
-          console.log('Org units loaded:', this.orgUnits);
         },
         error: (error) => {
           console.error('Error fetching org units:', error);

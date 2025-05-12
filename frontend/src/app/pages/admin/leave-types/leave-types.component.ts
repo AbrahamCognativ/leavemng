@@ -81,7 +81,6 @@ export class LeaveTypesComponent implements OnInit {
   
   // Updated onTypeEdit method
   onTypeEdit = (e: any) => {
-    console.log('Edit clicked:', e);
     this.selectedType = e.row?.data || e.data;
     
     // Make sure we have valid data before setting typeFormData
@@ -208,8 +207,6 @@ export class LeaveTypesComponent implements OnInit {
         default_allocation_days: this.typeFormData.default_allocation_days
       };
   
-      console.log('Sending leave type data:', dataToSend);
-  
       if (this.selectedType) {
         await leaveService.updateLeaveType(this.selectedType.id, dataToSend);
       } else {
@@ -254,7 +251,6 @@ export class LeaveTypesComponent implements OnInit {
   }
 
   deleteType = (e: any) => {
-    console.log('Delete clicked:', e);
     this.leaveTypeToDelete = e.row?.data || e.data;
     this.isDeleteDialogVisible = true;
   }

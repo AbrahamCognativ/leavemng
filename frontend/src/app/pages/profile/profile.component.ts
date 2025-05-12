@@ -212,7 +212,6 @@ export class ProfileComponent implements OnInit {
           // Fix profile image URL if needed
           if (updatedEmployee.profile_image_url) {
             updatedEmployee.profile_image_url = this.formatImageUrl(updatedEmployee.profile_image_url);
-            console.log('Formatted profile image URL:', updatedEmployee.profile_image_url);
           }
           
           this.employee = updatedEmployee;
@@ -318,22 +317,17 @@ export class ProfileComponent implements OnInit {
     const token = parsedUser?.token || '';
     
     this.isLoading = true;
-    console.log('Uploading file:', file.name, 'Size:', file.size);
-    
     // Ensure we have the correct URL with user ID
     const uploadUrl = this.getApiUrl(`files/upload-profile-image/${this.employee.id}`);
-    console.log('Upload URL:', uploadUrl);
     
     this.http.post(uploadUrl, formData, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     }).subscribe({
       next: (response: any) => {
-        console.log('Profile image upload response:', response);
         // Update profile image URL in employee object
         if (response && response.profile_image_url) {
           // Format the image URL consistently
           const imageUrl = this.formatImageUrl(response.profile_image_url);
-          console.log('Formatted image URL:', imageUrl);
           
           this.employee.profile_image_url = imageUrl;
           this.originalEmployee.profile_image_url = imageUrl;
@@ -347,7 +341,6 @@ export class ProfileComponent implements OnInit {
           setTimeout(() => {
             const refreshedUrl = imageUrl + '?t=' + new Date().getTime();
             this.employee.profile_image_url = refreshedUrl;
-            console.log('Updated profile image URL with cache buster:', refreshedUrl);
           }, 500);
         }
         
@@ -386,16 +379,13 @@ export class ProfileComponent implements OnInit {
    * Handle the uploaded event from the file uploader component
    */
   handleUploadedEvent(event: FileUploaderEvent): void {
-    console.log('File upload event received:', event);
     if (event && event.request && event.request.response) {
       try {
         const response = JSON.parse(event.request.response);
-        console.log('Parsed response:', response);
         
         if (response && response.profile_image_url) {
           // Format the image URL consistently
           const imageUrl = this.formatImageUrl(response.profile_image_url);
-          console.log('Formatted image URL:', imageUrl);
           
           this.employee.profile_image_url = imageUrl;
           this.originalEmployee.profile_image_url = imageUrl;
@@ -409,7 +399,6 @@ export class ProfileComponent implements OnInit {
           setTimeout(() => {
             const refreshedUrl = imageUrl + '?t=' + new Date().getTime();
             this.employee.profile_image_url = refreshedUrl;
-            console.log('Updated profile image URL with cache buster:', refreshedUrl);
           }, 500);
         }
       } catch (error) {

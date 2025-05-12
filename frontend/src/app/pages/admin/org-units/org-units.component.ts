@@ -68,12 +68,10 @@ export class OrgUnitsComponent implements OnInit {
   }
 
   async save() {
-    console.log("formData", this.formData);
     try {
       this.isLoading = true;
       if (this.selectedUnit) {
         await this.orgUnitService.updateOrgUnit(this.selectedUnit.id, this.formData);
-        console.log("updated org unit", this.formData);
       } else {
         await this.orgUnitService.createOrgUnit(this.formData);
       }
@@ -101,8 +99,6 @@ export class OrgUnitsComponent implements OnInit {
   getParentName(parentId: string | undefined): string {
     if (!parentId) return 'None';
     if (!this.orgUnits || this.orgUnits.length === 0) return '';
-    console.log("parentId", parentId);
-    console.log("orgUnits", this.orgUnits);
     const parent = this.orgUnits.find(u => u.id === parentId);
     return parent ? parent.name : 'Unknown';
   }

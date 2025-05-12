@@ -158,12 +158,6 @@ export class LeaveHistoryComponent implements OnInit {
                    leave.user_id === this.currentUser.id;
           });
           
-          console.log('All leave requests:', leaveRequests);
-          console.log('Current user ID:', this.currentUser.id);
-          
-          // Log raw response to debug field names
-          console.log('Raw leave requests:', JSON.stringify(leaveRequests));
-          
           // Enhance leave requests with leave type names and fix field name mismatch
           this.leaveHistory.forEach(leave => {
             // Map leave type ID to name
@@ -174,7 +168,6 @@ export class LeaveHistoryComponent implements OnInit {
             if (leave.status === 'approved') {
               // Check if we have raw access to the database field
               if (leave.hasOwnProperty('decision_at') && leave.decision_at) {
-                console.log(`Found decision_at field for leave ${leave.id}: ${leave.decision_at}`);
                 // Map it to the field the template is expecting
                 leave.decided_at = leave.decision_at;
               } else if (!leave.decided_at) {
@@ -186,7 +179,6 @@ export class LeaveHistoryComponent implements OnInit {
           // Fetch user details for approvers
           this.fetchApproverDetails();
           
-          console.log('Filtered leave history:', this.leaveHistory);
           this.isLoading = false;
         },
         error: (error) => {
