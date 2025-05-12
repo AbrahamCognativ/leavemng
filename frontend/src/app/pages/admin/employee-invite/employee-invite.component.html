@@ -1,11 +1,11 @@
 <div class="employee-invite-container">
-  <div class="section">
+  <div class="section full-width">
     <div class="section-header">
       <h2>Invite New User</h2>
     </div>
-  <div class="form-header">
-    <p>Create a new user account</p>
-  </div>
+    <div class="form-header">
+      <p>Create a new user account</p>
+    </div>
   
   <div *ngIf="isLoading" class="loading-container">
     <dx-load-indicator width="50" height="50"></dx-load-indicator>
@@ -23,63 +23,86 @@
   <dx-form id="employeeForm"
     [formData]="newEmployee"
     labelLocation="top"
-    [colCountByScreen]="colCountByScreen"
+    [colCount]="3"
     [disabled]="isLoading"
+    class="full-width-form"
   >
-    <!-- Basic Information -->
-    <dxi-item itemType="group" caption="Basic Information">
-      <dxi-item dataField="name" [isRequired]="true">
-        <dxi-validation-rule type="required" message="Name is required"></dxi-validation-rule>
-      </dxi-item>
-      
-      <dxi-item dataField="email" [isRequired]="true">
-        <dxi-validation-rule type="required" message="Email is required"></dxi-validation-rule>
-        <dxi-validation-rule type="email" message="Email is invalid"></dxi-validation-rule>
-      </dxi-item>
-      
-      <dxi-item dataField="password" [isRequired]="true" editorType="dxTextBox" [editorOptions]="{ mode: 'password' }">
-        <dxi-validation-rule type="required" message="Password is required"></dxi-validation-rule>
-      </dxi-item>
-      
-      <dxi-item dataField="passport_or_id_number" [isRequired]="true">
-        <dxi-validation-rule type="required" message="Passport/ID number is required"></dxi-validation-rule>
-      </dxi-item>
-      
-      <dxi-item dataField="gender" editorType="dxSelectBox" [editorOptions]="{ items: genderOptions }" [isRequired]="true">
-        <dxi-validation-rule type="required" message="Gender is required"></dxi-validation-rule>
+    <!-- Form Title -->
+    <dxi-item itemType="group" cssClass="form-section-title" [colSpan]="3">
+      <dxi-item itemType="empty" cssClass="section-title-text">
+        <div *dxTemplate>
+          <h3>Basic Information</h3>
+        </div>
       </dxi-item>
     </dxi-item>
     
-    <!-- Role Information -->
-    <dxi-item itemType="group" caption="Role Information">
-      <dxi-item dataField="role_band" editorType="dxSelectBox" [editorOptions]="{ items: roleBands }" [isRequired]="true">
-        <dxi-validation-rule type="required" message="Role band is required"></dxi-validation-rule>
-      </dxi-item>
-      
-      <dxi-item dataField="role_title" [isRequired]="true">
-        <dxi-validation-rule type="required" message="Role title is required"></dxi-validation-rule>
-      </dxi-item>
-      
-      <dxi-item dataField="manager_id" editorType="dxSelectBox" 
-        [editorOptions]="{
-          items: managers,
-          displayExpr: 'name',
-          valueExpr: 'id',
-          searchEnabled: true,
-          placeholder: 'Select a manager'
-        }">
-      </dxi-item>
-      
-      <dxi-item dataField="org_unit_id" editorType="dxSelectBox" 
-        [editorOptions]="{
-          items: orgUnits,
-          displayExpr: 'name',
-          valueExpr: 'id',
-          searchEnabled: true,
-          placeholder: 'Select an organization unit'
-        }">
+    <!-- First Row -->
+    <dxi-item dataField="name" [isRequired]="true">
+      <dxi-validation-rule type="required" message="Name is required"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item dataField="email" [isRequired]="true">
+      <dxi-validation-rule type="required" message="Email is required"></dxi-validation-rule>
+      <dxi-validation-rule type="email" message="Email is invalid"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item dataField="passport_or_id_number" [isRequired]="true">
+      <dxi-validation-rule type="required" message="Passport/ID number is required"></dxi-validation-rule>
+    </dxi-item>
+    
+    <!-- Second Row -->
+    <dxi-item dataField="password" [isRequired]="true" editorType="dxTextBox" [editorOptions]="{ mode: 'password' }">
+      <dxi-validation-rule type="required" message="Password is required"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item dataField="gender" editorType="dxSelectBox" [editorOptions]="{ items: genderOptions }" [isRequired]="true">
+      <dxi-validation-rule type="required" message="Gender is required"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item itemType="empty"></dxi-item>
+    
+    <!-- Role Section Title -->
+    <dxi-item itemType="group" cssClass="form-section-title" [colSpan]="3">
+      <dxi-item itemType="empty" cssClass="section-title-text">
+        <div *dxTemplate>
+          <h3>Role Information</h3>
+        </div>
       </dxi-item>
     </dxi-item>
+    
+    <!-- Third Row -->
+    <dxi-item dataField="role_band" editorType="dxSelectBox" [editorOptions]="{ items: roleBands }" [isRequired]="true">
+      <dxi-validation-rule type="required" message="Role band is required"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item dataField="role_title" [isRequired]="true">
+      <dxi-validation-rule type="required" message="Role title is required"></dxi-validation-rule>
+    </dxi-item>
+    
+    <dxi-item itemType="empty"></dxi-item>
+    
+    <!-- Fourth Row -->
+    <dxi-item dataField="manager_id" editorType="dxSelectBox" 
+      [editorOptions]="{
+        items: managers,
+        displayExpr: 'name',
+        valueExpr: 'id',
+        searchEnabled: true,
+        placeholder: 'Select a manager'
+      }">
+    </dxi-item>
+    
+    <dxi-item dataField="org_unit_id" editorType="dxSelectBox" 
+      [editorOptions]="{
+        items: orgUnits,
+        displayExpr: 'name',
+        valueExpr: 'id',
+        searchEnabled: true,
+        placeholder: 'Select an organization unit'
+      }">
+    </dxi-item>
+    
+    <dxi-item itemType="empty"></dxi-item>
   </dx-form>
   
   <div class="form-actions">
