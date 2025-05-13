@@ -12,6 +12,7 @@ import { LeaveTypesComponent } from './leave-types/leave-types.component';
 import { LeaveRequestDetailsComponent } from './leave-request-details/leave-request-details.component';
 import { OrgUnitsComponent } from './org-units/org-units.component';
 import { EmployeeInviteComponent } from './employee-invite/employee-invite.component';
+import { AuditLogsComponent } from './audit-logs/audit-logs.component';
 import { AuthService } from '../../shared/services';
 import { Router, CanActivate } from '@angular/router';
 import { Injectable } from '@angular/core';
@@ -56,6 +57,11 @@ const routes: Routes = [
     path: 'employee-invite',
     component: EmployeeInviteComponent,
     canActivate: [AdminGuard]
+  },
+  {
+    path: 'audit-logs',
+    component: AuditLogsComponent,
+    canActivate: [AdminGuard]
   }
 ];
 
@@ -73,7 +79,8 @@ const routes: Routes = [
     LeaveTypesComponent,
     LeaveRequestDetailsComponent,
     OrgUnitsComponent,
-    EmployeeInviteComponent
+    EmployeeInviteComponent,
+    AuditLogsComponent
   ],
   providers: [AdminGuard]
 })
