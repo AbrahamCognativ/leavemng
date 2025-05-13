@@ -1,6 +1,6 @@
 # Ignore uploads folder and its contents (images, documents, etc.)
 app/api/uploads/
-
+files/
 # Common Python ignores
 __pycache__/
 *.py[cod]
@@ -13,7 +13,6 @@ venv/
 .venv/
 
 # Ignore environment and settings files
-app/settings.py
 
 # VSCode settings
 .vscode/

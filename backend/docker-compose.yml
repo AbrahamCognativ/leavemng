@@ -8,7 +8,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - leavemng_files:/app/files
+      - /Users/ogol/Documents/projects/leavemng/backend/files:/app/app/api/uploads/
     restart: unless-stopped
 
 volumes:
