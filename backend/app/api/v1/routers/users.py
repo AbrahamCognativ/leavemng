@@ -293,7 +293,18 @@ def update_user(user_id: UUID, user_update: UserUpdate, db: Session = Depends(ge
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Could not update user")
-    # Audit: log user update
-    from app.deps.permissions import log_permission_denied
-    log_permission_denied(db, current_user.id, "update_user", "user", str(user_id))
+    # Audit: log user update with proper audit logging
+    from app.utils.audit import create_audit_log
+    create_audit_log(
+        db=db,
+        user_id=str(current_user.id),
+        action="update_user",
+        resource_type="user",
+        resource_id=str(user_id),
+        metadata={
+            "updated_fields": list(update_data.keys()),
+            "updated_by": current_user.email,
+            "self_update": str(current_user.id) == str(user_id)
+        }
+    )
     return UserRead.model_validate(user)

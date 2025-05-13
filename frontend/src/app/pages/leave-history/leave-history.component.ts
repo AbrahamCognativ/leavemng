@@ -152,10 +152,21 @@ export class LeaveHistoryComponent implements OnInit {
             return;
           }
           
-          // Filter for all approved leaves that belong to the current user
+          // Get the current date for comparison
+          const currentDate = new Date();
+          
+          // Filter for all approved leaves that belong to the current user AND have end dates that have passed
           this.leaveHistory = leaveRequests.filter((leave: LeaveRequest) => {
-            return leave.status === 'approved' && 
-                   leave.user_id === this.currentUser.id;
+            // Check if the leave is approved and belongs to the current user
+            const isApprovedAndOwnedByUser = leave.status === 'approved' && 
+                                            leave.user_id === this.currentUser.id;
+            
+            // Check if the end date has passed
+            const endDate = new Date(leave.end_date);
+            const hasEndDatePassed = endDate < currentDate;
+            
+            // Return true only if both conditions are met
+            return isApprovedAndOwnedByUser && hasEndDatePassed;
           });
           
           // Enhance leave requests with leave type names and fix field name mismatch
