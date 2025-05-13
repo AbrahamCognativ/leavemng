@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    container_name: leavemng-backend
+    env_file:
+      - .env.prod  # Change to .env.dev for development
+    ports:
+      - "8000:8000"
+    volumes:
+      - leavemng_files:/app/files
+    restart: unless-stopped
+
+volumes:
+  leavemng_files:
+    driver: local
