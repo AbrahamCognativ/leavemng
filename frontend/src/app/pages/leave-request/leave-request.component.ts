@@ -65,7 +65,7 @@ export class LeaveRequestComponent implements OnInit {
   toastType: 'success' | 'error' | 'info' | 'warning' = 'info';
 
   constructor(
-    private leaveService: LeaveService, 
+    private leaveService: LeaveService,
     private authService: AuthService,
     private sanitizer: DomSanitizer
   ) { }
@@ -101,7 +101,7 @@ export class LeaveRequestComponent implements OnInit {
           }
           this.leaveBalances = userLeaveData.leave_balance;
         }
-      }      
+      }
     } catch (error) {
       this.showToast('Error loading leave balances', 'error');
     }
@@ -163,7 +163,7 @@ export class LeaveRequestComponent implements OnInit {
         const end = new Date(this.leave.endDate);
         let days = 0;
         const current = new Date(start);
-        
+
         while (current <= end) {
           const day = current.getDay();
           if (day !== 0 && day !== 6) { // Skip weekends
@@ -171,7 +171,7 @@ export class LeaveRequestComponent implements OnInit {
           }
           current.setDate(current.getDate() + 1);
         }
-        
+
         this.calculatedDays = days;
       } catch (error) {
         this.showToast('Error calculating working days', 'error');
@@ -232,7 +232,7 @@ export class LeaveRequestComponent implements OnInit {
       }
 
       this.showToast('Leave request submitted successfully', 'success');
-      this.uploadedFiles = []; 
+      this.uploadedFiles = [];
       this.leave = {
         id: '',
         employeeId: '',
@@ -245,8 +245,12 @@ export class LeaveRequestComponent implements OnInit {
         createdAt: new Date(),
         updatedAt: new Date()
       };
-    } catch (error) {
-      this.showToast('Error submitting leave request', 'error');
+    } catch (error: any) {
+      let errorMessage = 'Error submitting leave request';
+      if (error && typeof error === 'object' && 'detail' in error.error) {
+        errorMessage = `Error: ${error.error.detail}`;
+      }
+      this.showToast(errorMessage, 'error');
     } finally {
       this.submitting = false;
     }
@@ -276,5 +280,5 @@ export class LeaveRequestComponent implements OnInit {
     }
     return '';
   }
-  
+
 }

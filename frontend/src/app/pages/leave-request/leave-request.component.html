@@ -73,7 +73,7 @@
             <div class="document-section">
               <h3>Supporting Documents</h3>
               <p class="section-description">Upload any relevant documents to support your leave request</p>
-              
+
               <dx-file-uploader
                 selectButtonText="Choose Files"
                 labelText="Drag files here or click to browse"
@@ -99,21 +99,18 @@
 
               <!-- Document List -->
               <div class="document-list" *ngIf="leave.documents && leave.documents.length > 0">
-                <div class="document-item" *ngFor="let document of leave.documents; let i = index">
-                  <div class="document-info">
-                    <span class="document-name">{{ document.name }}</span>
-                    <span class="document-size">{{ document.size | bytes }}</span>
-                    <span class="document-type">{{ document.fileType }}</span>
-                    <span class="document-date">{{ document.uploadDate | date:'medium' }}</span>
+                <div class="document-item d-flex align-items-center justify-content-between py-3 px-4 bg-light border-bottom" *ngFor="let document of leave.documents; let i = index">
+                  <div class="document-info d-flex align-items-center">
+                    <span class="document-name me-4 text-break" style="flex: 1; min-width: 200px; max-width: 350px;">{{ document.name }}</span>
+                    <span class="document-size me-4 text-nowrap text-muted">{{ document.size | bytes }}</span>
+                    <span class="document-type me-4 text-nowrap text-muted">{{ document.fileType }}</span>
                   </div>
                   <div class="document-actions">
-                    <button class="download-btn" (click)="downloadDocument(document)">
+                    <button class="download-btn btn btn-icon mx-2" (click)="downloadDocument(document)">
                       <i class="dx-icon-download"></i>
-                      Download
                     </button>
-                    <button class="remove-btn" (click)="removeDocument(i)" *ngIf="!leave.id">
-                      <i class="dx-icon-remove"></i>
-                      Remove
+                    <button class="remove-btn btn btn-icon mx-2 bg-danger" (click)="removeDocument(i)" *ngIf="!leave.id">
+                      <i class="dx-icon-trash"></i>
                     </button>
                   </div>
                 </div>
@@ -168,7 +165,7 @@
         </div>
       </div>
     </div>
-    
+
   </div>
 </div>
 

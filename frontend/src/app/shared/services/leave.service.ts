@@ -214,10 +214,18 @@ export class LeaveService {
       errorMessage = `Error: ${error.error.message}`;
     } else {
       // Server-side error
-      errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
+      if (error.error && typeof error.error === 'object' && 'detail' in error.error) {
+        errorMessage = error.error.detail;
+      } else {
+        errorMessage = `Error Code: ${error.status}\nMessage: ${error.message}`;
+      }
     }
 
     console.error(errorMessage);
-    return throwError(() => new Error(errorMessage));
+    return throwError(() => ({
+      error: {
+        detail: errorMessage
+      }
+    }));
   }
 }
