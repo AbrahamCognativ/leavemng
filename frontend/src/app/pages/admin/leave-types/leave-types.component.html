@@ -17,6 +17,12 @@
       [showBorders]="true"
       [columnAutoWidth]="true"
       [rowAlternationEnabled]="true">
+      <dxo-paging [pageSize]="5"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
       <dxi-column dataField="description"  caption="Description"></dxi-column>
       <dxi-column dataField="default_allocation_days" caption="Default Days" dataType="number"></dxi-column>
       <dxi-column caption="Actions" [width]="120" [allowFiltering]="false" [allowSorting]="false" cellTemplate="actionsTemplate">
@@ -47,6 +53,12 @@
       [showBorders]="true"
       [columnAutoWidth]="true"
       [rowAlternationEnabled]="true">
+      <dxo-paging [pageSize]="5"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
       <dxi-column
         dataField="org_unit_id"
         caption="Organization Unit"

@@ -11,7 +11,7 @@ import { DxiItemModule } from 'devextreme-angular/ui/nested';
 // Default leave types matching backend LeaveCodeEnum
 const DEFAULT_LEAVE_TYPES = [
   { code: 'annual', description: 'Annual Leave', default_allocation_days: 19 },
-  { code: 'sick', description: 'Sick Leave', default_allocation_days: 45 },
+  { code: 'sick', description: 'Sick Leave', default_allocation_days: 37 },
   { code: 'maternity', description: 'Maternity Leave', default_allocation_days: 90 },
   { code: 'paternity', description: 'Paternity Leave', default_allocation_days: 14 },
   { code: 'compassionate', description: 'Compassionate Leave', default_allocation_days: 10 },
@@ -67,7 +67,7 @@ export class LeaveTypesComponent implements OnInit {
     description: '',
     default_allocation_days: 0
   };
-  
+
   // Updated onTypeAdd method to use custom code for new types
   onTypeAdd = () => {
     this.selectedType = null;
@@ -78,14 +78,14 @@ export class LeaveTypesComponent implements OnInit {
     };
     this.isTypePopupVisible = true;
   }
-  
+
   // Updated onTypeEdit method
   onTypeEdit = (e: any) => {
     this.selectedType = e.row?.data || e.data;
-    
+
     // Make sure we have valid data before setting typeFormData
     if (this.selectedType) {
-      this.typeFormData = { 
+      this.typeFormData = {
         code: this.selectedType.code || 'custom',
         description: this.selectedType.description || '',
         default_allocation_days: this.selectedType.default_allocation_days || 0
@@ -97,7 +97,7 @@ export class LeaveTypesComponent implements OnInit {
         default_allocation_days: 0
       };
     }
-    
+
     this.isTypePopupVisible = true;
   }
 
@@ -125,19 +125,19 @@ export class LeaveTypesComponent implements OnInit {
     try {
       this.isLoading = true;
       this.leaveTypes = await this.leaveService.getLeaveTypes();
-      
+      this.orgUnits = await this.leaveService.getOrgUnits();
+
       const existingCodes = new Set(this.leaveTypes.map(t => t.code));
-      
+
       // Create only missing leave types
       for (const type of DEFAULT_LEAVE_TYPES) {
         if (!existingCodes.has(type.code)) {
           await this.leaveService.createLeaveType(type);
         }
       }
-      
+
       this.leaveTypes = await this.leaveService.getLeaveTypes();
       this.leavePolicies = await this.leaveService.getLeavePolicies();
-      this.orgUnits = await this.leaveService.getOrgUnits();
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -165,13 +165,13 @@ export class LeaveTypesComponent implements OnInit {
   async saveType() {
     try {
       this.isLoading = true;
-  
+
       // Store a reference to the service to avoid "this" context issues
       const leaveService = this.leaveService;
       if (!leaveService) {
         throw new Error('Leave service is not available');
       }
-  
+
       // Make sure typeFormData is initialized
       if (!this.typeFormData) {
         this.typeFormData = {
@@ -180,33 +180,33 @@ export class LeaveTypesComponent implements OnInit {
           default_allocation_days: 0
         };
       }
-  
+
       // Validate required fields
       if (!this.typeFormData.code) {
         throw new Error('Leave type code is required');
       }
-      
+
       if (!this.typeFormData.description) {
         throw new Error('Leave type description is required');
       }
-      
+
       // Ensure the code is one of the valid enum values
       const validCodes = ['annual', 'sick', 'unpaid', 'compassionate', 'maternity', 'paternity', 'custom'];
       if (!validCodes.includes(this.typeFormData.code)) {
         throw new Error('Invalid leave type code. Must be one of: ' + validCodes.join(', '));
       }
-      
+
       // Convert to number to avoid sending string values for numeric fields
-      this.typeFormData.default_allocation_days = 
+      this.typeFormData.default_allocation_days =
         Number(this.typeFormData.default_allocation_days) || 0;
-  
+
       // Prepare data to send
       const dataToSend = {
         code: this.typeFormData.code,
         description: this.typeFormData.description,
         default_allocation_days: this.typeFormData.default_allocation_days
       };
-  
+
       if (this.selectedType) {
         await leaveService.updateLeaveType(this.selectedType.id, dataToSend);
       } else {
@@ -217,7 +217,7 @@ export class LeaveTypesComponent implements OnInit {
       this.selectedType = null;
     } catch (error: any) {
       console.error('Error saving leave type:', error);
-      
+
       // Better error handling for API validation errors
       if (error.error?.detail) {
         // Format validation errors for display

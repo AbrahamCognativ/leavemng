@@ -56,7 +56,7 @@ export class LeaveRequestComponent implements OnInit {
     createdAt: new Date(),
     updatedAt: new Date()
   };
-
+  leaveTypeCodeMap: {[code: string]: number} = {};
   uploadedFiles: File[] = [];
   submitting = false;
   calculatedDays = 0;
@@ -91,20 +91,54 @@ export class LeaveRequestComponent implements OnInit {
     try {
       const leaveTypes = await this.leaveService.getLeaveTypes();
       const user = await this.authService.getUser();
-      if(user.isOk){
+
+      if (user.isOk) {
         const userId = user.data?.id;
-        if(userId){
+
+        if (userId) {
           const userLeaveData = await this.leaveService.getUserLeave(userId);
-          for(const balance of userLeaveData.leave_balance){
-            const leaveType = leaveTypes.find(type => type.code === balance.leave_type);
-            balance.leave_type = leaveType?.description || 'Unknown';
-            balance.total_days = leaveType?.default_allocation_days || 0;
-            balance.balance_days = balance.balance_days || 0;
+
+          if (userLeaveData.leave_balance) {
+            // First, prepare a dictionary to track used days for each leave type code
+            const usedDaysByCode: {[code: string]: number} = {};
+
+            // If there are leave requests, calculate used days for each leave type
+            if (userLeaveData.leave_request && userLeaveData.leave_request.length > 0) {
+              for (const request of userLeaveData.leave_request) {
+                if (request.leave_type && request.total_days) {
+                  // Get current used days for this leave type, or initialize to 0
+                  const currentUsed = usedDaysByCode[request.leave_type] || 0;
+                  // Add days from this request to the accumulated total
+                  usedDaysByCode[request.leave_type] = currentUsed + request.total_days;
+                }
+              }
+            }
+            this.leaveTypeCodeMap = usedDaysByCode;
+            // Now process each balance with the accumulated days
+            for (const balance of userLeaveData.leave_balance) {
+              const leaveTypeCode = balance.leave_type;
+              const leaveType = leaveTypes.find(type => type.code === leaveTypeCode);
+
+              // Set leave type description and total days
+              balance.leave_type = leaveType?.description || 'Unknown';
+              balance.total_days = leaveType?.default_allocation_days || 0;
+
+              // Get accumulated used days for this leave type
+              const usedDays = usedDaysByCode[leaveTypeCode] || 0;
+
+              // Calculate remaining balance
+              balance.balance_days = balance.total_days - usedDays;
+            }
+          } else {
+            // Initialize empty leave balance array if none exists
+            userLeaveData.leave_balance = [];
           }
+
           this.leaveBalances = userLeaveData.leave_balance;
         }
       }
     } catch (error) {
+      console.error('Error loading leave balances:', error);
       this.showToast('Error loading leave balances', 'error');
     }
   }
@@ -196,22 +230,34 @@ export class LeaveRequestComponent implements OnInit {
       if (!user.isOk || !user.data?.id) {
         throw new Error('User ID not found');
       }
-
-      // Get the leave type ID from the selected leave type
-      const leaveTypeId = this.getLeaveTypeId(this.leave.leaveType);
-      if (!leaveTypeId) {
+      const leaveType = this.getLeaveType(this.leave.leaveType);
+      if (!leaveType.id) {
         throw new Error('Invalid leave type selected');
       }
 
       // First create the leave request without documents
       const leaveData = {
         employeeId: user.data.id,
-        leave_type_id: leaveTypeId,
+        leave_type_id: leaveType.id,
         start_date: this.leave.startDate.toISOString().split('T')[0],
         end_date: this.leave.endDate.toISOString().split('T')[0],
         comments: this.leave.comments || '',
         status: 'pending'
       };
+      var daysCount = this.leave.endDate.getTime() - this.leave.startDate.getTime();
+      daysCount = daysCount / (1000 * 60 * 60 * 24);
+      // prevent user from apply days that would exeed the leave balance
+      const leaveBalance = this.leaveBalances.find(b => b.leave_type === leaveType.description);
+      const errorMessage = `Leave balance not enough for ${leaveType.description}`;
+      if (!leaveBalance) {
+        this.showToast(errorMessage, 'error');
+        return;
+      }
+      if (daysCount > leaveBalance.balance_days) {
+
+        this.showToast(errorMessage, 'error');
+        return;
+      }
 
       // Create the leave request
       const response = await this.leaveService.createLeaveRequest(leaveData);
@@ -276,12 +322,12 @@ export class LeaveRequestComponent implements OnInit {
     this.calculatedDays = 0;
   }
 
-  getLeaveTypeId(leaveTypeName: string): string {
+  getLeaveType(leaveTypeName: string): any {
     const found = this.leaveTypes.find(t => t.description === leaveTypeName);
     if(found){
-      return found.id;
+      return found;
     }
-    return '';
+    return null;
   }
 
 }
