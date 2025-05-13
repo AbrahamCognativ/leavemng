@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate
 from app.models.leave_request import LeaveRequest
@@ -26,7 +26,7 @@ def list_leave_requests(db: Session = Depends(get_db), current_user=Depends(get_
     return [LeaveRequestRead.model_validate(req) for req in requests]
 
 @router.post("/", tags=["leave"], response_model=LeaveRequestRead)
-def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None):
     # Validate leave_type_id exists
     try:
         leave_type = db.query(LeaveType).filter(LeaveType.id == req.leave_type_id).first()
@@ -44,6 +44,10 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Duplicate leave request")
+
+    # Validate that end_date is the same as or after start_date
+    if req.end_date < req.start_date:
+        raise HTTPException(status_code=400, detail="End date must be the same as or after start date.")
 
     # Calculate total_days
     from datetime import timedelta, date, datetime as dt
@@ -84,7 +88,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
             entitlement = min(float(leave_type.default_allocation_days), 19)
 
         # 4. Calculate user's annual leave taken in their accrual year (from joining date)
-        from app.models.user import User
+        # from app.models.user import User
         user = db.query(User).filter(User.id == current_user.id).first()
         join_date = user.created_at.date() if hasattr(user.created_at, 'date') else user.created_at
         accrual_year_start = join_date.replace(year=today.year)
@@ -109,7 +113,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
         SICK_HALF_DAYS = 15
         SICK_TOTAL = SICK_FULL_DAYS + SICK_HALF_DAYS * 0.5
         # Calculate user's sick leave taken in accrual year
-        from app.models.user import User
+        # from app.models.user import User
         user = db.query(User).filter(User.id == current_user.id).first()
         join_date = user.created_at.date() if hasattr(user.created_at, 'date') else user.created_at
         today = date.today()
@@ -133,7 +137,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
         # This will be handled by a background job
     elif leave_code == "paternity":
         # Only available to male users
-        from app.models.user import User
+        # from app.models.user import User
         user = db.query(User).filter(User.id == current_user.id).first()
         if not user or user.gender != "male":
             raise HTTPException(status_code=400, detail="Paternity leave is only available to male employees.")
@@ -157,7 +161,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
             raise HTTPException(status_code=400, detail=f"Paternity leave request exceeds entitlement (14 days per year). You have already taken {taken_days} days.")
     elif leave_code == "maternity":
         # Only available to female users
-        from app.models.user import User
+        # from app.models.user import User
         user = db.query(User).filter(User.id == current_user.id).first()
         if not user or user.gender != "female":
             raise HTTPException(status_code=400, detail="Maternity leave is only available to female employees.")
@@ -181,7 +185,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
             raise HTTPException(status_code=400, detail=f"Maternity leave request exceeds entitlement (90 days per year). You have already taken {taken_days} days.")
     elif leave_code == "compassionate":
         # Compassionate: 10 days per quarter, based on start date's quarter
-        from app.models.user import User
+        # from app.models.user import User
         user = db.query(User).filter(User.id == current_user.id).first()
         COMPASSIONATE_DAYS = 10
         start = req.start_date
@@ -230,11 +234,46 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
             raise HTTPException(status_code=400, detail="Duplicate leave request")
         raise HTTPException(status_code=500, detail="Internal server error")
     # Send notification to approver (manager)
-    from app.utils.email import send_leave_request_notification
+    from app.utils.email_utils import send_leave_request_notification
     manager = db.query(User).filter(User.id == current_user.manager_id).first() if current_user.manager_id else None
     if manager:
-        leave_details = f"Type: {leave_type.code}, Start: {req.start_date}, End: {req.end_date}, Days: {total_days}"
-        send_leave_request_notification(manager.email, current_user.name, leave_details, request)
+        # Use LeaveType.description as the label if available, fallback to code label
+        LEAVE_TYPE_LABELS = {
+            "annual": "Annual Leave",
+            "sick": "Sick Leave",
+            "unpaid": "Unpaid Leave",
+            "compassionate": "Compassionate Leave",
+            "maternity": "Maternity Leave",
+            "paternity": "Paternity Leave",
+            "custom": "Custom Leave"
+        }
+        type_label = None
+        
+        # if not type_label:
+        code_value = getattr(leave_type, 'code', None)
+        if hasattr(code_value, 'value'):
+            code_value = code_value.value
+
+        if code_value == "custom":
+            type_label = getattr(leave_type, 'custom_code', None)
+        else:
+            type_label = LEAVE_TYPE_LABELS.get(code_value, str(code_value) if code_value else "Unknown")
+        
+        leave_details = {
+            "Type": type_label,
+            "Start Date": str(req.start_date),
+            "End Date": str(req.end_date),
+            "Days": total_days,
+            "Comments": req.comments or ""
+        }
+        send_leave_request_notification(
+            manager.email,
+            current_user.name,
+            leave_details,
+            request=request,
+            request_id=db_req.id,
+            requestor_email=current_user.email
+        )
     return LeaveRequestRead.model_validate(db_req)
 
 
@@ -276,13 +315,17 @@ def update_leave_request(request_id: UUID, req_update: LeaveRequestCreate, db: S
     return LeaveRequestRead.model_validate(req)
 
 @router.patch("/{request_id}/approve", tags=["leave"], response_model=LeaveRequestRead)
-def approve_leave_request(request_id: UUID,db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None ):
+def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None ):
     req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")
     sstt = req.status if hasattr(req.status, 'value') else str(req.status)
     if (sstt if not hasattr(req.status, 'value') else req.status.value) != "pending":
         raise HTTPException(status_code=400, detail="Only pending requests can be approved")
+    # Prevent self-approval, even for Admin/HR
+    if str(req.user_id) == str(current_user.id):
+        log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
+        raise HTTPException(status_code=403, detail="You cannot approve your own leave request.")
     if (current_user.role_band not in ("HR", "Admin") and current_user.role_title not in ("HR", "Admin") and str(req.user_id) != str(current_user.id)):
         log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
         raise HTTPException(status_code=403, detail="Only direct manager or HR/Admin can approve")
@@ -297,8 +340,60 @@ def approve_leave_request(request_id: UUID,db: Session = Depends(get_db), curren
         import logging
         logging.error(f"Error during leave approval DB commit: {e}")
         raise HTTPException(status_code=500, detail=f"Could not approve leave request: {e}")
+
+    from app.utils.email_utils import send_leave_approval_notification
+    user = db.query(User).filter(User.id == req.user_id).first()
+    leave_details = f"Type: {req.leave_type_id}, Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
+    try:
+        if user:
+            send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
+        log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
+    except Exception as e:
+        import logging
+        logging.error(f"Error sending approval email: {e}")
+    return LeaveRequestRead.model_validate(req)
+
+
+@router.patch("/{request_id}/reject", tags=["leave"], response_model=LeaveRequestRead)
+def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None ):
+    req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+    sstt = req.status if hasattr(req.status, 'value') else str(req.status)
+    if (sstt if not hasattr(req.status, 'value') else req.status.value) != "pending":
+        raise HTTPException(status_code=400, detail="Only pending requests can be rejected")
+    # Prevent self-rejection, even for Admin/HR
+    if str(req.user_id) == str(current_user.id):
+        log_permission_denied(db, current_user.id, "reject_leave_request", "leave_request", str(request_id))
+        raise HTTPException(status_code=403, detail="You cannot reject your own leave request.")
+    if (current_user.role_band not in ("HR", "Admin") and current_user.role_title not in ("HR", "Admin") and str(req.user_id) != str(current_user.id)):
+        log_permission_denied(db, current_user.id, "reject_leave_request", "leave_request", str(request_id))
+        raise HTTPException(status_code=403, detail="Only direct manager or HR/Admin can reject")
+    try:
+        req.status = 'rejected'
+        req.decision_at = datetime.now(timezone.utc)
+        req.decided_by = current_user.id
+        db.commit()
+        db.refresh(req)
+    except Exception as e:
+        db.rollback()
+        import logging
+        logging.error(f"Error during leave rejection DB commit: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not reject leave request: {e}")
+
+    from app.utils.email_utils import send_leave_approval_notification
+    user = db.query(User).filter(User.id == req.user_id).first()
+    leave_details = f"Type: {req.leave_type_id}, Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
+    try:
+        if user:
+            send_leave_approval_notification(user.email, leave_details, approved=False, request=request)
+        log_permission_denied(db, current_user.id, "reject_leave_request", "leave_request", str(request_id))
+    except Exception as e:
+        import logging
+        logging.error(f"Error sending rejection email: {e}")
+    return LeaveRequestRead.model_validate(req)
     
-    from app.utils.email import send_leave_approval_notification
+    from app.utils.email_utils import send_leave_approval_notification
     user = db.query(User).filter(User.id == req.user_id).first()
     leave_details = f"Type: {req.leave_type_id}, Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
     try:
