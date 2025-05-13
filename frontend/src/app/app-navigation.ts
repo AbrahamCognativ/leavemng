@@ -15,6 +15,10 @@ export const navigation = [
       {
         text: 'Leave History',
         path: '/leave/history',
+      },
+      {
+        text: 'Schedule',
+        path: '/leave/schedule',
       }
     ]
   },

@@ -1,0 +1,155 @@
+<div class="content">
+  <h2 class="content-header">Leave Schedule</h2>
+  <div class="dx-card">
+    <div class="schedule-container">
+      <!-- Loading Overlay -->
+      <div *ngIf="loading" class="loading-overlay">
+        <div class="loading-content">
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="loading-indicator" *ngIf="loading">
+        <dx-load-indicator [width]="40" [height]="40"></dx-load-indicator>
+        <span>Loading leave requests...</span>
+      </div>
+      
+      <!-- Month Selector -->
+      <div class="month-selector" *ngIf="!loading" style="margin-bottom: 20px; max-width: 200px;">
+        <dx-select-box
+          [items]="months"
+          displayExpr="name"
+          valueExpr="value"
+          [value]="currentMonth"
+          (onValueChanged)="onMonthChanged($event)">
+        </dx-select-box>
+      </div>
+      
+      <!-- Scheduler -->
+      <div class="scheduler-container" *ngIf="!loading">
+        <dx-scheduler
+          [dataSource]="leaveRequests"
+          [currentDate]="currentDate"
+          [views]="views"
+          [(currentView)]="currentView"
+          [height]="schedulerHeight"
+          [firstDayOfWeek]="1"
+          [startDayHour]="0"
+          [endDayHour]="24"
+          [showAllDayPanel]="false"
+          [showCurrentTimeIndicator]="true"
+          [indicatorUpdateInterval]="10000"
+          [shadeUntilCurrentTime]="true"
+          [adaptivityEnabled]="true"
+          (onAppointmentFormOpening)="onAppointmentFormOpening($event)">
+          
+          <dxo-scrolling mode="virtual"></dxo-scrolling>
+          
+          <dxo-toolbar>
+            <dxi-item widget="dxButton" location="before">
+              <dxo-button
+                icon="menu"
+                [stylingMode]="'text'"
+                (onClick)="toggleSidebar()">
+              </dxo-button>
+            </dxi-item>
+            <dxi-item name="today"></dxi-item>
+          </dxo-toolbar>
+          
+          <!-- Main appointment tooltip configuration -->
+          <dxo-appointment-tooltip 
+            [enabled]="true"
+            [showDeleteButton]="true"
+            (onShowing)="onTooltipShowing($event)">
+            <div *dxTemplate="let model='model' of 'tooltip'" class="appointment-tooltip">
+              <div class="tooltip-header">
+                <div class="tooltip-title">
+                  <i class="dx-icon dx-icon-event" style="margin-right: 8px;"></i>
+                  {{model.appointmentData.text || 'Leave Request'}}
+                </div>
+                <div class="tooltip-status" [ngClass]="'status-' + model.appointmentData.status">
+                  {{model.appointmentData.status | titlecase}}
+                </div>
+              </div>
+              <div class="tooltip-body">
+                <div class="tooltip-section">
+                  <div class="tooltip-row" *ngIf="model.appointmentData.employeeName">
+                    <i class="dx-icon dx-icon-user"></i>
+                    <div class="tooltip-details">
+                      <div class="tooltip-label">Employee</div>
+                      <div>{{model.appointmentData.employeeName}}</div>
+                    </div>
+                  </div>
+                  <div class="tooltip-row" *ngIf="model.appointmentData.employeeEmail">
+                    <i class="dx-icon dx-icon-email"></i>
+                    <div class="tooltip-details">
+                      <div class="tooltip-label">Email</div>
+                      <a [href]="'mailto:' + model.appointmentData.employeeEmail" class="tooltip-email">
+                        {{model.appointmentData.employeeEmail}}
+                      </a>
+                    </div>
+                  </div>
+                  <div class="tooltip-row" *ngIf="model.appointmentData.leaveType">
+                    <i class="dx-icon dx-icon-tags"></i>
+                    <div class="tooltip-details">
+                      <div class="tooltip-label">Leave Type</div>
+                      <div>{{model.appointmentData.leaveType}}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tooltip-section">
+                  <div class="tooltip-row">
+                    <i class="dx-icon dx-icon-clock"></i>
+                    <div class="tooltip-details">
+                      <div class="tooltip-label">Duration</div>
+                      <div>
+                        {{model.appointmentData.startDate | date:'mediumDate'}}
+                        <span *ngIf="!model.appointmentData.allDay">
+                          {{model.appointmentData.startDate | date:'shortTime'}}
+                        </span>
+                        <span *ngIf="model.appointmentData.endDate">
+                          - 
+                          <span *ngIf="!isSameDay(model.appointmentData.startDate, model.appointmentData.endDate)">
+                            {{model.appointmentData.endDate | date:'mediumDate'}}
+                          </span>
+                          <span *ngIf="!model.appointmentData.allDay">
+                            {{model.appointmentData.endDate | date:'shortTime'}}
+                          </span>
+                        </span>
+                        <span *ngIf="model.appointmentData.allDay"> (All Day)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tooltip-section" *ngIf="model.appointmentData.description">
+                  <div class="tooltip-row">
+                    <i class="dx-icon dx-icon-info"></i>
+                    <div class="tooltip-details">
+                      <div class="tooltip-label">Notes</div>
+                      <div class="tooltip-notes">{{model.appointmentData.description}}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </dxo-appointment-tooltip>
+          
+          <dxi-resource
+            fieldExpr="status"
+            [dataSource]="[
+              { id: 'pending', text: 'Pending', color: '#ffc107' },
+              { id: 'approved', text: 'Approved', color: '#28a745' },
+              { id: 'rejected', text: 'Rejected', color: '#dc3545' }
+            ]"
+            label="Status">
+          </dxi-resource>
+        </dx-scheduler>
+      </div>
+      
+      <div class="no-data-message" *ngIf="!loading && leaveRequests.length === 0">
+        <i class="dx-icon-calendar"></i>
+        <p>No leave requests found</p>
+      </div>
+    </div>
+  </div>
+</div>

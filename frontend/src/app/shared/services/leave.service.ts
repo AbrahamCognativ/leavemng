@@ -1,25 +1,130 @@
 // leave.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, retry } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+
+// Define interfaces for our data models
+interface UserDetails {
+  email: string;
+  full_name?: string;
+  [key: string]: any;
+}
+
+interface LeaveRequestData {
+  user_id?: string;
+  employee_email?: string;
+  employee_name?: string;
+  [key: string]: any;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class LeaveService {
   private apiUrl = environment.apiUrl;
+  private userCache = new Map<string, UserDetails>();
+  private cacheExpiry = 5 * 60 * 1000; // 5 minutes cache
+  private lastFetchTime = 0;
 
   constructor(private http: HttpClient) {}
 
-  // Get all leave requests
+  // Get all leave requests with enriched user data
   async getLeaveRequests(): Promise<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/leave`)
-      .pipe(
-        retry(1),
-        catchError(this.handleError)
-      ).toPromise() as Promise<any[]>;
+    try {
+      // Get all leave requests
+      const leaveRequests = await this.http.get<any[]>(`${this.apiUrl}/leave`)
+        .pipe(
+          retry(1),
+          catchError(this.handleError)
+        ).toPromise() as any[];
+
+      if (!leaveRequests) return [];
+
+      // Only refresh user cache if it's empty or expired
+      const now = Date.now();
+      if (this.userCache.size === 0 || (now - this.lastFetchTime) > this.cacheExpiry) {
+        await this.refreshUserCache(leaveRequests);
+        this.lastFetchTime = now;
+      }
+
+      // Enrich leave requests with cached user details
+      return this.enrichLeaveRequests(leaveRequests);
+
+    } catch (error) {
+      console.error('Error in getLeaveRequests:', error);
+      return [];
+    }
+  }
+
+  private async refreshUserCache(leaveRequests: LeaveRequestData[]): Promise<void> {
+    // Get unique user IDs and filter out undefined/null values
+    const userIds = Array.from(new Set(
+      leaveRequests
+        .map(req => req.user_id)
+        .filter((id): id is string => !!id)
+    ));
+    
+    if (userIds.length === 0) return;
+    
+    // Only fetch users that aren't in cache
+    const usersToFetch = userIds.filter(id => !this.userCache.has(id));
+    if (usersToFetch.length === 0) return;
+    
+    // Fetch user details in parallel
+    const userPromises = usersToFetch.map(async (userId: string) => {
+      try {
+        const user = await this.http.get<UserDetails>(`${this.apiUrl}/users/${userId}`)
+          .pipe(catchError(this.handleError))
+          .toPromise();
+        
+        if (user) {
+          this.userCache.set(userId, {
+            email: user.email,
+            full_name: user.full_name || `User ${userId.substring(0, 8)}`
+          });
+        }
+      } catch (error) {
+        console.error(`Error fetching user ${userId}:`, error);
+        // Add a fallback user to cache to prevent repeated failed requests
+        this.userCache.set(userId, {
+          email: `${userId}@example.com`,
+          full_name: `User ${userId.substring(0, 8)}`
+        });
+      }
+    });
+
+    await Promise.all(userPromises);
+  }
+
+  private enrichLeaveRequests(requests: LeaveRequestData[]): LeaveRequestData[] {
+    return requests.map(request => {
+      if (!request.user_id) {
+        return {
+          ...request,
+          employee_email: 'unknown@example.com',
+          employee_name: 'Unknown User'
+        };
+      }
+      
+      const user = this.userCache.get(request.user_id) || {
+        email: `${request.user_id}@example.com`,
+        full_name: `User ${request.user_id.substring(0, 8)}`
+      };
+      
+      return {
+        ...request,
+        employee_email: user.email,
+        employee_name: user.full_name
+      };
+    });
+  }
+
+  // Clear cache (can be called on logout or when needed)
+  clearUserCache(): void {
+    this.userCache.clear();
+    this.lastFetchTime = 0;
   }
 
   // Get leave request details
@@ -87,16 +192,24 @@ export class LeaveService {
       ).toPromise() as Promise<any>;
   }
 
-  // Create leave request with documents
+  // Create leave request with optional file upload
   async createLeaveRequest(data: FormData | any): Promise<any> {
-    const options = {
-      headers: data instanceof FormData ? new HttpHeaders() : new HttpHeaders({ 'Content-Type': 'application/json' })
-    };
-    return this.http.post<any>(`${this.apiUrl}/leave`, data, options)
-      .pipe(
-        retry(1),
-        catchError(this.handleError)
-      ).toPromise() as Promise<any>;
+    let requestData: any;
+    let headers: Record<string, string> = {};
+    
+    if (data instanceof FormData) {
+      // For FormData, let the browser set the Content-Type with boundary
+      requestData = data;
+    } else {
+      // For JSON data, set the Content-Type header
+      headers['Content-Type'] = 'application/json';
+      requestData = JSON.stringify(data);
+    }
+    
+    return this.http.post<any>(`${this.apiUrl}/leave`, requestData, { headers }).pipe(
+      retry(1),
+      catchError(this.handleError)
+    ).toPromise() as Promise<any>;
   }
 
   // Delete leave document
@@ -151,15 +264,6 @@ export class LeaveService {
         retry(1),
         catchError(this.handleError)
       ).toPromise() as Promise<any[]>;
-  }
-
-  // Create simple leave request (without documents)
-  async createSimpleLeaveRequest(leaveData: any): Promise<any> {
-    return this.http.post<any>(`${this.apiUrl}/leave`, leaveData)
-      .pipe(
-        retry(1),
-        catchError(this.handleError)
-      ).toPromise() as Promise<any>;
   }
 
   // Update leave request
