@@ -16,6 +16,7 @@ import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { DxiItemModule, DxoLabelModule, DxiValidationRuleModule } from 'devextreme-angular/ui/nested';
 import { DxToastModule } from 'devextreme-angular/ui/toast';
 import { BytesPipe } from '../../pipes/bytes.pipe';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-leave-request',
@@ -67,7 +68,8 @@ export class LeaveRequestComponent implements OnInit {
   constructor(
     private leaveService: LeaveService,
     private authService: AuthService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -245,6 +247,7 @@ export class LeaveRequestComponent implements OnInit {
         createdAt: new Date(),
         updatedAt: new Date()
       };
+      this.router.navigate(['/dashboard']);
     } catch (error: any) {
       let errorMessage = 'Error submitting leave request';
       if (error && typeof error === 'object' && 'detail' in error.error) {
