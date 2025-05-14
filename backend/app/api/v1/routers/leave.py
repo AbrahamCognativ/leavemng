@@ -26,7 +26,7 @@ def list_leave_requests(db: Session = Depends(get_db), current_user=Depends(get_
     return [LeaveRequestRead.model_validate(req) for req in requests]
 
 @router.post("/", tags=["leave"], response_model=LeaveRequestRead)
-def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None):
     # Validate leave_type_id exists
     try:
         leave_type = db.query(LeaveType).filter(LeaveType.id == req.leave_type_id).first()

@@ -243,24 +243,22 @@ export class LeaveService {
       ).toPromise() as Promise<any>;
   }
 
-  // Create leave request with optional file upload
-  async createLeaveRequest(data: FormData | any): Promise<any> {
-    let requestData: any;
-    let headers: Record<string, string> = {};
+  // Create leave request (JSON data only)
+  async createLeaveRequest(data: any): Promise<any> {
+    console.log('Creating leave request with data:', data);
     
-    if (data instanceof FormData) {
-      // For FormData, let the browser set the Content-Type with boundary
-      requestData = data;
-    } else {
-      // For JSON data, set the Content-Type header
-      headers['Content-Type'] = 'application/json';
-      requestData = JSON.stringify(data);
-    }
+    // Always use application/json for leave requests
+    const headers = { 'Content-Type': 'application/json' };
     
-    return this.http.post<any>(`${this.apiUrl}/leave`, requestData, { headers }).pipe(
-      retry(1),
-      catchError(this.handleError)
-    ).toPromise() as Promise<any>;
+    // Don't stringify the data - Angular's HttpClient will do it automatically
+    // when Content-Type is application/json
+    return this.http.post<any>(`${this.apiUrl}/leave`, data, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error('Leave request creation error:', error);
+          return this.handleError(error);
+        })
+      ).toPromise() as Promise<any>;
   }
 
   // Delete leave document
@@ -335,12 +333,36 @@ export class LeaveService {
 
   // Upload leave document
   async uploadLeaveDocument(requestId: string, file: File): Promise<any> {
+    // Create form data object with the file
     const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<any>(`${this.apiUrl}/files/upload/${requestId}`, formData)
-      .pipe(
-        catchError(this.handleError)
-      ).toPromise() as Promise<any>;
+    
+    // IMPORTANT: The parameter name 'file' must match what the backend expects
+    // This is defined in the FastAPI endpoint as 'file: UploadFile = File(...)'
+    formData.append('file', file, file.name);
+    
+    console.log(`Uploading file '${file.name}' (${file.size} bytes) to request ${requestId}`);
+    console.log(`Upload URL: ${this.apiUrl}/files/upload/${requestId}`);
+    
+    // Don't set Content-Type header - browser will set it with correct boundary
+    try {
+      const response = await this.http.post<any>(`${this.apiUrl}/files/upload/${requestId}`, formData, {
+        // Important: Don't set Content-Type here, let the browser set it with the correct boundary
+        // But we do need to include the Authorization header
+        headers: this.getAuthHeaders()
+      }).toPromise();
+      
+      console.log('Document upload response:', response);
+      return response;
+    } catch (error) {
+      console.error('Document upload error:', error);
+      throw error;
+    }
+  }
+  
+  // Helper method to get auth headers
+  private getAuthHeaders(): Record<string, string> {
+    const token = localStorage.getItem('token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 
   // Get leave documents
