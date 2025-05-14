@@ -1,0 +1,182 @@
+<div class="leave-types-container">
+  <dx-load-indicator *ngIf="isLoading"></dx-load-indicator>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Leave Types</h2>
+      <dx-button
+        text="Add Leave Type"
+        type="default"
+        stylingMode="contained"
+        (onClick)="onTypeAdd()">
+      </dx-button>
+    </div>
+
+    <dx-data-grid
+      [dataSource]="leaveTypes"
+      [showBorders]="true"
+      [columnAutoWidth]="true"
+      [rowAlternationEnabled]="true">
+      <dxo-paging [pageSize]="5"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
+      <dxi-column dataField="description"  caption="Description"></dxi-column>
+      <dxi-column dataField="default_allocation_days" caption="Default Days" dataType="number"></dxi-column>
+      <dxi-column caption="Actions" [width]="120" [allowFiltering]="false" [allowSorting]="false" cellTemplate="actionsTemplate">
+        <div *dxTemplate="let cell of 'actionsTemplate'">
+          <div class="action-buttons">
+            <button class="action-btn edit-btn" (click)="onTypeEdit({data: cell.data})">
+              <i class="dx-icon-edit"></i>
+            </button>
+          </div>
+        </div>
+      </dxi-column>
+    </dx-data-grid>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Leave Policies</h2>
+      <dx-button
+        text="Add Policy"
+        type="default"
+        stylingMode="contained"
+        (onClick)="onPolicyAdd()">
+      </dx-button>
+    </div>
+
+    <dx-data-grid
+      [dataSource]="leavePolicies"
+      [showBorders]="true"
+      [columnAutoWidth]="true"
+      [rowAlternationEnabled]="true">
+      <dxo-paging [pageSize]="5"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
+      <dxi-column
+        dataField="org_unit_id"
+        caption="Organization Unit"
+        [calculateCellValue]="getOrgUnitName">
+      </dxi-column>
+      <dxi-column
+        dataField="leave_type_id"
+        caption="Leave Type"
+        [calculateCellValue]="getLeaveTypeName">
+      </dxi-column>
+      <dxi-column dataField="allocation_days_per_year" caption="Days/Year" dataType="number"></dxi-column>
+      <dxi-column dataField="accrual_frequency" caption="Accrual Frequency"></dxi-column>
+      <dxi-column dataField="accrual_amount_per_period" caption="Amount/Period" dataType="number"></dxi-column>
+      <dxi-column caption="Actions" [width]="120" [allowFiltering]="false" [allowSorting]="false" cellTemplate="actionsTemplate">
+      </dxi-column>
+      <div *dxTemplate="let cell of 'actionsTemplate'">
+        <div class="action-buttons">
+          <button class="action-btn edit-btn" (click)="onPolicyEdit({data: cell.data})">
+            <i class="dx-icon-edit"></i>
+          </button>
+        </div>
+      </div>
+    </dx-data-grid>
+  </div>
+
+  <!-- Leave Type Form Popup -->
+  <dx-popup
+  [visible]="isTypePopupVisible"
+  [showTitle]="true"
+  [title]="selectedType ? 'Edit Leave Type' : 'Add Leave Type'"
+  [width]="400"
+  [height]="360"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="true"
+  (onHiding)="isTypePopupVisible = false"
+  [toolbarItems]="[{
+    widget: 'dxButton',
+    toolbar: 'bottom',
+    location: 'after',
+    options: {
+      text: selectedType ? 'Update' : 'Save',
+      type: 'default',
+      stylingMode: 'contained',
+      onClick: saveType
+    }
+  }]">
+
+  <dx-form
+    [formData]="typeFormData"
+    labelLocation="top"
+    [showColonAfterLabel]="true">
+    <dxi-item dataField="code" editorType="dxSelectBox" [editorOptions]="{ dataSource: availableCodes, displayExpr: 'text', valueExpr: 'value' }"></dxi-item>
+    <dxi-item dataField="description" editorType="dxTextBox"></dxi-item>
+    <dxi-item dataField="default_allocation_days" editorType="dxNumberBox"></dxi-item>
+  </dx-form>
+
+</dx-popup>
+
+  <!-- Leave Policy Form Popup -->
+  <dx-popup
+  [visible]="isPolicyPopupVisible"
+  [showTitle]="true"
+  [title]="selectedPolicy ? 'Edit Leave Policy' : 'Add Leave Policy'"
+  [width]="400"
+  [height]="400"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="true"
+  (onHiding)="isPolicyPopupVisible = false"
+  [toolbarItems]="[{
+    widget: 'dxButton',
+    toolbar: 'bottom',
+    location: 'after',
+    options: {
+      text: 'Save',
+      type: 'default',
+      stylingMode: 'contained',
+      onClick: savePolicy
+    }
+  }]">
+
+  <dx-form
+    [formData]="policyFormData"
+    labelLocation="top"
+    [showColonAfterLabel]="true">
+    <dxi-item
+      dataField="org_unit_id"
+      editorType="dxSelectBox"
+      [editorOptions]="{
+        dataSource: orgUnits,
+        displayExpr: 'name',
+        valueExpr: 'id'
+      }">
+    </dxi-item>
+
+    <dxi-item
+      dataField="leave_type_id"
+      editorType="dxSelectBox"
+      [editorOptions]="{
+        dataSource: leaveTypes,
+        displayExpr: 'description',
+        valueExpr: 'id'
+      }">
+    </dxi-item>
+
+    <dxi-item dataField="allocation_days_per_year" editorType="dxNumberBox"></dxi-item>
+
+    <dxi-item
+      dataField="accrual_frequency"
+      editorType="dxSelectBox"
+      [editorOptions]="{
+        dataSource: accrualFrequencies,
+        displayExpr: 'text',
+        valueExpr: 'id'
+      }">
+    </dxi-item>
+
+    <dxi-item dataField="accrual_amount_per_period" editorType="dxNumberBox"></dxi-item>
+  </dx-form>
+
+</dx-popup>
+</div>

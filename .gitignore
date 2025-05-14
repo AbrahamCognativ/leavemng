@@ -92,6 +92,8 @@ Desktop.ini
 
 # Ignore test outputs
 test-output/
+# Ignore Editor Files
+.idea
 
 # Ignore uploads folder and its contents (images, documents, etc.)
 app/api/uploads/

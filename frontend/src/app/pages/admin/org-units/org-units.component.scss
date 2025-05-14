@@ -1,0 +1,68 @@
+.org-units-container {
+    padding: 20px;
+    
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    
+    .toolbar {
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    dx-load-indicator {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+    }
+    
+    .popup-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 16px;
+
+
+        dx-button{
+            margin-right: 10px;
+        }
+    }
+  
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+  
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+  
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+  
+      &.edit-btn {
+        color: #3498db;
+      }
+  
+      &.delete-btn {
+        color: #e74c3c;
+      }
+  
+      .dx-icon-edit, .dx-icon-trash {
+        font-size: 18px;
+      }
+    }
+  }

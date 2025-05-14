@@ -1,0 +1,122 @@
+.employee-invite-container {
+  padding: 20px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.section {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  
+  &.full-width {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+.users-section {
+  margin-top: 30px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.form-header {
+  margin-bottom: 20px;
+}
+
+.form-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.full-width-form {
+  width: 100%;
+  
+  ::ng-deep .dx-layout-manager .dx-field-item {
+    padding: 10px 15px;
+  }
+  
+  ::ng-deep .form-section-title {
+    background-color: #f8f9fa;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    
+    .section-title-text h3 {
+      margin: 0;
+      padding: 10px 15px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.success-message {
+  padding: 10px;
+  background-color: rgba(92, 184, 92, 0.1);
+  border-left: 4px solid #5cb85c;
+  margin: 10px 0;
+}
+
+.error-message {
+  padding: 10px;
+  background-color: rgba(217, 83, 79, 0.1);
+  border-left: 4px solid #d9534f;
+  margin: 10px 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.popup-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.confirm-message {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.status-active {
+  color: #5cb85c;
+  font-weight: 500;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(92, 184, 92, 0.1);
+}
+
+.status-inactive {
+  color: #d9534f;
+  font-weight: 500;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(217, 83, 79, 0.1);
+}

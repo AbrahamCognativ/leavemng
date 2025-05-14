@@ -1,0 +1,74 @@
+<div class="dashboard-container">
+  <dx-load-indicator *ngIf="isLoading" width="60" height="60"></dx-load-indicator>
+
+  <div class="stats-grid" *ngIf="!isLoading">
+    <div class="stat-card">
+      <h3>Pending Leaves</h3>
+      <div class="stat-value">{{pendingLeaves}}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Approved Leaves</h3>
+      <div class="stat-value">{{approvedLeaves}}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Rejected Leaves</h3>
+      <div class="stat-value">{{rejectedLeaves}}</div>
+    </div>
+  </div>
+  <div class="dashboard-grid" *ngIf="!isLoading">
+<!--
+
+    <div class="chart-container">
+      <dx-pie-chart
+        id="leaveTypeChart"
+        [dataSource]="leaveTypeCounts"
+        [legend]="{ visible: true, customizeText: customizeLeaveTypeText }"
+        [title]="{ text: 'Leave Type Distribution' }">
+        <dxi-series
+          argumentField="type"
+          valueField="count">
+        </dxi-series>
+      </dx-pie-chart>
+    </div>
+    -->
+
+    <div class="leave-requests-container">
+      <h3>My Leave Requests</h3>
+      <dx-data-grid
+        [dataSource]="leaveRequests"
+        [showBorders]="true"
+        [columnAutoWidth]="true"
+        (onRowClick)="onRowClick($event)">
+        <dxo-paging [pageSize]="10"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
+        <dxi-column dataField="leave_type_description" caption="Leave Type"></dxi-column>
+        <dxi-column dataField="start_date" caption="Start Date" dataType="date"></dxi-column>
+        <dxi-column dataField="end_date" caption="End Date" dataType="date"></dxi-column>
+        <dxi-column dataField="total_days" caption="Days"></dxi-column>
+        <dxi-column dataField="status" caption="Status">
+          <dxo-lookup
+            [dataSource]="['pending', 'approved', 'rejected']"
+            displayExpr="status">
+          </dxo-lookup>
+        </dxi-column>
+      </dx-data-grid>
+    </div>
+<!--
+    <div class="leave-balances-container">
+      <h3>Leave Balances</h3>
+      <dx-data-grid
+        [dataSource]="leaveBalances"
+        [showBorders]="true"
+        [columnAutoWidth]="true">
+        <dxi-column dataField="leave_type.description" caption="Leave Type"></dxi-column>
+        <dxi-column dataField="balance_days" caption="Available Days"></dxi-column>
+        <dxi-column dataField="updated_at" caption="Last Updated" dataType="datetime"></dxi-column>
+      </dx-data-grid>
+    </div>
+  </div>
+  -->
+</div>

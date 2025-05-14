@@ -15,6 +15,7 @@ class UserBase(BaseModel):
     org_unit_id: Optional[UUID] = None
     is_active: Optional[bool] = True 
     extra_metadata : Optional[Any] = None
+    is_active: Optional[bool] = True  # Default to active
 
 class UserCreate(UserBase):
     password: str
@@ -36,4 +37,5 @@ class UserUpdate(BaseModel):
     org_unit_id: Optional[UUID] = None
     extra_metadata: Optional[Any] = None
     password: Optional[str] = None
+    is_active: Optional[bool] = None
     # email is intentionally omitted to prevent editing

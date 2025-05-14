@@ -1,0 +1,178 @@
+<div class="leave-request-container">
+  <div class="page-header">
+    <h2>New Leave Request</h2>
+    <p class="subtitle">Fill out the form below to submit your leave request</p>
+  </div>
+
+  <div class="content-wrapper">
+    <!-- Left Column: Main Form -->
+    <div class="form-section">
+      <dx-form [formData]="leave" [colCount]="1">
+        <!-- Leave Type Selection -->
+        <dxi-item
+          dataField="leaveType"
+          editorType="dxSelectBox"
+          [editorOptions]="{
+            items: leaveTypesDescription,
+            placeholder: 'Select leave type',
+            searchEnabled: true,
+            showClearButton: true
+          }">
+          <dxo-label text="Leave Type" showRequiredMark="true"></dxo-label>
+          <dxi-validation-rule type="required" message="Please select a leave type"></dxi-validation-rule>
+        </dxi-item>
+
+        <!-- Date Selection -->
+        <dxi-item [colSpan]="1">
+          <div *dxTemplate>
+            <div class="date-range-container">
+              <div class="date-field">
+                <label class="required">Start Date</label>
+                <dx-date-box
+                  [(value)]="leave.startDate"
+                  type="date"
+                  displayFormat="dd/MM/yyyy"
+                  [min]="minDate"
+                  (onValueChanged)="calculateWorkingDays()">
+                </dx-date-box>
+              </div>
+              <div class="date-field">
+                <label class="required">End Date</label>
+                <dx-date-box
+                  [(value)]="leave.endDate"
+                  type="date"
+                  displayFormat="dd/MM/yyyy"
+                  [min]="leave.startDate || minDate"
+                  (onValueChanged)="calculateWorkingDays()">
+                </dx-date-box>
+              </div>
+            </div>
+            <div class="calculated-days" *ngIf="calculatedDays > 0">
+              <i class="dx-icon-info"></i>
+              <span>This request covers {{ calculatedDays }} working day{{ calculatedDays > 1 ? 's' : '' }}</span>
+            </div>
+          </div>
+        </dxi-item>
+
+        <!-- Reason -->
+        <dxi-item
+          dataField="comments"
+          editorType="dxTextArea"
+          [editorOptions]="{
+            height: 100,
+            placeholder: 'Please provide details about your leave request',
+            maxLength: 500
+          }">
+          <dxo-label text="Reason for Leave" showRequiredMark="true"></dxo-label>
+          <dxi-validation-rule type="required" message="Please provide a reason for your leave request"></dxi-validation-rule>
+        </dxi-item>
+
+        <!-- Document Upload -->
+        <dxi-item [colSpan]="1">
+          <div *dxTemplate>
+            <div class="document-section">
+              <h3>Supporting Documents</h3>
+              <p class="section-description">Upload any relevant documents to support your leave request</p>
+
+              <dx-file-uploader
+                selectButtonText="Choose Files"
+                labelText="Drag files here or click to browse"
+                accept=".pdf,.doc,.docx,.jpg,.png"
+                [multiple]="true"
+                [showFileList]="true"
+                [(value)]="uploadedFiles"
+                (onValueChanged)="onFileUploaded($event)"
+                uploadMode="useForm"
+                [maxFileSize]="5242880">
+              </dx-file-uploader>
+
+              <div class="document-hints">
+                <i class="dx-icon-info"></i>
+                <div class="hints-content">
+                  <p>Accepted formats: PDF, DOC, DOCX, JPG, PNG</p>
+                  <p>Maximum file size: 5MB per file</p>
+                  <p *ngIf="leave.leaveType && leave.leaveType.toLowerCase().includes('sick')">
+                    For sick leave requests, please attach a doctor's note or medical certificate
+                  </p>
+                </div>
+              </div>
+
+              <!-- Document List -->
+              <div class="document-list" *ngIf="leave.documents && leave.documents.length > 0">
+                <div class="document-item d-flex align-items-center justify-content-between py-3 px-4 bg-light border-bottom" *ngFor="let document of leave.documents; let i = index">
+                  <div class="document-info d-flex align-items-center">
+                    <span class="document-name me-4 text-break" style="flex: 1; min-width: 200px; max-width: 350px;">{{ document.name }}</span>
+                    <span class="document-size me-4 text-nowrap text-muted">{{ document.size | bytes }}</span>
+                    <span class="document-type me-4 text-nowrap text-muted">{{ document.fileType }}</span>
+                  </div>
+                  <div class="document-actions">
+                    <button class="download-btn btn btn-icon mx-2" (click)="downloadDocument(document)">
+                      <i class="dx-icon-download"></i>
+                    </button>
+                    <button class="remove-btn btn btn-icon mx-2 bg-danger" (click)="removeDocument(i)" *ngIf="!leave.id">
+                      <i class="dx-icon-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </dxi-item>
+
+        <!-- Submit Buttons -->
+        <dxi-item [colSpan]="1">
+          <div *dxTemplate>
+            <div class="form-actions">
+              <dx-button
+                text="Reset Form"
+                type="normal"
+                stylingMode="outlined"
+                [width]="120"
+                (onClick)="resetForm()">
+              </dx-button>
+              <dx-button
+                [text]="submitting ? 'Submitting...' : 'Submit Request'"
+                type="default"
+                [width]="150"
+                [disabled]="submitting"
+                (onClick)="onSubmit()">
+              </dx-button>
+            </div>
+          </div>
+        </dxi-item>
+      </dx-form>
+    </div>
+
+    <!-- Right Column: Leave Balance -->
+    <div class="sidebar-section">
+      <div class="leave-balance-card">
+        <h3>Your Leave Balance</h3>
+        <div class="balance-list">
+          <div class="balance-item" *ngFor="let balance of leaveBalances">
+            <div class="balance-header">
+              <span class="balance-type">{{ balance.leave_type }}</span>
+              <span class="balance-status" [ngClass]="{'low-balance': balance.balance_days < 5}">
+                {{ balance.balance_days }} days left
+                <span *ngIf="balance.balance_days < 5">⚠️</span>
+                <span *ngIf="balance.balance_days >= 5 && balance.balance_days < 10">🟡</span>
+                <span *ngIf="balance.balance_days >= 10">🟢</span>
+              </span>
+            </div>
+            <div class="balance-total">
+              Total: {{ balance.total_days }} days
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<dx-toast
+  [visible]="toastVisible"
+  [message]="toastMessage"
+  [type]="toastType"
+  [displayTime]="5000"
+  (onHidden)="toastVisible = false">
+</dx-toast>

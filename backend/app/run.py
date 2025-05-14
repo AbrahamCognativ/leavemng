@@ -1,12 +1,16 @@
 from fastapi import FastAPI
 from importlib import import_module
 from app.settings import get_settings
+from fastapi.staticfiles import StaticFiles
+import os
+from pathlib import Path
 
 # Load environment-specific settings
 settings = get_settings()
 
 # Make settings available globally via app.state
 
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, SecuritySchemeType
 from fastapi import Security
@@ -41,6 +45,22 @@ app = FastAPI(
 app.state.settings = settings
 # Usage: from fastapi import Request; settings = request.app.state.settings
 
+origins = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    "http://localhost:4200/"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    ## expose_headers=["Content-Length", "Content-Type", "*"],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight responses for 10 minutes
+)
 # Add a global dependency to require Authorization except for /login
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -74,6 +94,21 @@ def include_routers():
 
 
 include_routers()
+
+# Mount uploads directory as static files
+try:
+    # Get the path to the uploads directory
+    from app.api.v1.routers.files import UPLOAD_DIR
+    uploads_path = Path(UPLOAD_DIR)
+    
+    # Create the directory if it doesn't exist
+    os.makedirs(uploads_path, exist_ok=True)
+    
+    # Mount the directory to serve static files
+    app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+    print(f"[INFO] Mounted uploads directory: {uploads_path}")
+except Exception as e:
+    print(f"[WARN] Could not mount uploads directory: {e}")
 
 # Start the leave accrual scheduler (monthly)
 try:

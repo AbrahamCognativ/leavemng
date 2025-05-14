@@ -19,6 +19,14 @@ class LeaveRequestBase(BaseModel):
 class LeaveRequestCreate(LeaveRequestBase):
     pass
 
+class LeaveRequestUpdate(LeaveRequestBase):
+    status: Optional[LeaveStatusEnum] = None
+    applied_at: Optional[datetime] = None
+    user_id: Optional[UUID] = None
+    total_days: Optional[float] = None
+    decision_at: Optional[datetime] = None
+    decided_by: Optional[UUID] = None
+
 class LeaveRequestRead(LeaveRequestBase):
     id: UUID
     status: LeaveStatusEnum
@@ -26,6 +34,7 @@ class LeaveRequestRead(LeaveRequestBase):
     total_days: float
     user_id: UUID
     decided_at: Optional[datetime] = None
+    decision_at: Optional[datetime] = None
     decided_by: Optional[UUID] = None
     comments: Optional[str] = None
 

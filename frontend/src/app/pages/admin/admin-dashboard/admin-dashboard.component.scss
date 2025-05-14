@@ -1,0 +1,65 @@
+.content-block {
+  padding: 20px;
+}
+
+.dx-card {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    margin-bottom: 20px;
+    color: #333;
+  }
+}
+
+.statistics-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 6px;
+  text-align: center;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  h3 {
+    margin: 0 0 10px 0;
+    color: #666;
+    font-size: 14px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+  }
+}
+
+.recent-requests {
+  margin-top: 30px;
+
+  h3 {
+    margin-bottom: 15px;
+    color: #333;
+  }
+}
+
+::ng-deep {
+  .dx-datagrid {
+    .dx-row {
+      &:hover {
+        background-color: #f8f9fa;
+      }
+    }
+  }
+} 

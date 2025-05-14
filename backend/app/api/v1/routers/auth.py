@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -12,6 +12,8 @@ from datetime import timezone
 from app.settings import get_settings
 from uuid import UUID
 from app.deps.permissions import get_current_user, require_role
+from fastapi import Request
+
 
 router = APIRouter()
 
@@ -21,6 +23,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user: UserRead
 
 class InviteRequest(BaseModel):
     email: EmailStr
@@ -57,7 +60,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         }
     token = jwt.encode(claims, get_settings().SECRET_KEY, algorithm=ALGORITHM)
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer", "user": UserRead.from_orm(user)}
 
 # Dummy permission dependency for HR/Admin
 from fastapi import Security
