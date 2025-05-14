@@ -68,6 +68,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 class AuthRequiredMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # Allow OPTIONS requests for CORS preflight
+        if request.method == "OPTIONS":
+            return await call_next(request)
+            
         if (request.url.path.startswith("/api/v1/auth/login") 
         or request.url.path.startswith("/docs") 
         or request.url.path.startswith("/openapi") 
