@@ -13,7 +13,6 @@ import { UserService, IUser } from '../../../shared/services/user.service';
 interface NewEmployee {
   name: string;
   email: string;
-  password: string;
   role_band: string;
   role_title: string;
   passport_or_id_number: string;
@@ -52,7 +51,6 @@ export class EmployeeInviteComponent implements OnInit {
   newEmployee: NewEmployee = {
     name: '',
     email: '',
-    password: '',
     role_band: '',
     role_title: '',
     passport_or_id_number: '',
@@ -228,7 +226,6 @@ export class EmployeeInviteComponent implements OnInit {
           this.newEmployee = {
             name: '',
             email: '',
-            password: '',
             role_band: '',
             role_title: '',
             passport_or_id_number: '',

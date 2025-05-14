@@ -51,13 +51,11 @@
     </dxi-item>
     
     <!-- Second Row -->
-    <dxi-item dataField="password" [isRequired]="true" editorType="dxTextBox" [editorOptions]="{ mode: 'password' }">
-      <dxi-validation-rule type="required" message="Password is required"></dxi-validation-rule>
-    </dxi-item>
-    
     <dxi-item dataField="gender" editorType="dxSelectBox" [editorOptions]="{ items: genderOptions }" [isRequired]="true">
       <dxi-validation-rule type="required" message="Gender is required"></dxi-validation-rule>
     </dxi-item>
+    
+    <dxi-item itemType="empty"></dxi-item>
     
     <dxi-item itemType="empty"></dxi-item>
     
