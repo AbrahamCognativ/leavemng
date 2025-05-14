@@ -49,12 +49,13 @@ def send_email(subject: str, body: str, to_emails: list[str], request: Request, 
 
 from app.settings import get_settings
 
-def send_invite_email(to_email: str, invite_link: str, request: Request):
-    subject = "You're Invited to Leave Management System"
+def send_invite_email(to_email: str, to_name: str, invite_link: str, password: str, request: Request):
+    subject = "Invite - Welcome to Cognativ Technology Ltd"
     body = (
-        f"Hello,\n\n"
+        f"Hello {to_name},\n\n"
         f"You have been invited to join the Leave Management System.\n"
-        f"Please use the following link to register:\n{invite_link}\n\nBest Regards."
+        f"Please use the following link to register:\n{invite_link}\n\n"
+        f"Your temporary password is: {password}\n\nBest Regards."
     )
     html = f"""
     <html>
@@ -68,6 +69,9 @@ def send_invite_email(to_email: str, invite_link: str, request: Request):
         <a href='{invite_link}' style='display: inline-block; margin: 24px 0 8px 0; padding: 12px 32px; background: #2d6cdf; color: #fff; border-radius: 4px; text-decoration: none; font-size: 16px; font-weight: bold;'>
           Accept Invitation
         </a>
+        <p style='font-size: 15px; color: #333; margin-top: 24px;'>
+          <b>Your temporary password is:</b> <span style='background:#f4f4f4; padding:4px 8px; border-radius:4px; font-family:monospace;'>{password}</span>
+        </p>
         <p style='font-size: 13px; color: #888; margin-top: 16px;'>
           If the button above doesn't work, copy and paste this link into your browser:<br>
           <a href='{invite_link}' style='color: #2d6cdf;'>{invite_link}</a>

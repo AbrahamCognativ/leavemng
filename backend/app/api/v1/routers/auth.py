@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.user import User
+from app.models.password_reset_invite_token import PasswordResetInviteToken
 from app.utils.password import hash_password, verify_password
 from app.schemas.user import UserRead
 from pydantic import BaseModel, EmailStr
@@ -19,6 +20,15 @@ router = APIRouter()
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+# --- SCHEMA FOR PASSWORD RESET VIA INVITE TOKEN ---
+class PasswordResetInviteRequest(BaseModel):
+    token: str
+    old_password: str
+    new_password: str
+
+class PasswordResetInviteResponse(BaseModel):
+    message: str
 
 class Token(BaseModel):
     access_token: str
@@ -126,10 +136,15 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
                 org_unit_id = field_value
     # Require gender, default to 'male' if not provided
     gender = getattr(invite, 'gender', None) or 'male'
+    import secrets
+    import string
+    # Securely generate a random password
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    random_password = ''.join(secrets.choice(alphabet) for _ in range(12))
     user = User(
         name=invite.name,
         email=invite.email,
-        hashed_password=hash_password("secret123"),  # In real app, generate/send temp password
+        hashed_password=hash_password(random_password),
         role_band=invite.role_band,
         role_title=invite.role_title,
         passport_or_id_number=invite.passport_or_id_number,
@@ -145,8 +160,18 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     from app.settings import get_settings
     settings = get_settings()
     base_url = settings.REGISTER_URL.rstrip('/')
-    invite_link = f"{base_url}/register?email={user.email}"
-    send_invite_email(user.email, invite_link, request=request)
+    # --- Password Reset Invite Token Generation ---
+    import secrets
+    from datetime import datetime, timedelta
+    from app.models.password_reset_invite_token import PasswordResetInviteToken
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=24)  # 24 hour expiry
+    reset_token = PasswordResetInviteToken(user_id=user.id, token=token, expires_at=expires_at)
+    db.add(reset_token)
+    db.commit()
+    # Invite link with token
+    invite_link = f"{base_url}/register?email={user.email}&token={token}"
+    send_invite_email(user.email, user.name, invite_link, random_password, request=request)
     return UserRead.from_orm(user)
 
 @router.post("/logout", tags=["auth"])
@@ -167,3 +192,23 @@ def logout(current_user: User = Depends(get_current_user), db: Session = Depends
     )
     
     return {"detail": "Successfully logged out"}
+
+# --- ENDPOINT FOR FIRST-TIME PASSWORD RESET ---
+@router.post("/reset-password-invite", tags=["auth"], response_model=PasswordResetInviteResponse)
+def reset_password_invite(data: PasswordResetInviteRequest, db: Session = Depends(get_db)):
+    reset_token = db.query(PasswordResetInviteToken).filter(PasswordResetInviteToken.token == data.token).first()
+    if not reset_token:
+        raise HTTPException(status_code=400, detail="Invalid or expired token.")
+    if reset_token.used:
+        raise HTTPException(status_code=400, detail="Token has already been used.")
+    if reset_token.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Token has expired.")
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if not verify_password(data.old_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect password, Check your email and input it correctly.")
+    user.hashed_password = hash_password(data.new_password)
+    reset_token.used = True
+    db.commit()
+    return PasswordResetInviteResponse(status_code=200, message="Password has been reset. You can now log in.")

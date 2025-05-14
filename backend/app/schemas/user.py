@@ -27,6 +27,9 @@ class UserRead(UserBase):
     model_config = {"from_attributes": True}
 
 class UserUpdate(BaseModel):
+    """
+    Standard user update schema. For first-time password reset via invite, use the /reset-password-invite endpoint.
+    """
     name: Optional[str] = None
     role_band: Optional[str] = None
     role_title: Optional[str] = None

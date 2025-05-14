@@ -68,7 +68,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 class AuthRequiredMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        if request.url.path.startswith("/api/v1/auth/login") or request.url.path.startswith("/docs") or request.url.path.startswith("/openapi") or request.url.path.startswith("/redoc"):
+        if (request.url.path.startswith("/api/v1/auth/login") 
+        or request.url.path.startswith("/docs") 
+        or request.url.path.startswith("/openapi") 
+        or request.url.path.startswith("/redoc")
+        or request.url.path.startswith("/api/v1/auth/reset-password-invite")
+        ):
             return await call_next(request)
         # Only require token for API routes
         if request.url.path.startswith("/api/v1/"):
