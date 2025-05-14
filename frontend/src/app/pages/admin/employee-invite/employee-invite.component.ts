@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../shared/services';
 import { UserService, IUser } from '../../../shared/services/user.service';
+import { environment } from '../../../../environments/environment';
 
 interface NewEmployee {
   name: string;
@@ -76,8 +77,8 @@ export class EmployeeInviteComponent implements OnInit {
   userToDelete: IUser | null = null;
   
   colCountByScreen: object;
-  baseUrl: string = 'http://localhost:8000';
-  apiVersion: string = 'v1';
+  baseUrl: string = environment.apiUrl
+  // apiVersion: string = 'v1';
 
   constructor(
     private http: HttpClient,
@@ -126,7 +127,7 @@ export class EmployeeInviteComponent implements OnInit {
   }
 
   getApiUrl(endpoint: string): string {
-    return `${this.baseUrl}/api/${this.apiVersion}/${endpoint}`;
+    return `${this.baseUrl}/${endpoint}`;
   }
 
   fetchManagers(): void {
