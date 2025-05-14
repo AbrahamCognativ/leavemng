@@ -12,8 +12,10 @@ from app.schemas.audit_log import AuditLogResponse, AuditLogListResponse
 from app.models.user import User
 
 router = APIRouter()
+from app.deps.permissions import require_role
+from fastapi import Depends
 
-@router.get("", response_model=AuditLogListResponse)
+@router.get("", response_model=AuditLogListResponse, tags=["audit-logs"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def get_audit_logs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -159,7 +161,7 @@ def get_audit_logs(
             detail=f"Error retrieving audit logs: {str(e)}"
         )
 
-@router.get("/{audit_log_id}", response_model=AuditLogResponse)
+@router.get("/{audit_log_id}", response_model=AuditLogResponse, tags=["audit-logs"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def get_audit_log(
     audit_log_id: UUID,
     db: Session = Depends(get_db),
