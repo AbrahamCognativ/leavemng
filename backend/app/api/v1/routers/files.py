@@ -11,12 +11,39 @@ from app.models.leave_request import LeaveRequest
 from app.models.user import User
 from app.deps.permissions import get_current_user, require_role
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), '../../uploads')
-UPLOAD_DIR = os.path.abspath(UPLOAD_DIR)
+# Get upload directory from settings but handle Docker vs local environment
+from app.settings import get_settings
+settings = get_settings()
+
+# Check if the configured path is accessible
+config_path = getattr(settings, 'UPLOAD_DIR', '/app/api/uploads')
+try:
+    # Try to create a test directory to see if we have write access
+    test_path = os.path.join(config_path, 'test_access')
+    os.makedirs(test_path, exist_ok=True)
+    os.rmdir(test_path)  # Clean up after test
+    
+    # If we get here, the path is writable
+    UPLOAD_DIR = config_path
+    print(f"[INFO] Using configured upload directory: {UPLOAD_DIR}")
+    
+except (OSError, PermissionError):
+    # Fall back to a local path if the configured path is not accessible
+    UPLOAD_DIR = os.path.join(os.path.dirname(__file__), '../../uploads')
+    UPLOAD_DIR = os.path.abspath(UPLOAD_DIR)
+    print(f"[INFO] Falling back to local upload directory: {UPLOAD_DIR}")
+
+# Create subdirectories
 LEAVE_UPLOADS_DIR = os.path.join(UPLOAD_DIR, 'leave_documents')
 PROFILE_UPLOADS_DIR = os.path.join(UPLOAD_DIR, 'profile_images')
+
+# Ensure directories exist
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(LEAVE_UPLOADS_DIR, exist_ok=True)
 os.makedirs(PROFILE_UPLOADS_DIR, exist_ok=True)
+
+print(f"[INFO] Using upload directory: {UPLOAD_DIR}")
+print(f"[INFO] Profile images directory: {PROFILE_UPLOADS_DIR}")
 
 router = APIRouter()
 
@@ -113,39 +140,80 @@ async def upload_profile_image(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
-    # Only the user themselves or HR/Admin can upload
-    # ICs can only upload for themselves
-    if str(current_user.id) != str(user_id):
-        # Only HR or Admin can upload for others
-        if current_user.role_band not in ("HR", "Admin") and current_user.role_title not in ("HR", "Admin"):
-            raise HTTPException(status_code=403, detail="Not permitted.")
-    # Save profile image
-    ext = os.path.splitext(file.filename)[1]
-    filename = f"{user_id}{ext}"
-    file_location = os.path.join(PROFILE_UPLOADS_DIR, filename)
-    with open(file_location, "wb") as f:
+    try:
+        # Validate user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
+            
+        # Check permissions
+        # Only the user themselves or HR/Admin can upload
+        # ICs can only upload for themselves
+        if str(current_user.id) != str(user_id):
+            # Only HR or Admin can upload for others
+            if current_user.role_band not in ("HR", "Admin") and current_user.role_title not in ("HR", "Admin"):
+                raise HTTPException(status_code=403, detail="Not permitted.")
+                
+        # Validate file type
+        allowed_extensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
+        ext = os.path.splitext(file.filename)[1].lower()
+        
+        if ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid file type. Allowed types: {', '.join(allowed_extensions)}"
+            )
+            
+        # Save profile image
+        filename = f"{user_id}{ext}"
+        file_location = os.path.join(PROFILE_UPLOADS_DIR, filename)
+        
+        # Read file content
         content = await file.read()
-        f.write(content)
-    user.profile_image_url = f"/uploads/profile_images/{filename}"
-    db.commit()
-    
-    # Log profile image upload in audit logs
-    from app.utils.audit import create_audit_log
-    create_audit_log(
-        db=db,
-        user_id=str(current_user.id),
-        action="upload_profile_image",
-        resource_type="user",
-        resource_id=str(user_id),
-        metadata={
-            "uploaded_by": current_user.email,
-            "self_upload": str(current_user.id) == str(user_id),
-            "file_type": ext,
-            "file_path": file_location
+        
+        # Ensure it's not empty
+        if len(content) == 0:
+            raise HTTPException(status_code=400, detail="Empty file uploaded.")
+            
+        # Write file to disk
+        with open(file_location, "wb") as f:
+            f.write(content)
+            
+        # Update user record with profile image URL
+        # Ensure the URL is correctly formatted for static file serving
+        profile_image_url = f"/uploads/profile_images/{filename}"
+        user.profile_image_url = profile_image_url
+        db.commit()
+        
+        # Log profile image upload in audit logs
+        from app.utils.audit import create_audit_log
+        create_audit_log(
+            db=db,
+            user_id=str(current_user.id),
+            action="upload_profile_image",
+            resource_type="user",
+            resource_id=str(user_id),
+            metadata={
+                "uploaded_by": current_user.email,
+                "self_upload": str(current_user.id) == str(user_id),
+                "file_type": ext,
+                "file_path": file_location
+            }
+        )
+        
+        print(f"[INFO] Profile image uploaded successfully for user {user_id}: {profile_image_url}")
+        
+        # Return success response with the URL
+        return {
+            "detail": "Profile image uploaded successfully.", 
+            "profile_image_url": profile_image_url,
+            "success": True
         }
-    )
-    
-    return {"detail": "Profile image uploaded successfully.", "profile_image_url": user.profile_image_url}
+        
+    except HTTPException as he:
+        # Re-raise HTTP exceptions
+        raise he
+    except Exception as e:
+        # Log any other errors
+        print(f"[ERROR] Failed to upload profile image: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload profile image: {str(e)}")

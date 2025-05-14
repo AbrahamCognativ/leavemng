@@ -5,6 +5,7 @@ import {DxFileUploaderModule} from 'devextreme-angular/ui/file-uploader';
 import {DxTextBoxModule} from 'devextreme-angular/ui/text-box';
 import {CommonModule} from '@angular/common';
 import {HttpClient, HttpClientModule, HttpHeaders} from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface Employee {
   id: string;
@@ -42,8 +43,8 @@ export class ProfileComponent implements OnInit {
   colCountByScreen: object;
   isEditing: boolean = false;
   originalEmployee: Employee = {} as Employee;
-  baseUrl: string = 'http://localhost:8000'; // Hardcoded API URL instead of using environment
-  apiVersion: string = 'v1'; // Centralized API version
+  baseUrl: string = environment.apiUrl; // Hardcoded API URL instead of using environment
+  
   isLoading: boolean = false;
   uploadUrl: string = '';
   @ViewChild('fileInput') fileInput!: ElementRef;
@@ -111,7 +112,7 @@ export class ProfileComponent implements OnInit {
     if (endpoint.startsWith('/')) {
       endpoint = endpoint.substring(1);
     }
-    return `${this.baseUrl}/api/${this.apiVersion}/${endpoint}`;
+    return `${this.baseUrl}/${endpoint}`;
   }
   
   // For password confirmation validation
@@ -184,7 +185,15 @@ export class ProfileComponent implements OnInit {
       return url;
     }
     
-    // If it's a relative path, prepend the base URL
+    // Extract the base URL without the API path
+    const baseUrlWithoutApi = this.baseUrl.split('/api')[0];
+    
+    // If it's a path starting with /uploads, use the base URL without API path
+    if (url.startsWith('/uploads/')) {
+      return `${baseUrlWithoutApi}${url}`;
+    }
+    
+    // If it's another relative path with leading slash, use the full API base URL
     if (url.startsWith('/')) {
       return `${this.baseUrl}${url}`;
     }
