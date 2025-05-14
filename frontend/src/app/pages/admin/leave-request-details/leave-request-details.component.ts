@@ -119,32 +119,12 @@ export class LeaveRequestDetailsComponent implements OnInit {
     if (!this.requestId) return;
     try {
       this.isRejecting = true;
-      const existing = await this.leaveService.getLeaveRequestDetails(this.requestId);
-
-      // Create a new object without id
-      const { id, ...payloadWithoutId } = existing;
-
-      const payload = {
-        leave_type_id: existing.leave_type_id,
-        start_date: existing.start_date,
-        end_date: existing.end_date,
-        id: existing.id,
-        applied_at: existing.applied_at,
-        user_id: existing.user_id,
-        total_days: existing.total_days,
-        comments: existing.comments,
-        status: 'rejected',
-        decision_at: new Date().toISOString(),
-        decided_by: (await this.authService.getUser()).data?.id,
-      };
-
-      await this.leaveService.updateLeaveRequest(this.requestId, payload);
+      await this.leaveService.rejectLeaveRequest(this.requestId);
       await this.loadRequestDetails();
       this.router.navigate(['/admin/leave-requests']);
     } catch (error) {
       console.error('Error rejecting leave request:', error);
       // Log more details about the error
-
     } finally {
       this.isRejecting = false;
     }

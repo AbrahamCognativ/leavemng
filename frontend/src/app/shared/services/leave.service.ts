@@ -333,6 +333,14 @@ export class LeaveService {
       ).toPromise() as Promise<any>;
   }
 
+  // Reject leave request
+  async rejectLeaveRequest(requestId: string): Promise<any> {
+    return this.http.patch<any>(`${this.apiUrl}/leave/${requestId}/reject`, {})
+      .pipe(
+        catchError(this.handleError)
+      ).toPromise() as Promise<any>;
+  }
+
   // Upload leave document
   async uploadLeaveDocument(requestId: string, file: File): Promise<any> {
     const formData = new FormData();
