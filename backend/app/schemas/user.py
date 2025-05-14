@@ -13,6 +13,7 @@ class UserBase(BaseModel):
     profile_image_url: Optional[str] = None
     manager_id: Optional[UUID] = None
     org_unit_id: Optional[UUID] = None
+    is_active: Optional[bool] = True 
     extra_metadata : Optional[Any] = None
 
 class UserCreate(UserBase):
