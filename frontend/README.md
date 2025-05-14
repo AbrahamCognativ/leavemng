@@ -1,6 +1,34 @@
 # Leave Management System - Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.10.
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.10 and uses [DevExtreme](https://js.devexpress.com/) for UI components.
+
+## Prerequisites
+
+- Node.js (v18 or later)
+- npm (v9 or later)
+- Angular CLI (v19.2.10)
+- DevExtreme License Key
+
+## Setup
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Configure DevExtreme License:
+   - Create a file `src/devextreme-license.ts` in the frontend directory
+   - Add your DevExtreme license key:
+   ```typescript
+   export const licenseKey = 'YOUR_LICENSE_KEY';
+   ```
+   - Replace 'YOUR_LICENSE_KEY' with your actual DevExtreme license key
+   - The license key can be obtained from your DevExtreme account dashboard or purchase confirmation email
+
+3. Build themes:
+```bash
+npm run build-themes
+```
 
 ## Development server
 
@@ -54,6 +82,19 @@ ng e2e
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
+## DevExtreme Components
+
+This project uses several DevExtreme components:
+- DataGrid for data display and management
+- Form for data input
+- DateBox and Calendar for date selection
+- Charts for data visualization
+- SelectBox for dropdown selections
+- Button for actions
+- LoadIndicator for loading states
+
 ## Additional Resources
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli)
+- [DevExtreme Documentation](https://js.devexpress.com/Documentation/)
+- [DevExtreme Angular Components](https://js.devexpress.com/Documentation/Guide/Angular_Components/DevExtreme_Angular_Components/)
