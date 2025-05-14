@@ -16,21 +16,6 @@
     </div>
   </div>
   <div class="dashboard-grid" *ngIf="!isLoading">
-<!--
-
-    <div class="chart-container">
-      <dx-pie-chart
-        id="leaveTypeChart"
-        [dataSource]="leaveTypeCounts"
-        [legend]="{ visible: true, customizeText: customizeLeaveTypeText }"
-        [title]="{ text: 'Leave Type Distribution' }">
-        <dxi-series
-          argumentField="type"
-          valueField="count">
-        </dxi-series>
-      </dx-pie-chart>
-    </div>
-    -->
 
     <div class="leave-requests-container">
       <h3>My Leave Requests</h3>
@@ -57,6 +42,37 @@
         </dxi-column>
       </dx-data-grid>
     </div>
+
+    <div class="leave-balance-container">
+      <div class="balance-summary">
+        <h6>Leave Balance Summary</h6>
+        <div class="summary-card">
+          <div class="stat-value">{{remainingLeaveDays}} days</div>
+          <div class="stat-label">Total Balance ({{leaveBalances[0]?.year}})</div>
+        </div>
+      </div>
+
+      <div class="leave-distribution">
+        <h6>Leave Type Distribution</h6>
+        <div class="distribution-item" *ngFor="let item of leaveTypeCounts">
+          <div class="distribution-header">
+            <div class="type-name">{{item.type}}</div>
+            <div class="type-stats">
+              <span class="used">Used: {{item.used}} days</span>
+              <span class="remaining">Remaining: {{item.remaining}} days</span>
+            </div>
+          </div>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress" [style.width.%]="item.percentageUsed"></div>
+            </div>
+            <div class="progress-label">{{item.percentageUsed.toFixed(0)}}% Used</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
 <!--
     <div class="leave-balances-container">
       <h3>Leave Balances</h3>

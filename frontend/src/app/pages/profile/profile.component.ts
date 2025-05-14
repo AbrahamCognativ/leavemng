@@ -16,6 +16,7 @@ interface Employee {
   role_title: string;
   gender?: string;
   profile_image_url?: string;
+  avatarUrl?: string;
   org_unit_id?: string | null;
   extra_metadata?: any;
   token?: string;
@@ -357,7 +358,25 @@ export class ProfileComponent implements OnInit {
    * Getter for profile image source with fallback
    */
   get profileImageSrc(): string {
-    return this.employee?.profile_image_url || 'https://via.placeholder.com/150?text=User';
+    // First try to use the profile_image_url
+    if (this.employee?.profile_image_url) {
+      return this.employee.profile_image_url;
+    }
+    
+    // Then try to use avatarUrl as fallback
+    if (this.employee?.avatarUrl) {
+      return this.employee.avatarUrl;
+    }
+    
+    // Use gender-specific default avatars if gender is available
+    if (this.employee?.gender === 'Male') {
+      return 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+    } else if (this.employee?.gender === 'Female') {
+      return 'https://cdn-icons-png.flaticon.com/512/4140/4140047.png';
+    }
+    
+    // Default fallback
+    return 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
   }
   
   /**

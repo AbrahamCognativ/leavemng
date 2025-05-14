@@ -2,13 +2,20 @@
   <dx-drop-down-button
     *ngIf="menuMode !== 'list'"
     stylingMode="text"
-    [icon]="user?.avatarUrl || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'"
+    [template]="'userButtonTemplate'"
     [showArrowIcon]="false"
     [items]="menuItems"
     displayExpr="text"
     keyExpr="id"
     [elementAttr]="{class: 'user-button'}"
     [dropDownOptions]="{width: '150px'}">
+    <div *dxTemplate="let data of 'userButtonTemplate'">
+      <div class="user-image-container">
+        <img *ngIf="user?.profile_image_url" [src]="user?.profile_image_url" class="user-image" alt="User Profile" />
+        <img *ngIf="!user?.profile_image_url && user?.avatarUrl" [src]="user?.avatarUrl" class="user-image" alt="User Profile" />
+        <i *ngIf="!user?.profile_image_url && !user?.avatarUrl" class="dx-icon dx-icon-user"></i>
+      </div>
+    </div>
   </dx-drop-down-button>
   <dx-list
     *ngIf="menuMode === 'list'"

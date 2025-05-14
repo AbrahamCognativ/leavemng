@@ -41,7 +41,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     # if not user or not user.is_active:
     #     raise HTTPException(status_code=401, detail="User is not active")
     if not user or not verify_password(form_data.password, user.hashed_password):
+        # Log failed login attempt
+        from app.utils.audit import create_audit_log
+        create_audit_log(
+            db=db,
+            user_id="00000000-0000-0000-0000-000000000000",  # Unknown user
+            action="login_failed",
+            resource_type="auth",
+            resource_id="00000000-0000-0000-0000-000000000000",
+            metadata={"email": form_data.username, "reason": "Incorrect email or password"}
+        )
         raise HTTPException(status_code=401, detail="Incorrect email or password")
+    
     claims = {
             "sub": str(user.id),
             "user_id": str(user.id),
@@ -60,6 +71,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         }
     token = jwt.encode(claims, get_settings().SECRET_KEY, algorithm=ALGORITHM)
+    
+    # Log successful login
+    from app.utils.audit import create_audit_log
+    create_audit_log(
+        db=db,
+        user_id=str(user.id),
+        action="login_success",
+        resource_type="auth",
+        resource_id=str(user.id),
+        metadata={"email": user.email, "role": user.role_band}
+    )
+    
     return {"access_token": token, "token_type": "bearer", "user": UserRead.from_orm(user)}
 
 # Dummy permission dependency for HR/Admin
@@ -125,3 +148,22 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     invite_link = f"{base_url}/register?email={user.email}"
     send_invite_email(user.email, invite_link, request=request)
     return UserRead.from_orm(user)
+
+@router.post("/logout", tags=["auth"])
+def logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Logout endpoint - primarily used for audit logging purposes.
+    The actual token invalidation happens client-side by removing the token.
+    """
+    # Log the logout action
+    from app.utils.audit import create_audit_log
+    create_audit_log(
+        db=db,
+        user_id=str(current_user.id),
+        action="logout",
+        resource_type="auth",
+        resource_id=str(current_user.id),
+        metadata={"email": current_user.email}
+    )
+    
+    return {"detail": "Successfully logged out"}

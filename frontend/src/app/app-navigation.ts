@@ -41,6 +41,10 @@ export const navigation = [
       {
         text: 'Users',
         path: '/admin/employee-invite',
+      },
+      {
+        text: 'Audit Logs',
+        path: '/admin/audit-logs',
       }
     ]
   },

@@ -38,6 +38,7 @@ app = FastAPI(
         {"name": "leave", "description": "Leave requests endpoints"},
         {"name": "files", "description": "Files endpoints"},
         {"name": "analytics", "description": "Analytics endpoints"},
+        {"name": "audit_logs", "description": "Audit logs endpoints"},
     ]
 )
 
@@ -80,7 +81,7 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
 app.add_middleware(AuthRequiredMiddleware)
 
 def include_routers():
-    modules = ["auth", "users", "org", "leave", "files", "analytics", "leave_types", "leave_policy"]
+    modules = ["auth", "users", "org", "leave", "files", "analytics", "leave_types", "leave_policy", "audit_logs"]
     for m in modules:
         router = import_module(f"app.api.v1.routers.{m}")
         # Use kebab-case for leave-policy and leave-types
@@ -88,6 +89,8 @@ def include_routers():
             prefix = "/api/v1/leave-policy"
         elif m == "leave_types":
             prefix = "/api/v1/leave-types"
+        elif m == "audit_logs":
+            prefix = "/api/v1/audit-logs"
         else:
             prefix = f"/api/v1/{m}"
         app.include_router(router.router, prefix=prefix)

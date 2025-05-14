@@ -131,4 +131,21 @@ async def upload_profile_image(
         f.write(content)
     user.profile_image_url = f"/uploads/profile_images/{filename}"
     db.commit()
+    
+    # Log profile image upload in audit logs
+    from app.utils.audit import create_audit_log
+    create_audit_log(
+        db=db,
+        user_id=str(current_user.id),
+        action="upload_profile_image",
+        resource_type="user",
+        resource_id=str(user_id),
+        metadata={
+            "uploaded_by": current_user.email,
+            "self_upload": str(current_user.id) == str(user_id),
+            "file_type": ext,
+            "file_path": file_location
+        }
+    )
+    
     return {"detail": "Profile image uploaded successfully.", "profile_image_url": user.profile_image_url}
