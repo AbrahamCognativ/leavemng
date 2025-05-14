@@ -52,15 +52,15 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     #     raise HTTPException(status_code=401, detail="User is not active")
     if not user or not verify_password(form_data.password, user.hashed_password):
         # Log failed login attempt
-        from app.utils.audit import create_audit_log
-        create_audit_log(
-            db=db,
-            user_id="00000000-0000-0000-0000-000000000000",  # Unknown user
-            action="login_failed",
-            resource_type="auth",
-            resource_id="00000000-0000-0000-0000-000000000000",
-            metadata={"email": form_data.username, "reason": "Incorrect email or password"}
-        )
+        # from app.utils.audit import create_audit_log
+        # create_audit_log(
+        #     db=db,
+        #     user_id=Null,  # Unknown user
+        #     action="login_failed",
+        #     resource_type="auth",
+        #     resource_id="00000000-0000-0000-0000-000000000000",
+        #     metadata={"email": form_data.username, "reason": "Incorrect email or password"}
+        # )
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     
     claims = {

@@ -14,6 +14,8 @@ class ProductionSettings(BaseSettings):
 
     class Config:
         env_file = ".env.prod"
+        # pass  # Do not set env_file; rely on environment variables
+
 
 class DevelopmentSettings(BaseSettings):
     APP_ENV: str
@@ -29,11 +31,13 @@ class DevelopmentSettings(BaseSettings):
 
     class Config:
         env_file = ".env.dev"
+        # pass  # Do not set env_file; rely on environment variables
+
 
 
 def get_settings():
     import os
-    env = os.getenv("APP_ENV", "development").lower()
+    env = os.getenv("APP_ENV", "development")
     if env == "production":
         return ProductionSettings()
     else:
