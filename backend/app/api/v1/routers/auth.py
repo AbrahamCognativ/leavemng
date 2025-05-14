@@ -141,8 +141,11 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     db.commit()
     db.refresh(user)
     # Send invite email
-    from app.utils.email import send_invite_email
-    invite_link = f"https://your-app-url/register?email={user.email}"  # TODO: Replace with real link
+    from app.utils.email_utils import send_invite_email
+    from app.settings import get_settings
+    settings = get_settings()
+    base_url = settings.REGISTER_URL.rstrip('/')
+    invite_link = f"{base_url}/register?email={user.email}"
     send_invite_email(user.email, invite_link, request=request)
     return UserRead.from_orm(user)
 

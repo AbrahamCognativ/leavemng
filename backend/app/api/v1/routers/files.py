@@ -42,7 +42,8 @@ async def upload_file(
     current_user: User = Depends(get_current_user),
 ):
     leave_request = can_access_leave_request(db, leave_request_id, current_user)
-    req_dir = os.path.join(UPLOAD_DIR, str(leave_request_id))
+    LEAVE_UPLOADS_DIR = os.path.join(UPLOAD_DIR, "leave_documents")
+    req_dir = os.path.join(LEAVE_UPLOADS_DIR, str(leave_request_id))
     os.makedirs(req_dir, exist_ok=True)
     file_location = os.path.join(req_dir, file.filename)
     with open(file_location, "wb") as f:

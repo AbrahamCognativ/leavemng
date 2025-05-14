@@ -162,7 +162,7 @@ def test_leave_request_duplicate(auth_token, db_session):
             pass
         if not admin_token:
             # Fallback: try login as admin
-            resp = client.post("/api/v1/auth/login", data={"username": "admin@example.com", "password": "adminpass"})
+            resp = client.post("/api/v1/auth/login", data={"username": "user@example.com", "password": "adminpass"})
             assert resp.status_code == 200, "Could not get admin token"
             admin_token = resp.json()["access_token"]
         leave_type_data = {

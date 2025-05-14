@@ -18,8 +18,8 @@ from fastapi import Security
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 app = FastAPI(
-    title=f"Leave Management API [{get_settings().APP_ENV.upper()}]",
-    description=f"API for managing employee leave requests and approvals.\n\n**Environment:** `{get_settings().APP_ENV}`",
+    title=f"Leave Management API [{settings.APP_ENV.upper()}]",
+    description=f"API for managing employee leave requests and approvals.\n\n**Environment:** `{settings.APP_ENV}`\n\n**Register URL:** `{settings.REGISTER_URL}`",
     version="1.0.0",
     swagger_ui_init_oauth={
         "usePkceWithAuthorizationCodeGrant": True,
