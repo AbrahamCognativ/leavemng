@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { UserService } from '../../shared/services/user.service';
 import { 
   DxSchedulerModule, 
   DxLoadIndicatorModule, 
@@ -11,6 +12,7 @@ import {
 } from 'devextreme-angular';
 
 import { LeaveService } from '../../shared/services/leave.service';
+import { AuthService } from '../../shared/services';
 
 // Define a custom type for the appointment form event
 interface AppointmentFormEvent {
@@ -64,6 +66,7 @@ interface ApiLeaveRequest {
     DxTemplateModule,
     DxTooltipModule
   ],
+  providers: [AuthService],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './leave-schedule.component.html',
   styleUrls: ['./leave-schedule.component.scss']
@@ -138,19 +141,38 @@ export class LeaveScheduleComponent implements OnInit {
     }
   ];
   
-  // Scheduler views configuration
-  schedulerViews: any = {
-    day: { name: 'Day' },
-    week: { name: 'Week' },
-    month: { name: 'Month' }
-  };
-
   constructor(
     private leaveService: LeaveService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private authService: AuthService,
+    private userService: UserService
   ) {
     console.log('Scheduler initialized with date:', this.currentDate);
     console.log('Available views:', this.views);
+  }
+
+  // Generate a consistent color from a string (public for template)
+  stringToColor(str: string): string {
+    if (!str) return '#f8f9fa'; // Default light gray for empty strings
+    
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Generate pastel colors by using higher base values
+    const h = Math.abs(hash) % 360;
+    return `hsl(${h}, 70%, 90%)`; // Very light, pastel colors
+  }
+
+  // Get border color based on status (public for template)
+  getStatusColor(status: string): string {
+    switch (status?.toLowerCase()) {
+      case 'approved': return '#28a745';
+      case 'pending': return '#ffc107';
+      case 'rejected': return '#dc3545';
+      default: return '#6c757d';
+    }
   }
 
   ngOnInit(): void {
@@ -165,72 +187,48 @@ export class LeaveScheduleComponent implements OnInit {
   }
 
   // Process leave requests from API to match scheduler format
-  private processLeaveRequests(requests: any[]): LeaveRequest[] {
+  private processLeaveRequests(requests: any[]): any[] {
     if (!requests || !Array.isArray(requests)) {
-      console.error('Invalid or empty requests array');
+      console.warn('No valid leave requests to process');
       return [];
     }
 
     console.log('Processing leave requests:', requests);
 
-    return requests
-      .filter(request => {
-        // Filter out invalid requests
-        const hasRequiredFields = request && 
-                                request.id && 
-                                request.start_date && 
-                                request.end_date &&
-                                request.status;
-        if (!hasRequiredFields) {
-          console.warn('Request missing required fields:', request);
+    return requests.map(request => {
+      try {
+        // Parse dates
+        const startDate = new Date(request.start_date);
+        const endDate = new Date(request.end_date);
+
+        // Handle potential invalid dates
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          console.warn('Invalid date in request:', request);
+          return null;
         }
-        return hasRequiredFields;
-      })
-      .map((request) => {
-        try {
-          // Parse dates
-          const startDate = new Date(request.start_date);
-          const endDate = new Date(request.end_date);
 
-          // Handle potential invalid dates
-          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            console.warn('Invalid date in request:', request);
-            return null;
-          }
+        // Adjust end date to be inclusive
+        endDate.setHours(23, 59, 59, 999);
 
-          // Adjust end date to be inclusive
-          endDate.setHours(23, 59, 59, 999);
 
-          // Get employee details - check different possible locations in the response
-          const employeeName = request.employee_name || 
-                              request.employee?.full_name || 
-                              request.user?.full_name ||
-                              request.employeeName ||
-                              `User ${request.user_id?.substring(0, 8) || 'Unknown'}`;
-          
-          const employeeEmail = request.employee_email || 
-                              request.employee?.email || 
-                              request.user?.email ||
-                              request.employeeEmail ||
-                              `${request.user_id?.substring(0, 8) || 'unknown'}@example.com`;
+        // Create the processed request object
+        const processedRequest: any = {
+          id: request.id,
+          text: `${request.employee_name || 'User'}'s Leave`,
+          startDate: startDate,
+          endDate: endDate,
+          allDay: true,
+          status: (request.status || '').toLowerCase(),
+          employeeName: request.employee_name,
+          employeeEmail: request.employee_email,
+          leaveType: request.leave_type_id || 'Unspecified',
+          userId: request.user_id,
+          description: request.comments || 'No comments',
+          rawData: request // Keep original data for debugging
+        };
 
-          // Create the processed request object
-          const processedRequest: LeaveRequest = {
-            id: request.id,
-            text: employeeEmail || request.title || 'Leave Request',
-            startDate: startDate,
-            endDate: endDate,
-            allDay: request.all_day !== undefined ? request.all_day : true,
-            status: (request.status || '').toLowerCase(),
-            employeeName: employeeName,
-            employeeEmail: employeeEmail,
-            leaveType: request.leave_type || request.leave_type_id || 'Unspecified',
-            userId: request.user_id || request.userId,
-            description: request.comments || request.description
-          };
-
-          console.log('Processed request:', processedRequest);
-          return processedRequest;
+        console.log('Processed request:', processedRequest);
+        return processedRequest;
         } catch (error) {
           console.error('Error processing request:', error, 'Request:', request);
           return null;
@@ -242,18 +240,59 @@ export class LeaveScheduleComponent implements OnInit {
   async loadLeaveRequests(): Promise<void> {
     this.loading = true;
     try {
-      // First try to load from API
-      console.log('Fetching leave requests from API...');
-      const requests = await this.leaveService.getLeaveRequests();
-      console.log('Raw API response:', JSON.stringify(requests, null, 2));
+      // Get current user
+      const userResponse = await this.authService.getUser();
+      const currentUser = userResponse?.data;
       
-      this.leaveRequests = this.processLeaveRequests(requests);
-      console.log('Processed leave requests:', JSON.stringify(this.leaveRequests, null, 2));
+      console.log('Current user:', currentUser);
       
-      // If no data from API, use test data
+      // Get all leave requests
+      console.log('Fetching all leave requests...');
+      const allRequests = await this.leaveService.getLeaveRequests();
+      console.log('Raw leave requests from service:', JSON.stringify(allRequests, null, 2));
+      
+      // Filter for approved leave requests only
+      const approvedRequests = allRequests.filter(request => 
+        request.status && request.status.toLowerCase() === 'approved'
+      );
+      
+      console.log('Approved leave requests:', approvedRequests.length, 'of', allRequests.length);
+      
+      // Enrich approved leave requests with user data
+      const enrichedRequests = [];
+      console.log('Total approved requests to process:', approvedRequests.length);
+      
+      for (const [index, request] of approvedRequests.entries()) {
+        try {
+          console.log(`\n--- Processing approved request ${index + 1}/${approvedRequests.length} ---`);
+          console.log('Request data:', JSON.stringify(request, null, 2));
+          
+          // Fetch user details for the leave request
+          console.log('Fetching user details for user_id:', request.user_id);
+          const user = await this.userService.getUserById(request.user_id);
+          console.log('Retrieved user:', user);
+          
+          const enrichedRequest = {
+            ...request,
+            employee_name: user?.name || request.employee_name,
+            employee_email: user?.email || request.employee_email
+          };
+          
+          console.log('Enriched request:', enrichedRequest);
+          enrichedRequests.push(enrichedRequest);
+        } catch (error) {
+          console.error('Error enriching leave request:', error, 'Request:', request);
+        }
+      }
+      
+      console.log('Enriched approved leaves:', JSON.stringify(enrichedRequests, null, 2));
+      
+      // Process the requests for the scheduler
+      this.leaveRequests = this.processLeaveRequests(enrichedRequests);
+      console.log('Processed leave requests for scheduler:', JSON.stringify(this.leaveRequests, null, 2));
+      
       if (this.leaveRequests.length === 0) {
-        console.warn('No leave requests found in the database. Using test data.');
-        this.leaveRequests = [...this.testData]; // Use test data directly since it's already in the correct format
+        console.warn('No leave requests found matching the criteria.');
       }
       
       this.cdr.detectChanges();
@@ -261,7 +300,8 @@ export class LeaveScheduleComponent implements OnInit {
       console.error('Error loading leave requests:', error);
       // Fall back to test data if there's an error
       console.warn('Falling back to test data due to error');
-      this.leaveRequests = [...this.testData];
+      // Filter test data to show only approved leaves
+      this.leaveRequests = this.testData.filter(leave => leave.status === 'approved');
       this.cdr.detectChanges();
     } finally {
       this.loading = false;

@@ -31,6 +31,57 @@ export class LeaveService {
   constructor(private http: HttpClient) {}
 
   // Get all leave requests with enriched user data
+  // Get all approved leave requests
+  async getAllApprovedLeaves(): Promise<any[]> {
+    try {
+      console.log('Fetching all leave requests from:', `${this.apiUrl}/leave`);
+      // Get all leave requests
+      const leaveRequests = await this.http.get<any[]>(`${this.apiUrl}/leave`)
+        .pipe(
+          retry(1),
+          catchError(this.handleError)
+        ).toPromise() as any[];
+      
+      console.log('Raw leave requests from API:', JSON.stringify(leaveRequests, null, 2));
+      
+      if (!leaveRequests || !Array.isArray(leaveRequests)) {
+        console.error('Invalid leave requests data:', leaveRequests);
+        return [];
+      }
+      
+      // Filter for approved leaves only
+      const approvedLeaves = leaveRequests.filter(request => {
+        const isApproved = request.status && request.status.toLowerCase() === 'approved';
+        console.log(`Leave ID: ${request.id}, Status: ${request.status}, Is Approved: ${isApproved}`);
+        return isApproved;
+      });
+      
+      console.log('Approved leaves after filtering:', JSON.stringify(approvedLeaves, null, 2));
+      
+      if (!approvedLeaves.length) {
+        console.warn('No approved leaves found');
+        return [];
+      }
+
+      // Only refresh user cache if it's empty or expired
+      const now = Date.now();
+      if (this.userCache.size === 0 || (now - this.lastFetchTime) > this.cacheExpiry) {
+        console.log('Refreshing user cache...');
+        await this.refreshUserCache(approvedLeaves);
+        this.lastFetchTime = now;
+      }
+
+      // Enrich leave requests with cached user details
+      const enrichedLeaves = this.enrichLeaveRequests(approvedLeaves);
+      console.log('Enriched leaves:', JSON.stringify(enrichedLeaves, null, 2));
+      return enrichedLeaves;
+
+    } catch (error) {
+      console.error('Error in getAllApprovedLeaves:', error);
+      return [];
+    }
+  }
+
   async getLeaveRequests(): Promise<any[]> {
     try {
       // Get all leave requests

@@ -57,6 +57,20 @@
           </dxo-toolbar>
           
           <!-- Main appointment tooltip configuration -->
+          <!-- Custom appointment template with colored dots -->
+          <div *dxTemplate="let model of 'appointmentTemplate'">
+            <div class="dot-appointment">
+              <div 
+                class="status-dot"
+                [style.background-color]="stringToColor(model.appointmentData.employee_name || model.appointmentData.employee_email || model.appointmentData.user_id)"
+                [style.border-color]="getStatusColor(model.appointmentData.status)"
+              ></div>
+              <div class="appointment-text">
+                {{model.appointmentData.employee_name || 'User'}}
+              </div>
+            </div>
+          </div>
+          
           <dxo-appointment-tooltip 
             [enabled]="true"
             [showDeleteButton]="true"
