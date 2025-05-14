@@ -26,7 +26,7 @@ def list_leave_requests(db: Session = Depends(get_db), current_user=Depends(get_
     return [LeaveRequestRead.model_validate(req) for req in requests]
 
 @router.post("/", tags=["leave"], response_model=LeaveRequestRead)
-def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None):
     # Validate leave_type_id exists
     try:
         leave_type = db.query(LeaveType).filter(LeaveType.id == req.leave_type_id).first()
@@ -34,6 +34,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
         raise HTTPException(status_code=500, detail=f"Error looking up leave_type_id: {str(e)}")
     if not leave_type:
         raise HTTPException(status_code=400, detail="Invalid leave_type_id")
+
 
     # Check for duplicate leave request
     existing = db.query(LeaveRequest).filter(
@@ -375,6 +376,19 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
         req.decided_by = current_user.id
         db.commit()
         db.refresh(req)
+        # Re-add leave days to user's balance
+        from app.models.leave_balance import LeaveBalance
+        leave_balance = db.query(LeaveBalance).filter(
+            LeaveBalance.user_id == req.user_id,
+            LeaveBalance.leave_type_id == req.leave_type_id
+        ).first()
+        if leave_balance:
+            leave_balance.balance_days += req.total_days
+            db.commit()
+            db.refresh(leave_balance)
+        else:
+            import logging
+            logging.warning(f"Leave balance record not found for user {req.user_id} and leave type {req.leave_type_id}")
     except Exception as e:
         db.rollback()
         import logging
@@ -392,30 +406,6 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
         import logging
         logging.error(f"Error sending rejection email: {e}")
     return LeaveRequestRead.model_validate(req)
-
-    from app.utils.email_utils import send_leave_approval_notification
-    user = db.query(User).filter(User.id == req.user_id).first()
-    leave_details = f"Type: {req.leave_type_id}, Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
-    try:
-        if user:
-            send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
-        log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
-    except Exception as e:
-        # Optionally log the error but don't fail the approval
-        import logging
-        logging.error(f"Error in approval post-processing: {e}")
-        pass
-    from pydantic import ValidationError
-    import logging
-    logging.debug(f"LeaveRequest DB object before validation: {req.__dict__}")
-    try:
-        return LeaveRequestRead.model_validate(req)
-    except ValidationError as ve:
-        logging.error(f"LeaveRequestRead validation error: {ve}")
-        raise HTTPException(status_code=500, detail="Internal error during approval response formatting")
-    except Exception as e:
-        logging.error(f"Unexpected error in approval endpoint: {e}")
-        raise HTTPException(status_code=500, detail="Internal error during approval")
 
 
 @router.delete("/{request_id}", tags=["leave"], status_code=204)
