@@ -31,6 +31,23 @@ def create_leave_type(leave_type: LeaveTypeCreate, db: Session = Depends(get_db)
     db.add(db_leave_type)
     db.commit()
     db.refresh(db_leave_type)
+
+    # Create LeaveBalance for all active users
+    from app.models.user import User
+    from app.models.leave_balance import LeaveBalance
+    active_users = db.query(User).filter(User.is_active == True).all()
+    for user in active_users:
+        # Avoid duplicate balances
+        exists = db.query(LeaveBalance).filter(LeaveBalance.user_id == user.id, LeaveBalance.leave_type_id == db_leave_type.id).first()
+        if not exists:
+            balance = LeaveBalance(
+                user_id=user.id,
+                leave_type_id=db_leave_type.id,
+                balance_days=db_leave_type.default_allocation_days,
+                updated_at=datetime.datetime.now(datetime.timezone.utc)
+            )
+            db.add(balance)
+    db.commit()
     return db_leave_type
 
 @router.get("/", response_model=List[LeaveTypeRead], tags=["leave-types"], dependencies=[])
