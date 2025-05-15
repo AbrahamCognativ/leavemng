@@ -51,13 +51,11 @@
     </dxi-item>
     
     <!-- Second Row -->
-    <dxi-item dataField="password" [isRequired]="true" editorType="dxTextBox" [editorOptions]="{ mode: 'password' }">
-      <dxi-validation-rule type="required" message="Password is required"></dxi-validation-rule>
-    </dxi-item>
-    
     <dxi-item dataField="gender" editorType="dxSelectBox" [editorOptions]="{ items: genderOptions }" [isRequired]="true">
       <dxi-validation-rule type="required" message="Gender is required"></dxi-validation-rule>
     </dxi-item>
+    
+    <dxi-item itemType="empty"></dxi-item>
     
     <dxi-item itemType="empty"></dxi-item>
     
@@ -177,22 +175,35 @@
   
   <!-- Edit User Popup -->
   <dx-popup
-    [width]="600"
-    [height]="'auto'"
+    [width]="900"
+    [height]="600"
     [showTitle]="true"
     title="Edit User"
-    [dragEnabled]="false"
+    [dragEnabled]="true"
     [closeOnOutsideClick]="false"
     [(visible)]="isEditMode"
+    [resizeEnabled]="true"
+    position="center"
   >
-    <div *dxTemplate="let data of 'content'">
+    <div *dxTemplate="let data of 'content'" class="edit-user-container">
       <dx-form
         *ngIf="selectedUser"
         [formData]="selectedUser"
         labelLocation="top"
-        [colCountByScreen]="colCountByScreen"
+        [colCount]="3"
         [disabled]="isLoading"
+        class="full-width-form"
       >
+        <!-- Form Title -->
+        <dxi-item itemType="group" cssClass="form-section-title" [colSpan]="3">
+          <dxi-item itemType="empty" cssClass="section-title-text">
+            <div *dxTemplate>
+              <h3>Basic Information</h3>
+            </div>
+          </dxi-item>
+        </dxi-item>
+        
+        <!-- First Row -->
         <dxi-item dataField="name" [isRequired]="true">
           <dxi-validation-rule type="required" message="Name is required"></dxi-validation-rule>
         </dxi-item>
@@ -206,6 +217,7 @@
           <dxi-validation-rule type="required" message="Passport/ID number is required"></dxi-validation-rule>
         </dxi-item>
         
+        <!-- Second Row -->
         <dxi-item dataField="gender" editorType="dxSelectBox" [editorOptions]="{ items: genderOptions }" [isRequired]="true">
           <dxi-validation-rule type="required" message="Gender is required"></dxi-validation-rule>
         </dxi-item>
@@ -218,6 +230,7 @@
           <dxi-validation-rule type="required" message="Role title is required"></dxi-validation-rule>
         </dxi-item>
         
+        <!-- Third Row -->
         <dxi-item dataField="manager_id" editorType="dxSelectBox" 
           [editorOptions]="{
             items: managers,
@@ -237,6 +250,8 @@
             placeholder: 'Select an organization unit'
           }">
         </dxi-item>
+        
+        <dxi-item itemType="empty"></dxi-item>
       </dx-form>
       
       <div class="popup-buttons">
@@ -245,12 +260,14 @@
           type="success"
           (onClick)="saveUserChanges()"
           [disabled]="isLoading"
+          [width]="120"
         ></dx-button>
         <dx-button
           text="Cancel"
           type="normal"
           (onClick)="cancelEdit()"
           [disabled]="isLoading"
+          [width]="120"
         ></dx-button>
       </div>
     </div>

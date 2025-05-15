@@ -57,7 +57,48 @@ def require_direct_manager(request_user_id: str, db: Session = Depends(get_db), 
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the reporting manager (or HR/Admin) may perform this action")
     return current
 
-# 4. Audit logging for permission failures
+# 4. Permission check for specific actions
+
+def has_permission(user: User, permission: str) -> bool:
+    """Check if a user has a specific permission based on their role."""
+    # Define permission mappings
+    admin_permissions = [
+        "view_audit_logs",
+        "manage_users",
+        "manage_leave_types",
+        "manage_org_units",
+        "approve_leave",
+        "reject_leave",
+        "view_all_leave_requests"
+    ]
+    
+    hr_permissions = [
+        "view_audit_logs",
+        "manage_users",
+        "manage_leave_types",
+        "approve_leave",
+        "reject_leave",
+        "view_all_leave_requests"
+    ]
+    
+    manager_permissions = [
+        "approve_leave",
+        "reject_leave",
+        "view_team_leave_requests"
+    ]
+    
+    # Check permissions based on role
+    if user.role_band == "Admin" or user.role_title == "Admin":
+        return permission in admin_permissions
+    elif user.role_band == "HR" or user.role_title == "HR":
+        return permission in hr_permissions
+    elif user.role_band == "Manager" or user.role_title == "Manager":
+        return permission in manager_permissions
+    
+    # Regular users don't have special permissions
+    return False
+
+# 5. Audit logging for permission failures
 
 def log_permission_denied(db: Session, user_id: str, action: str, resource: str, resource_id: str, message: str = None, http_status: int = None):
     from app.models.audit_log import AuditLog

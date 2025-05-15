@@ -1,9 +1,86 @@
-# Leave Management System - Backend
+# LeaveManager Deployment Guide (Linux)
 
-[![Test Status](https://github.com/AbrahamCognativ/leavemng/actions/workflows/python-app.yml/badge.svg)](https://github.com/AbrahamCognativ/leavemng/actions)
-[![Coverage](https://img.shields.io/badge/coverage-84%25-brightgreen.svg)](https://github.com/AbrahamCognativ/leavemng)
-[![Code Quality](https://img.shields.io/badge/code%20quality-A-brightgreen.svg)](https://github.com/AbrahamCognativ/leavemng)
+This guide will help you set up and run the LeaveManager system on a Linux machine with persistent file storage and a clean project structure.
 
+## Directory Structure
+
+```
+/leavemanager
+├── backend        # Clone your backend repository here
+├── frontend       # Clone your frontend repository here
+├── files          # All uploaded/downloaded files will be stored here (mounted as a volume)
+```
+
+## 1. Prepare Your Folders
+
+```bash
+sudo mkdir -p /leavemanager/files
+sudo chown -R $USER:$USER /leavemanager
+```
+
+## 2. Clone the Repositories
+
+```bash
+cd /leavemanager
+# Clone your backend repo
+git clone <backend-repo-url> backend
+# Clone your frontend repo
+git clone <frontend-repo-url> frontend
+```
+
+## 3. Configure Environment Files
+
+- Place your `.env.prod` and `.env.dev` files inside `/leavemanager/backend` as needed.
+- Make sure `UPLOAD_DIR=/app/files` is set in your `.env` files.
+
+## 4. Update Docker Compose for File Mount
+
+In `/leavemanager/backend/docker-compose.yml`, set the volume for the backend service:
+
+```yaml
+    volumes:
+      - /leavemanager/files:/app/files
+```
+This ensures all files are stored in `/leavemanager/files` on your host.
+
+## 5. Build and Run the Backend
+
+**Production:**
+```bash
+cd /leavemanager/backend
+docker compose --env-file .env.prod up --build -d
+```
+
+**Development:**
+```bash
+cd /leavemanager/backend
+docker compose --env-file .env.dev up --build
+```
+
+- The backend will be available at `http://localhost:8000/` (or your server's IP).
+- Uploaded/downloaded files will persist in `/leavemanager/files` even if the container is restarted or rebuilt.
+
+## 6. Stopping and Cleaning Up
+
+To stop the backend:
+```bash
+docker compose down
+```
+
+Files in `/leavemanager/files` will remain unless you manually delete them.
+
+## 7. Frontend
+
+- Follow your frontend's README/setup instructions inside `/leavemanager/frontend`.
+
+---
+
+**Summary:**
+- All persistent files are stored in `/leavemanager/files`.
+- Backend and frontend are cleanly separated.
+- Docker Compose mounts the host's `files` directory for data durability.
+
+If you need further customization or automation scripts, let us know!
 
 ## Setup Instructions
 

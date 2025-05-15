@@ -5,6 +5,7 @@ import {DxFileUploaderModule} from 'devextreme-angular/ui/file-uploader';
 import {DxTextBoxModule} from 'devextreme-angular/ui/text-box';
 import {CommonModule} from '@angular/common';
 import {HttpClient, HttpClientModule, HttpHeaders} from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface Employee {
   id: string;
@@ -16,6 +17,7 @@ interface Employee {
   role_title: string;
   gender?: string;
   profile_image_url?: string;
+  avatarUrl?: string;
   org_unit_id?: string | null;
   extra_metadata?: any;
   token?: string;
@@ -41,8 +43,8 @@ export class ProfileComponent implements OnInit {
   colCountByScreen: object;
   isEditing: boolean = false;
   originalEmployee: Employee = {} as Employee;
-  baseUrl: string = 'http://localhost:8000'; // Hardcoded API URL instead of using environment
-  apiVersion: string = 'v1'; // Centralized API version
+  baseUrl: string = environment.apiUrl; // Hardcoded API URL instead of using environment
+  basePlainUrl: string = environment.apiBaseUrl
   isLoading: boolean = false;
   uploadUrl: string = '';
   @ViewChild('fileInput') fileInput!: ElementRef;
@@ -110,7 +112,7 @@ export class ProfileComponent implements OnInit {
     if (endpoint.startsWith('/')) {
       endpoint = endpoint.substring(1);
     }
-    return `${this.baseUrl}/api/${this.apiVersion}/${endpoint}`;
+    return `${this.baseUrl}/${endpoint}`;
   }
   
   // For password confirmation validation
@@ -184,8 +186,8 @@ export class ProfileComponent implements OnInit {
     }
     
     // If it's a relative path, prepend the base URL
-    if (url.startsWith('/')) {
-      return `${this.baseUrl}${url}`;
+    if (url.startsWith('/uploads')) {
+      return `${this.basePlainUrl}${url}`;
     }
     
     // Otherwise, assume it's a relative path without leading slash
@@ -357,7 +359,25 @@ export class ProfileComponent implements OnInit {
    * Getter for profile image source with fallback
    */
   get profileImageSrc(): string {
-    return this.employee?.profile_image_url || 'https://via.placeholder.com/150?text=User';
+    // First try to use the profile_image_url
+    if (this.employee?.profile_image_url) {
+      return this.employee.profile_image_url;
+    }
+    
+    // Then try to use avatarUrl as fallback
+    if (this.employee?.avatarUrl) {
+      return this.employee.avatarUrl;
+    }
+    
+    // Use gender-specific default avatars if gender is available
+    if (this.employee?.gender === 'Male') {
+      return 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+    } else if (this.employee?.gender === 'Female') {
+      return 'https://cdn-icons-png.flaticon.com/512/4140/4140047.png';
+    }
+    
+    // Default fallback
+    return 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
   }
   
   /**
@@ -365,7 +385,7 @@ export class ProfileComponent implements OnInit {
    */
   handleImageError(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
-    imgElement.src = 'https://via.placeholder.com/150?text=User';
+    imgElement.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
   }
   
   /**

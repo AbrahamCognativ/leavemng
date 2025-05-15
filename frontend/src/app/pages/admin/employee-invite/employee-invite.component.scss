@@ -4,6 +4,44 @@
   max-width: 100%;
 }
 
+.edit-user-container {
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .full-width-form {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    
+    ::ng-deep .dx-fieldset {
+      padding: 30px 30px;
+      margin: 0;
+    }
+    
+    ::ng-deep .dx-field-item {
+      padding: 20px;
+      margin-bottom: 15px;
+    }
+    
+    ::ng-deep .dx-empty-item {
+      height: auto;
+      padding: 20px;
+      margin-bottom: 15px;
+    }
+  }
+  
+  .popup-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin: 0;
+    padding: 15px 30px;
+  }
+}
+
 .section {
   background-color: white;
   border-radius: 8px;

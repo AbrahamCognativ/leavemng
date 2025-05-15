@@ -107,3 +107,4 @@ venv/
 
 # VSCode settings
 .vscode/
+sendgrid.env

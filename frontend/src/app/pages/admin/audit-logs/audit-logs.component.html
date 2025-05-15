@@ -1,0 +1,180 @@
+<div class="content-block">
+  <h2 class="content-block-header">Audit Logs</h2>
+  
+  <!-- Filters -->
+  <div class="dx-card filter-container">
+    <div class="filter-row">
+      <div class="filter-item">
+        <div class="filter-label">Resource Type</div>
+        <dx-select-box
+          [items]="resourceTypes"
+          [(value)]="selectedResourceType"
+          [showClearButton]="true"
+          placeholder="Select resource type">
+        </dx-select-box>
+      </div>
+      
+      <div class="filter-item">
+        <div class="filter-label">Action</div>
+        <dx-select-box
+          [items]="actions"
+          [(value)]="selectedAction"
+          [showClearButton]="true"
+          placeholder="Select action">
+        </dx-select-box>
+      </div>
+      
+      <div class="filter-item">
+        <div class="filter-label">From Date</div>
+        <dx-date-box
+          [value]="hasFromDateFilter ? fromDate : ''"
+          (onValueChanged)="onFromDateChanged($event)"
+          [showClearButton]="true"
+          type="datetime"
+          placeholder="Select start date">
+        </dx-date-box>
+      </div>
+      
+      <div class="filter-item">
+        <div class="filter-label">To Date</div>
+        <dx-date-box
+          [value]="hasToDateFilter ? toDate : ''"
+          (onValueChanged)="onToDateChanged($event)"
+          [showClearButton]="true"
+          type="datetime"
+          placeholder="Select end date">
+        </dx-date-box>
+      </div>
+      
+      <div class="filter-buttons">
+        <dx-button
+          text="Apply Filters"
+          type="default"
+          (onClick)="applyFilters()">
+        </dx-button>
+        
+        <dx-button
+          text="Reset"
+          type="normal"
+          (onClick)="resetFilters()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Data Grid -->
+  <div class="dx-card responsive-paddings">
+    <dx-data-grid
+      [dataSource]="auditLogs"
+      [showBorders]="true"
+      [columnAutoWidth]="true"
+      [wordWrapEnabled]="true"
+      [rowAlternationEnabled]="true"
+      (onRowClick)="viewDetails($event.data)">
+      
+      <dxo-paging
+        [pageSize]="pageSize"
+        [pageIndex]="currentPage">
+      </dxo-paging>
+      
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[10, 20, 50]"
+        [showInfo]="true"
+        [showNavigationButtons]="true"
+        (onPageChanged)="onPageChanged($event)">
+      </dxo-pager>
+      
+      <dxo-load-panel [enabled]="true"></dxo-load-panel>
+      
+      <dxi-column dataField="timestamp" caption="Timestamp" cellTemplate="timestampTemplate" sortOrder="desc" [sortIndex]="0"></dxi-column>
+      
+      <div *dxTemplate="let data of 'timestampTemplate'">
+        {{ formatTimestamp(data.data.timestamp) }}
+      </div>
+      <dxi-column dataField="action" caption="Action"></dxi-column>
+      <dxi-column dataField="resource_type" caption="Resource Type"></dxi-column>
+      <dxi-column dataField="resource_name" caption="Resource" [width]="200"></dxi-column>
+      <dxi-column dataField="resource_id" caption="Resource ID" [width]="100" [visible]="false"></dxi-column>
+      <dxi-column dataField="user_name" caption="User" [width]="150"></dxi-column>
+      <dxi-column dataField="user_email" caption="Email" [width]="200" [visible]="false"></dxi-column>
+      <dxi-column caption="Details" cellTemplate="detailsTemplate" [width]="100"></dxi-column>
+      
+      <div *dxTemplate="let data of 'detailsTemplate'">
+        <dx-button
+          text="View"
+          type="default"
+          (onClick)="viewDetails(data.data)">
+        </dx-button>
+      </div>
+    </dx-data-grid>
+    
+    <div *ngIf="isLoading" class="loading-indicator">
+      <dx-load-indicator [visible]="true"></dx-load-indicator>
+      <span>Loading...</span>
+    </div>
+    
+    <div *ngIf="!isLoading && auditLogs.length === 0" class="no-data">
+      <p>No audit logs found.</p>
+    </div>
+  </div>
+  
+  <!-- Detail Popup -->
+  <dx-popup
+    [width]="800"
+    [height]="600"
+    [showTitle]="true"
+    title="Audit Log Details"
+    [dragEnabled]="false"
+    [hideOnOutsideClick]="true"
+    [showCloseButton]="true"
+    [(visible)]="isDetailPopupVisible">
+    
+    <div *ngIf="selectedLog" class="audit-log-details">
+      <div class="detail-row">
+        <div class="detail-label">ID:</div>
+        <div class="detail-value">{{ selectedLog.id }}</div>
+      </div>
+      
+      <div class="detail-row">
+        <div class="detail-label">Timestamp:</div>
+        <div class="detail-value">{{ formatTimestamp(selectedLog.timestamp) }}</div>
+      </div>
+      
+      <div class="detail-row">
+        <div class="detail-label">User ID:</div>
+        <div class="detail-value">{{ selectedLog.user_id }}</div>
+      </div>
+      
+      <div class="detail-row">
+        <div class="detail-label">Action:</div>
+        <div class="detail-value">{{ selectedLog.action }}</div>
+      </div>
+      
+      <div class="detail-row">
+        <div class="detail-label">Resource Type:</div>
+        <div class="detail-value">{{ selectedLog.resource_type }}</div>
+      </div>
+      
+      <div class="detail-row">
+        <div class="detail-label">Resource ID:</div>
+        <div class="detail-value">{{ selectedLog.resource_id }}</div>
+      </div>
+      
+      <div class="detail-row metadata" *ngIf="selectedLog.extra_metadata">
+        <div class="detail-label">Extra Metadata:</div>
+        <div class="detail-value">
+          <pre>{{ formatJson(selectedLog.extra_metadata) }}</pre>
+        </div>
+      </div>
+    </div>
+    
+    <div *dxTemplate="let data of 'bottom'">
+      <dx-button
+        text="Close"
+        type="normal"
+        (onClick)="closeDetailPopup()">
+      </dx-button>
+    </div>
+  </dx-popup>
+</div>

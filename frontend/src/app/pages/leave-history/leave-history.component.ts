@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
+import { environment } from '../../../environments/environment';
 
 interface LeaveRequest {
   id: string;
@@ -60,8 +61,7 @@ export class LeaveHistoryComponent implements OnInit {
   users: Map<string, User> = new Map(); // Cache for user details
   isLoading: boolean = false;
   errorMessage: string = '';
-  baseUrl: string = 'http://localhost:8000';
-  apiVersion: string = 'v1';
+  baseUrl: string = environment.apiUrl;
   currentUser: any = null;
   leaveTypeMap: Map<string, string> = new Map();
 
@@ -120,7 +120,7 @@ export class LeaveHistoryComponent implements OnInit {
     if (!endpoint.endsWith('/') && endpoint.length > 0) {
       endpoint = `${endpoint}/`;
     }
-    return `${this.baseUrl}/api/${this.apiVersion}/${endpoint}`;
+    return `${this.baseUrl}/${endpoint}`;
   }
 
   fetchLeaveHistory(): void {
@@ -152,10 +152,21 @@ export class LeaveHistoryComponent implements OnInit {
             return;
           }
           
-          // Filter for all approved leaves that belong to the current user
+          // Get the current date for comparison
+          const currentDate = new Date();
+          
+          // Filter for all approved leaves that belong to the current user AND have end dates that have passed
           this.leaveHistory = leaveRequests.filter((leave: LeaveRequest) => {
-            return leave.status === 'approved' && 
-                   leave.user_id === this.currentUser.id;
+            // Check if the leave is approved and belongs to the current user
+            const isApprovedAndOwnedByUser = leave.status === 'approved' && 
+                                            leave.user_id === this.currentUser.id;
+            
+            // Check if the end date has passed
+            const endDate = new Date(leave.end_date);
+            const hasEndDatePassed = endDate < currentDate;
+            
+            // Return true only if both conditions are met
+            return isApprovedAndOwnedByUser && hasEndDatePassed;
           });
           
           // Enhance leave requests with leave type names and fix field name mismatch

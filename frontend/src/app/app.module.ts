@@ -17,6 +17,10 @@ import {LeaveService} from './shared/services/leave.service';
 import {DxiItemModule, DxiSeriesModule} from 'devextreme-angular/ui/nested';
 import {DashboardModule} from './pages/dashboard/dashboard.component';
 import {AuthInterceptor} from './shared/services/authinceptor.service';
+import { configureDevExtreme } from './shared/config/devextreme.config';
+
+// Configure DevExtreme license
+configureDevExtreme();
 
 @NgModule({
   declarations: [

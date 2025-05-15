@@ -226,60 +226,116 @@ export class LeaveRequestComponent implements OnInit {
     this.submitting = true;
 
     try {
+      // Validate form
+      if (!this.leaveForm.instance.validate().isValid) {
+        this.showToast('Please fill in all required fields correctly', 'error');
+        this.submitting = false;
+        return;
+      }
+
+      // Get user data
       const user = await this.authService.getUser();
       if (!user.isOk || !user.data?.id) {
         throw new Error('User ID not found');
       }
+
+      // Get selected leave type
       const leaveType = this.getLeaveType(this.leave.leaveType);
-      if (!leaveType.id) {
+      if (!leaveType || !leaveType.id) {
         throw new Error('Invalid leave type selected');
       }
 
-      // First create the leave request without documents
+      console.log('Selected leave type:', leaveType);
+
+      // Format dates properly for the API
+      const startDate = this.formatDateForAPI(this.leave.startDate);
+      const endDate = this.formatDateForAPI(this.leave.endDate);
+
+      // Prepare leave request data - ONLY include fields that the backend schema expects
       const leaveData = {
-        employeeId: user.data.id,
         leave_type_id: leaveType.id,
-        start_date: this.leave.startDate.toISOString().split('T')[0],
-        end_date: this.leave.endDate.toISOString().split('T')[0],
-        comments: this.leave.comments || '',
-        status: 'pending'
+        start_date: startDate,
+        end_date: endDate,
+        comments: this.leave.comments || ''
+        // Don't include user_id or status - backend will set these automatically
       };
+
+      console.log('Submitting leave request with data:', leaveData);
+
+      // Check leave balance
       var daysCount = this.leave.endDate.getTime() - this.leave.startDate.getTime();
       daysCount = daysCount / (1000 * 60 * 60 * 24);
-      // prevent user from apply days that would exeed the leave balance
       const leaveBalance = this.leaveBalances.find(b => b.leave_type === leaveType.description);
-      const errorMessage = `Leave balance not enough for ${leaveType.description}`;
+      
       if (!leaveBalance) {
-        this.showToast(errorMessage, 'error');
+        this.showToast(`No leave balance found for ${leaveType.description}`, 'error');
+        this.submitting = false;
         return;
       }
+      
       if (daysCount > leaveBalance.balance_days) {
-
-        this.showToast(errorMessage, 'error');
+        this.showToast(`Leave balance not enough for ${leaveType.description}. Available: ${leaveBalance.balance_days} days`, 'error');
+        this.submitting = false;
         return;
       }
 
-      // Create the leave request
+      // Step 1: Create the leave request
       const response = await this.leaveService.createLeaveRequest(leaveData);
+      console.log('Leave request created successfully:', response);
+      
+      if (!response || !response.id) {
+        throw new Error('Failed to create leave request - no ID returned');
+      }
+      
       this.leave.id = response.id;
 
-      // Now upload any attached documents
+      // Step 2: Upload any attached documents
+      let uploadSuccess = true;
+      let failedUploads: string[] = [];
+      
       if (response.id && this.uploadedFiles.length > 0) {
+        console.log(`Uploading ${this.uploadedFiles.length} documents for leave request ${response.id}`);
+        
         for (const file of this.uploadedFiles) {
-          const result = await this.leaveService.uploadLeaveDocument(this.leave.id, file);
-          if (result.id) {
-            this.leave.documents.push({
-              id: result.id,
-              name: file.name,
-              fileType: file.type,
-              size: file.size,
-              uploadDate: new Date()
-            });
+          try {
+            console.log(`Uploading file: ${file.name}`);
+            console.log(`Uploading file ${file.name} to leave request ${response.id}`);
+            const result = await this.leaveService.uploadLeaveDocument(response.id, file);
+            console.log('Document upload result:', result);
+            
+            // The backend returns document_id in the response
+            if (result && (result.document_id || result.id)) {
+              const docId = result.document_id || result.id;
+              console.log(`Document uploaded successfully with ID: ${docId}`);
+              
+              this.leave.documents.push({
+                id: docId,
+                name: file.name,
+                fileType: file.type,
+                size: file.size,
+                uploadDate: new Date()
+              });
+            } else {
+              console.error('Document upload failed - no document ID in response', result);
+              uploadSuccess = false;
+              failedUploads.push(file.name);
+            }
+          } catch (uploadError) {
+            console.error('Error uploading document:', uploadError);
+            uploadSuccess = false;
+            failedUploads.push(file.name);
           }
         }
       }
 
-      this.showToast('Leave request submitted successfully', 'success');
+      // Show appropriate success message
+      if (uploadSuccess) {
+        this.showToast('Leave request submitted successfully', 'success');
+      } else {
+        this.showToast(`Leave request created but some documents failed to upload: ${failedUploads.join(', ')}`, 'warning');
+      }
+      
+      // Reset form and navigate away
       this.uploadedFiles = [];
       this.leave = {
         id: '',
@@ -295,14 +351,28 @@ export class LeaveRequestComponent implements OnInit {
       };
       this.router.navigate(['/dashboard']);
     } catch (error: any) {
+      console.error('Leave request submission error:', error);
       let errorMessage = 'Error submitting leave request';
-      if (error && typeof error === 'object' && 'detail' in error.error) {
-        errorMessage = `Error: ${error.error.detail}`;
+      
+      if (error && typeof error === 'object') {
+        if (error.error && typeof error.error === 'object' && 'detail' in error.error) {
+          errorMessage = `Error: ${error.error.detail}`;
+        } else if (error.message) {
+          errorMessage = `Error: ${error.message}`;
+        }
       }
+      
       this.showToast(errorMessage, 'error');
     } finally {
       this.submitting = false;
     }
+  }
+  
+  // Helper method to format dates in YYYY-MM-DD format
+  private formatDateForAPI(date: Date): string {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; // Returns YYYY-MM-DD
   }
 
   resetForm(): void {

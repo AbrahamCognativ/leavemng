@@ -18,8 +18,8 @@ from fastapi import Security
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 app = FastAPI(
-    title=f"Leave Management API [{get_settings().APP_ENV.upper()}]",
-    description=f"API for managing employee leave requests and approvals.\n\n**Environment:** `{get_settings().APP_ENV}`",
+    title=f"Leave Management API [{settings.APP_ENV.upper()}]",
+    description=f"API for managing employee leave requests and approvals.\n\n**Environment:** `{settings.APP_ENV}`\n\n**Register URL:** `{settings.REGISTER_URL}`",
     version="1.0.0",
     swagger_ui_init_oauth={
         "usePkceWithAuthorizationCodeGrant": True,
@@ -38,6 +38,7 @@ app = FastAPI(
         {"name": "leave", "description": "Leave requests endpoints"},
         {"name": "files", "description": "Files endpoints"},
         {"name": "analytics", "description": "Analytics endpoints"},
+        {"name": "audit_logs", "description": "Audit logs endpoints"},
     ]
 )
 
@@ -67,7 +68,16 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 class AuthRequiredMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        if request.url.path.startswith("/api/v1/auth/login") or request.url.path.startswith("/docs") or request.url.path.startswith("/openapi") or request.url.path.startswith("/redoc"):
+        # Allow OPTIONS requests for CORS preflight
+        if request.method == "OPTIONS":
+            return await call_next(request)
+            
+        if (request.url.path.startswith("/api/v1/auth/login") 
+        or request.url.path.startswith("/docs") 
+        or request.url.path.startswith("/openapi") 
+        or request.url.path.startswith("/redoc")
+        or request.url.path.startswith("/api/v1/auth/reset-password-invite")
+        ):
             return await call_next(request)
         # Only require token for API routes
         if request.url.path.startswith("/api/v1/"):
@@ -80,7 +90,7 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
 app.add_middleware(AuthRequiredMiddleware)
 
 def include_routers():
-    modules = ["auth", "users", "org", "leave", "files", "analytics", "leave_types", "leave_policy"]
+    modules = ["auth", "users", "org", "leave", "files", "analytics", "leave_types", "leave_policy", "audit_logs"]
     for m in modules:
         router = import_module(f"app.api.v1.routers.{m}")
         # Use kebab-case for leave-policy and leave-types
@@ -88,6 +98,8 @@ def include_routers():
             prefix = "/api/v1/leave-policy"
         elif m == "leave_types":
             prefix = "/api/v1/leave-types"
+        elif m == "audit_logs":
+            prefix = "/api/v1/audit-logs"
         else:
             prefix = f"/api/v1/{m}"
         app.include_router(router.router, prefix=prefix)

@@ -7,6 +7,7 @@ import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxScrollViewModule } from 'devextreme-angular/ui/scroll-view';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxiItemModule } from 'devextreme-angular/ui/nested';
+import { DxFileUploaderModule } from 'devextreme-angular/ui/file-uploader';
 import { UserService } from '../../../shared/services/user.service';
 import { AuthService } from '../../../shared/services/auth.service';
 
@@ -19,6 +20,7 @@ import { AuthService } from '../../../shared/services/auth.service';
     CommonModule,
     DxLoadIndicatorModule,
     DxButtonModule,
+    DxFileUploaderModule,
     DxScrollViewModule,
     DxFormModule,
     DxiItemModule
@@ -33,6 +35,14 @@ export class LeaveRequestDetailsComponent implements OnInit {
   isRejecting: boolean = false;
   leaveRequestLeaveType: any = null;
   isLeaveRequestOwner: boolean = false;
+  
+  // Edit mode properties
+  isEditMode: boolean = false;
+  editData: any = {
+    comments: ''
+  };
+  uploadedFiles: File[] = [];
+  isSaving: boolean = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -93,6 +103,9 @@ export class LeaveRequestDetailsComponent implements OnInit {
 
       // Check if the user is the owner of the leave request
       this.isLeaveRequestOwner = this.leaveRequest.user_id === (await this.authService.getUser()).data?.id;
+      
+      // Initialize edit data
+      this.editData.comments = this.leaveRequest.comments || '';
     } catch (error) {
       console.error('Error loading leave request details:', error);
     } finally {
@@ -119,59 +132,14 @@ export class LeaveRequestDetailsComponent implements OnInit {
     if (!this.requestId) return;
     try {
       this.isRejecting = true;
-      const existing = await this.leaveService.getLeaveRequestDetails(this.requestId);
-
-      // Create a new object without id
-      const { id, ...payloadWithoutId } = existing;
-
-      const payload = {
-        leave_type_id: existing.leave_type_id,
-        start_date: existing.start_date,
-        end_date: existing.end_date,
-        id: existing.id,
-        applied_at: existing.applied_at,
-        user_id: existing.user_id,
-        total_days: existing.total_days,
-        comments: existing.comments,
-        status: 'rejected',
-        decision_at: new Date().toISOString(),
-        decided_by: (await this.authService.getUser()).data?.id,
-      };
-
-      await this.leaveService.updateLeaveRequest(this.requestId, payload);
+      await this.leaveService.rejectLeaveRequest(this.requestId);
       await this.loadRequestDetails();
       this.router.navigate(['/admin/leave-requests']);
     } catch (error) {
       console.error('Error rejecting leave request:', error);
       // Log more details about the error
-
     } finally {
       this.isRejecting = false;
-    }
-  }
-
-  async downloadDocument(documentId: string): Promise<void> {
-    if (!this.requestId) {
-      console.error('Request ID is not available');
-      return;
-    }
-
-    if (!documentId || typeof documentId !== 'string') {
-      console.error('Invalid document ID provided:', documentId);
-      return;
-    }
-
-    try {
-      const blob = await this.leaveService.downloadLeaveDocument(this.requestId, documentId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = documentId;
-      link.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading document:', error);
-      alert('Failed to download document. Please try again.');
     }
   }
 
@@ -186,5 +154,132 @@ export class LeaveRequestDetailsComponent implements OnInit {
 
   capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+  
+  toggleEditMode(): void {
+    this.isEditMode = !this.isEditMode;
+    
+    console.log('Toggle edit mode:', this.isEditMode ? 'ON' : 'OFF');
+    
+    if (this.isEditMode) {
+      // Initialize edit data when entering edit mode
+      this.editData.comments = this.leaveRequest.comments || '';
+      this.uploadedFiles = [];
+      
+      // Refresh document list when entering edit mode
+      if (this.requestId) {
+        this.refreshDocumentList();
+      }
+    } else {
+      // Reset edit data when canceling edit mode
+      this.editData.comments = this.leaveRequest.comments || '';
+      this.uploadedFiles = [];
+    }
+  }
+  
+  async refreshDocumentList(): Promise<void> {
+    if (!this.requestId) return;
+    
+    try {
+      console.log('Refreshing document list for leave request:', this.requestId);
+      this.documents = await this.leaveService.getLeaveDocuments(this.requestId);
+      console.log('Document list refreshed, count:', this.documents.length);
+    } catch (error) {
+      console.error('Error refreshing document list:', error);
+    }
+  }
+  
+  onFileUploaded(e: any): void {
+    if (e.value && e.value.length > 0) {
+      this.uploadedFiles = e.value;
+    }
+  }
+  
+  async removeDocument(documentId: string): Promise<void> {
+    // Basic validation
+    if (!this.requestId || !documentId) {
+      return;
+    }
+    
+    const docToDelete = this.documents.find(doc => doc.document_id === documentId);
+    if (!docToDelete) return;
+    
+    try {
+      // Call the service method to delete
+      await this.leaveService.deleteLeaveDocument(this.requestId, documentId);
+      
+      // Reload documents list
+      await this.refreshDocumentList();
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+    }
+  }
+  
+  async downloadDocument(documentId: string, fileName: string = 'document'): Promise<void> {
+    if (!this.requestId || !documentId) return;
+    
+    try {
+      const blob = await this.leaveService.downloadLeaveDocumentFromFiles(this.requestId, documentId);
+      
+      if (!blob || blob.size === 0) return;
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'document';
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+    }
+  }
+  
+  async saveChanges(): Promise<void> {
+    if (!this.requestId || this.isSaving) return;
+    this.isSaving = true;
+    
+    try {
+      console.log('Starting save process for leave request:', this.requestId);
+      
+      // 1. Update leave request comments
+      const updateData = {
+        comments: this.editData.comments
+      };
+      
+      console.log('Sending update with data:', updateData);
+      const updateResult = await this.leaveService.updateLeaveRequest(this.requestId, updateData);
+      console.log('Update result:', updateResult);
+      
+      // 2. Upload any new files
+      if (this.uploadedFiles.length > 0) {
+        console.log(`Uploading ${this.uploadedFiles.length} files`);
+        for (const file of this.uploadedFiles) {
+          try {
+            const uploadResult = await this.leaveService.uploadFile(this.requestId, file);
+            console.log('File upload result:', uploadResult);
+          } catch (uploadError) {
+            console.error(`Error uploading file ${file.name}:`, uploadError);
+          }
+        }
+      }
+      
+      // 3. Exit edit mode and reload data
+      this.isEditMode = false;
+      console.log('Reloading leave request details');
+      await this.loadRequestDetails();
+      console.log('Successfully saved and reloaded leave request');
+    } catch (error) {
+      console.error('Error updating leave request:', error);
+      alert('There was an error saving your changes. Please try again.');
+    } finally {
+      this.isSaving = false;
+    }
   }
 }

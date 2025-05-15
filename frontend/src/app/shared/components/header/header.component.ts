@@ -48,6 +48,11 @@ export class HeaderComponent implements OnInit {
     try {
       this.authService.getUser().then((e) => {
         this.user = e.data;
+        
+        // If profile_image_url exists but avatarUrl doesn't, map it
+        if (this.user && this.user.profile_image_url && !this.user.avatarUrl) {
+          this.user.avatarUrl = this.user.profile_image_url;
+        }
       });
     } catch (err) {
       console.error('Invalid user JSON in localStorage:', err);

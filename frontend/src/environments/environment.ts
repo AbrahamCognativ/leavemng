@@ -1,4 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8000/api/v1'
+  // apiUrl: process.env["API_URL"]
+  apiUrl: "http://localhost:8000/api/v1",
+  apiBaseUrl: "http://localhost:8000"
 }; 

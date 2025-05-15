@@ -4,11 +4,24 @@
   <div class="content-block" *ngIf="!isLoading && leaveRequest">
     <div class="dx-card leave-request-details">
       <div class="header">
-        <h2>Leave Request Details</h2>
-        <div class="status-badge" [ngClass]="getStatusClass(leaveRequest.status)">
-          {{ leaveRequest.status | titlecase }} <span *ngIf="leaveRequest.status === 'approved' && leaveRequest.decision_at">on {{ leaveRequest.decision_at | date:'medium' }}</span>
+        <div class="header-content">
+          <h2>Leave Request Details</h2>
+          <div class="status-badge" [ngClass]="getStatusClass(leaveRequest.status)">
+            {{ leaveRequest.status | titlecase }} <span *ngIf="leaveRequest.status === 'approved' && leaveRequest.decision_at">on {{ leaveRequest.decision_at | date:'medium' }}</span>
+          </div>
         </div>
-
+        
+        <!-- Edit button for the owner of the request -->
+        <div class="header-actions" *ngIf="isLeaveRequestOwner">
+          <dx-button
+            *ngIf="!isEditMode"
+            text="Edit"
+            type="default"
+            icon="edit"
+            stylingMode="outlined"
+            (onClick)="toggleEditMode()">
+          </dx-button>
+        </div>
       </div>
 
       <dx-scroll-view>
@@ -47,7 +60,9 @@
 
           <div class="section">
             <h3>Request Details</h3>
-            <div class="info-grid">
+            
+            <!-- View mode -->
+            <div class="info-grid" *ngIf="!isEditMode">
               <div class="info-item full-width">
                 <label>Reason</label>
                 <span>{{ leaveRequest.comments ? leaveRequest.comments : 'No reason provided' }}</span>
@@ -61,24 +76,97 @@
                 <span>{{ leaveRequest.updated_at | date:'medium' }}</span>
               </div>
             </div>
+            
+            <!-- Edit mode -->
+            <div class="edit-form" *ngIf="isEditMode">
+              <dx-form [formData]="editData">
+                <dxi-item
+                  dataField="comments"
+                  editorType="dxTextArea"
+                  [editorOptions]="{
+                    height: 100,
+                    placeholder: 'Provide additional details about your leave request',
+                    value: editData.comments,
+                    maxLength: 500
+                  }">
+                  <dxo-label text="Reason"></dxo-label>
+                </dxi-item>
+              </dx-form>
+            </div>
           </div>
 
-          <div class="section" >
+          <div class="section">
             <h3>Supporting Documents</h3>
-            <div class="documents-list" *ngIf="documents.length > 0">
+            
+            <!-- View mode documents -->
+            <div class="documents-list" *ngIf="documents.length > 0 && !isEditMode">
               <div class="document-item" *ngFor="let doc of documents">
                 <div class="document-info">
                   <i class="dx-icon-file"></i>
                   <span>{{ doc.file_name }}</span>
                 </div>
-                <dx-button
-                  icon="download"
-                  stylingMode="text"
-                  (onClick)="downloadDocument(doc.document_id)">
-                </dx-button>
+                <div class="document-actions">
+                  <dx-button
+                    icon="download"
+                    stylingMode="text"
+                    title="Download document"
+                    (onClick)="downloadDocument(doc.document_id, doc.file_name)">
+                  </dx-button>
+                  <!-- Delete button removed from view mode as requested -->
+                </div>
               </div>
             </div>
-            <div class="section" *ngIf="documents.length === 0">
+            
+            <!-- Edit mode documents -->
+            <div class="documents-list" *ngIf="documents.length > 0 && isEditMode">
+              <div class="document-item" *ngFor="let doc of documents">
+                <div class="document-info">
+                  <i class="dx-icon-file"></i>
+                  <span>{{ doc.file_name }}</span>
+                </div>
+                <div class="document-actions">
+                  <dx-button
+                    icon="download"
+                    stylingMode="text"
+                    title="Download document"
+                    (onClick)="downloadDocument(doc.document_id, doc.file_name)">
+                  </dx-button>
+                  <dx-button
+                    icon="trash"
+                    stylingMode="text"
+                    type="danger"
+                    title="Delete document"
+                    (onClick)="removeDocument(doc.document_id)">
+                  </dx-button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Upload new documents in edit mode -->
+            <div class="document-upload" *ngIf="isEditMode">
+              <h4>Add New Documents</h4>
+              <dx-file-uploader
+                selectButtonText="Choose Files"
+                labelText="Drag files here or click to browse"
+                accept=".pdf,.doc,.docx,.jpg,.png"
+                [multiple]="true"
+                [showFileList]="true"
+                [(value)]="uploadedFiles"
+                (onValueChanged)="onFileUploaded($event)"
+                uploadMode="useForm"
+                [maxFileSize]="5242880">
+              </dx-file-uploader>
+              
+              <div class="document-hints">
+                <i class="dx-icon-info"></i>
+                <div class="hints-content">
+                  <p>Accepted formats: PDF, DOC, DOCX, JPG, PNG</p>
+                  <p>Maximum file size: 5MB per file</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="no-documents" *ngIf="documents.length === 0 && !isEditMode">
               <p>The employee did not upload any supporting documents for this leave request.</p>
             </div>
           </div>
@@ -89,6 +177,7 @@
         </div>
       </dx-scroll-view>
 
+      <!-- Approval/Rejection buttons for managers/admins -->
       <div class="actions" *ngIf="leaveRequest.status === 'pending' && !isLeaveRequestOwner">
         <dx-button
           [text]="isApproving ? 'Approving...' : 'Approve'"
@@ -101,8 +190,25 @@
           [text]="isRejecting ? 'Rejecting...' : 'Reject'"
           type="danger"
           stylingMode="contained"
-          [disabled]="isApproving || isRejecting"
+          [disabled]="isRejecting || isApproving"
           (onClick)="rejectRequest()">
+        </dx-button>
+      </div>
+      
+      <!-- Edit mode actions -->
+      <div class="actions" *ngIf="isEditMode && isLeaveRequestOwner">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          [disabled]="isSaving"
+          (onClick)="toggleEditMode()">
+        </dx-button>
+        <dx-button
+          [text]="isSaving ? 'Saving...' : 'Save Changes'"
+          type="default"
+          stylingMode="contained"
+          [disabled]="isSaving"
+          (onClick)="saveChanges()">
         </dx-button>
       </div>
     </div>

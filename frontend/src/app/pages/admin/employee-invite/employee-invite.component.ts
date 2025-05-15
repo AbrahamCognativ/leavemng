@@ -9,11 +9,11 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../shared/services';
 import { UserService, IUser } from '../../../shared/services/user.service';
+import { environment } from '../../../../environments/environment';
 
 interface NewEmployee {
   name: string;
   email: string;
-  password: string;
   role_band: string;
   role_title: string;
   passport_or_id_number: string;
@@ -52,7 +52,6 @@ export class EmployeeInviteComponent implements OnInit {
   newEmployee: NewEmployee = {
     name: '',
     email: '',
-    password: '',
     role_band: '',
     role_title: '',
     passport_or_id_number: '',
@@ -76,8 +75,7 @@ export class EmployeeInviteComponent implements OnInit {
   userToDelete: IUser | null = null;
   
   colCountByScreen: object;
-  baseUrl: string = 'http://localhost:8000';
-  apiVersion: string = 'v1';
+  baseUrl: string = environment.apiUrl;
 
   constructor(
     private http: HttpClient,
@@ -126,7 +124,7 @@ export class EmployeeInviteComponent implements OnInit {
   }
 
   getApiUrl(endpoint: string): string {
-    return `${this.baseUrl}/api/${this.apiVersion}/${endpoint}`;
+    return `${this.baseUrl}/${endpoint}`;
   }
 
   fetchManagers(): void {
@@ -228,7 +226,6 @@ export class EmployeeInviteComponent implements OnInit {
           this.newEmployee = {
             name: '',
             email: '',
-            password: '',
             role_band: '',
             role_title: '',
             passport_or_id_number: '',

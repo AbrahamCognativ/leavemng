@@ -13,6 +13,7 @@ class UserBase(BaseModel):
     profile_image_url: Optional[str] = None
     manager_id: Optional[UUID] = None
     org_unit_id: Optional[UUID] = None
+    is_active: Optional[bool] = True 
     extra_metadata : Optional[Any] = None
     is_active: Optional[bool] = True  # Default to active
 
@@ -26,6 +27,9 @@ class UserRead(UserBase):
     model_config = {"from_attributes": True}
 
 class UserUpdate(BaseModel):
+    """
+    Standard user update schema. For first-time password reset via invite, use the /reset-password-invite endpoint.
+    """
     name: Optional[str] = None
     role_band: Optional[str] = None
     role_title: Optional[str] = None

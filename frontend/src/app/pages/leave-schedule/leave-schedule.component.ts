@@ -55,13 +55,13 @@ export class LeaveScheduleComponent {
 
             if (!userId || !leaveTypeId) {
               throw new Error('User ID or Leave Type ID is missing or invalid');
+
             }
             const user = await this.userService.getUserById(userId);
             const leaveType = await this.leaveService.getLeaveTypes();
 
             const color = this.getColorForUser(userId);
 
-            console.log("this is d:", d)
             return {
               ...d,
               startDate: new Date(d['start_date']),

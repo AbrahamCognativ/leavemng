@@ -9,6 +9,6 @@ class AuditLog(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     action = Column(String, nullable=False)
     resource_type = Column(String, nullable=False)
-    resource_id = Column(UUID(as_uuid=True), nullable=False)
+    resource_id = Column(String, nullable=False)  # Changed from UUID to String to handle different ID formats
     timestamp = Column(DateTime(timezone=True))
     extra_metadata = Column(JSON, nullable=True)

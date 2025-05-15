@@ -8,6 +8,8 @@ export interface IUser {
   id: string;
   email: string;
   avatarUrl?: string;
+  profile_image_url?: string;
+  gender?: string;
   role_band: string;
   role_title: string;
 }
@@ -63,6 +65,20 @@ export class AuthService {
       const response = await firstValueFrom(
         this.http.post<LoginResponse>(`${this.API_URL}/auth/login`, formData)
       );
+      
+      // Set default avatarUrl if user doesn't have a profile image
+      if (!response.user.profile_image_url && !response.user.avatarUrl) {
+        // Use gender-specific default avatars if gender is available
+        if (response.user.gender === 'Male') {
+          response.user.avatarUrl = 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+        } else if (response.user.gender === 'Female') {
+          response.user.avatarUrl = 'https://cdn-icons-png.flaticon.com/512/4140/4140047.png';
+        } else {
+          // Default neutral avatar
+          response.user.avatarUrl = 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+        }
+      }
+      
       this._user = response.user;
       localStorage.setItem('current_user', JSON.stringify(response.user));
       localStorage.setItem('user_token', response.access_token);
@@ -74,10 +90,13 @@ export class AuthService {
         data: response
       };
     }
-    catch {
+    catch (error: any) {
+      // Clear any existing auth data
+      this.logOut();
+      
       return {
         isOk: false,
-        message: "Authentication failed"
+        message: error.error?.detail || "Authentication failed"
       };
     }
   }

@@ -6,7 +6,9 @@ import {AuthService} from '../../shared/services';
 import {CommonModule} from '@angular/common';
 import {DxLoadIndicatorModule} from 'devextreme-angular/ui/load-indicator';
 import {DxDataGridModule} from 'devextreme-angular/ui/data-grid';
+import {DxPopupModule} from 'devextreme-angular/ui/popup';
 import {Router} from '@angular/router';
+import {EditLeaveModalComponent} from './edit-leave-modal/edit-leave-modal.component';
 
 @Component({
   templateUrl: 'dashboard.component.html',
@@ -25,6 +27,11 @@ export class DashboardComponent {
   leaveBalances: any[] = [];
   isLoading: boolean = false;
   isAdmin: boolean = false;
+  remainingLeaveDays: number = 0;
+  
+  // Edit leave modal properties
+  editModalVisible: boolean = false;
+  selectedLeaveRequest: any = null;
 
   constructor(
     private leaveService: LeaveService,
@@ -48,7 +55,25 @@ export class DashboardComponent {
 
   onRowClick(e: any) {
     if (e.rowType === 'data' && e.rowIndex >= 0) {
+      // Navigate to the leave details page for all leave requests
       this.router.navigate(['/leave-request', e.data.id]);
+    }
+  }
+  
+  openEditModal(leaveRequest: any): void {
+    this.selectedLeaveRequest = leaveRequest;
+    this.editModalVisible = true;
+  }
+  
+  closeEditModal(): void {
+    this.editModalVisible = false;
+    this.selectedLeaveRequest = null;
+  }
+  
+  onLeaveUpdated(event: any): void {
+    if (event.success) {
+      // Reload statistics to reflect any changes
+      this.loadStatistics();
     }
   }
 
@@ -63,36 +88,75 @@ export class DashboardComponent {
         return;
       }
 
+      // Get all leave types first
+      const types = await this.leaveService.getLeaveTypes();
+      this.leaveTypes = types;
+
+      const totalAllowableLeaveDays = types.reduce((total, type) => total + (type.default_allocation_days || 0), 0);
+
+      // Get all leave requests for current user
       const allRequests = await this.leaveService.getLeaveRequests();
       const requests = allRequests.filter(r => r.user_id === currentUserId);
       this.leaveRequests = requests;
+      
+      const pendingAndApprovedRequests = requests.filter(r => r.status === 'pending' || r.status === 'approved');
+      const totalUsedLeaveDays = pendingAndApprovedRequests.reduce((total, request) => total + (request.total_days || 0), 0);
+      this.remainingLeaveDays = totalAllowableLeaveDays - totalUsedLeaveDays;
+
+      // Calculate leave statistics
       this.pendingLeaves = requests.filter(r => r.status === 'pending').length;
       this.approvedLeaves = requests.filter(r => r.status === 'approved').length;
       this.rejectedLeaves = requests.filter(r => r.status === 'rejected').length;
 
-      const types = await this.leaveService.getLeaveTypes();
-      this.leaveTypes = types;
+      // Calculate leave balances and distribution
+      const leaveDistribution: { [key: string]: { total: number; used: number; remaining: number } } = {};
+      const currentYear = new Date().getFullYear();
 
-      const typeCounts: { [key: string]: number } = {};
-      for (const type of types) {
-        const typeName = type.description || 'Unknown';
-        typeCounts[typeName] = (typeCounts[typeName] || 0) + 1;
-      }
-      this.leaveTypeCounts = Object.entries(typeCounts).map(([type, count]) => ({
+      // Initialize distribution
+      types.forEach(type => {
+        leaveDistribution[type.description] = {
+          total: type.default_allocation_days || 0,
+          used: 0,
+          remaining: type.default_allocation_days || 0
+        };
+      });
+
+      // Calculate used days for each leave type
+      requests.forEach(request => {
+        if (request.status === 'approved' || request.status === 'pending') {
+          const requestYear = new Date(request.start_date).getFullYear();
+          if (requestYear === currentYear) {
+            const type = types.find(t => t.id === request.leave_type_id);
+            if (type) {
+              leaveDistribution[type.description].total = type.default_allocation_days || 0;
+              leaveDistribution[type.description].used += request.total_days;
+              leaveDistribution[type.description].remaining = type.default_allocation_days - leaveDistribution[type.description].used;
+            }
+          }
+        }
+      });
+
+      // Prepare data for display
+      this.leaveTypeCounts = Object.entries(leaveDistribution).map(([type, data]) => ({
         type,
-        count
+        total: data.total,
+        used: data.used,
+        remaining: data.remaining,
+        percentageUsed: data.total > 0 ? (data.used / data.total) * 100 : 0
       }));
-      // Optional: Only fetch balances if needed for the same user
-      const balances = requests;
-      this.leaveBalances = balances;
 
-      // update each leave Request with the leave type description
+      // Calculate total leave balance
+      this.leaveBalances = [{
+        totalBalance: this.remainingLeaveDays,
+        year: currentYear
+      }];
+
+      // Update leave requests with type descriptions
       for (const request of requests) {
         const leaveType = types.find(t => t.id === request.leave_type_id);
         request.leave_type_description = leaveType?.description || 'Unknown';
       }
       this.leaveRequests = requests;
-
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -107,7 +171,9 @@ export class DashboardComponent {
     DxiSeriesModule,
     DxDataGridModule,
     DxLoadIndicatorModule,
-    CommonModule
+    DxPopupModule,
+    CommonModule,
+    EditLeaveModalComponent
   ],
   providers: [AuthService, LeaveService],
   declarations: [ DashboardComponent ],
