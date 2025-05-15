@@ -318,12 +318,44 @@ export class LeaveScheduleComponent implements OnInit {
   onAppointmentFormOpening(e: AppointmentFormEvent): void {
     console.log('Appointment form opening event:', e);
     
-    if (!e || !e['form']) {
-      console.error('Form not available in the event');
-      return;
+    // First, ensure editing is disabled for this specific event
+    if (e.appointmentData) {
+      e.appointmentData.disabled = true;
     }
     
-    // Make the form read-only
+    // Set up form to prevent deletion
+    if (e['form']) {
+      // Disable the form's delete button
+      e['form'].option('readOnly', true);
+      
+      // If the form has items, hide the delete button
+      if (e['form'].option('items')) {
+        const items = e['form'].option('items');
+        e['form'].option('items', items.filter((item: any) => 
+          item.itemType !== 'button' || 
+          (item.itemType === 'button' && item.buttonOptions?.text !== 'Delete')
+        ));
+      }
+    }
+    
+    // Modify the popup to remove any delete buttons
+    if (e['popup']) {
+      // Hide all delete-related toolbar items
+      const toolbarItems = e['popup'].option('toolbarItems');
+      if (toolbarItems) {
+        e['popup'].option('toolbarItems', toolbarItems.filter((item: any) => 
+          item.name !== 'deleteButton' && 
+          item.options?.text !== 'Delete' && 
+          item.options?.hint !== 'Delete' && 
+          item.options?.type !== 'danger'
+        ));
+      }
+      
+      // Set popup property to disable deletion
+      e['popup'].option('showDeleteButton', false);
+    }
+    
+    // Cancel the default form behavior
     e.cancel = true;
     
     if (e.appointmentData) {
