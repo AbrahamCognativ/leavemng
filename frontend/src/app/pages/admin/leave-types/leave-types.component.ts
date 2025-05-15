@@ -129,12 +129,12 @@ export class LeaveTypesComponent implements OnInit {
 
       const existingCodes = new Set(this.leaveTypes.map(t => t.code));
 
-      // Create only missing leave types
-      for (const type of DEFAULT_LEAVE_TYPES) {
-        if (!existingCodes.has(type.code)) {
-          await this.leaveService.createLeaveType(type);
-        }
-      }
+      // // Create only missing leave types
+      // for (const type of DEFAULT_LEAVE_TYPES) {
+      //   if (!existingCodes.has(type.code)) {
+      //     await this.leaveService.createLeaveType(type);
+      //   }
+      // }
 
       this.leaveTypes = await this.leaveService.getLeaveTypes();
       this.leavePolicies = await this.leaveService.getLeavePolicies();

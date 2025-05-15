@@ -30,6 +30,28 @@ def add_existing_users_to_leave_balances(db: Session):
     log_audit(db, "Add Existing Users to Leave Balances", "Added existing users to leave balances.")
 
 
+def test_accrue_annual_leave(db: Session):
+    """
+    TEST FUNCTION: Add 2 days to the annual leave balance for all active users, for testing purposes only.
+    """
+    from app.models.leave_type import LeaveType, LeaveCodeEnum
+    from decimal import Decimal
+    # Find the annual leave type
+    annual_leave_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.annual).first()
+    if not annual_leave_type:
+        log_audit(db, "Test Annual Leave Accrual", "No annual leave type found. No database update was done.")
+        return
+    users = db.query(User).filter(User.is_active == True).all()
+    for user in users:
+        bal = db.query(LeaveBalance).filter_by(user_id=user.id, leave_type_id=annual_leave_type.id).first()
+        if not bal:
+            bal = LeaveBalance(user_id=user.id, leave_type_id=annual_leave_type.id, balance_days=0)
+            db.add(bal)
+        bal.balance_days = (bal.balance_days or Decimal(0)) + Decimal(2)
+    db.commit()
+    log_audit(db, "Test Annual Leave Accrual", {"users": [user.email for user in users]})
+
+
 # def accrue_annual_leave_balances(db: Session):
 #     """
 #     Accrue annual leave for all active users by adding the policy's accrual_amount_per_period to their balance.

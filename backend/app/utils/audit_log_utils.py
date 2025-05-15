@@ -11,18 +11,17 @@ LOG_PATH = os.path.abspath(LOG_PATH)
 def get_or_create_scheduler_user(db: Session):
     """Get or create the Anonymous Scheduler user for audit logging."""
     from app.models.user import User
-    username = 'anonymous_scheduler'
-    user = db.query(User).filter(User.username == username).first()
+    scheduler_name = 'anonymous scheduler'
+    user = db.query(User).filter(User.name == scheduler_name).first()
     if not user:
         user = User(
-            username=username,
-            name='Scheduler',
+            name=scheduler_name,
             email='scheduler@system.local',
             hashed_password='!',  # Not used for login
-            role_band='system',
+            role_band='IC',
             role_title='Scheduler',
             passport_or_id_number='SCHEDULER-000',
-            gender='other',
+            gender='male',
             is_active=True
         )
         db.add(user)
@@ -39,18 +38,20 @@ def write_audit_log(message: str):
     with open(LOG_PATH, 'a') as f:
         f.write(f"[{timestamp}] {message}\n")
 
-def insert_audit_log_db(db: Session, action: str, details: str):
+def insert_audit_log_db(db: Session, action: str, resource_id: str = "", extra_metadata: dict = None):
     """Insert an audit log record into the database using the scheduler user."""
     user = get_or_create_scheduler_user(db)
     log = AuditLog(
         user_id=user.id,
         action=action,
-        details=details,
-        timestamp=datetime.datetime.now()
+        resource_type="system_scheduler",
+        resource_id="cron_job",
+        timestamp=datetime.datetime.now(),
+        extra_metadata=extra_metadata
     )
     db.add(log)
     db.commit()
 
 def log_audit(db: Session, action: str, details: str):
     write_audit_log(f"{action}: {details}")
-    insert_audit_log_db(db, action, details)
+    insert_audit_log_db(db, action, extra_metadata={"details": details})

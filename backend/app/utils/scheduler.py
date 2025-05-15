@@ -1,7 +1,7 @@
 import time
 import threading
 from app.db.session import SessionLocal
-from app.utils.accrual import add_existing_users_to_leave_balances, accrue_monthly_leave_balances, accrue_quarterly_leave_balances, accrue_yearly_leave_balances, reset_annual_leave_carry_forward
+from app.utils.accrual import add_existing_users_to_leave_balances, accrue_monthly_leave_balances, accrue_quarterly_leave_balances, accrue_yearly_leave_balances, reset_annual_leave_carry_forward, test_accrue_annual_leave
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.utils.auto_reject import auto_reject_old_pending_leaves
 
@@ -56,6 +56,21 @@ def run_accrual_scheduler():
     scheduler.add_job(yearly_accrual_job, 'cron', month=1, day=1, hour=0, minute=0, id='yearly_accrual_job')
     # Run quarterly on the 1st of Jan, Apr, Jul, Oct at 00:00
     scheduler.add_job(quarterly_accrual_job, 'cron', month='1,4,7,10', day=1, hour=0, minute=0, id='quarterly_accrual_job')
+
+    # Schedule quarterly accrual for Apr 1st at 00:00
+    def test_quarterly_accrual_job():
+        db = SessionLocal()
+        try:
+            logging.info('[START] Test annual leave accrual job starting.')
+            test_accrue_annual_leave(db)
+            db.commit()
+            logging.info('[SUCCESS] Test annual leave accrual job ran successfully.')
+        except Exception as e:
+            logging.error(f'[ERROR] Test annual leave accrual job failed: {e}')
+        finally:
+            db.close()
+    # For demo/testing: run every 2 minutes. For real monthly: use 'interval', minutes=30
+    scheduler.add_job(test_quarterly_accrual_job, 'interval', minutes=1, id='test_quarterly_accrual_job')
 
 
     # Schedule carry forward logic for Dec 31st at midnight

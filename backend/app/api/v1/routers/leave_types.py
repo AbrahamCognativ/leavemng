@@ -39,7 +39,11 @@ def create_leave_type(leave_type: LeaveTypeCreate, db: Session = Depends(get_db)
     for user in active_users:
         # Avoid duplicate balances
         exists = db.query(LeaveBalance).filter(LeaveBalance.user_id == user.id, LeaveBalance.leave_type_id == db_leave_type.id).first()
-        if not exists:
+        if not exists and (
+            db_leave_type.code != LeaveCodeEnum.maternity or user.gender != "male"
+        ) and (
+            db_leave_type.code != LeaveCodeEnum.paternity or user.gender != "female"
+        ):
             balance = LeaveBalance(
                 user_id=user.id,
                 leave_type_id=db_leave_type.id,
