@@ -16,6 +16,14 @@ def accrue_leave_balances(db: Session):
         # Only accrue if monthly
         if policy.accrual_frequency != AccrualFrequencyEnum.monthly:
             continue
+        # Ensure all active users in org_unit have a LeaveBalance for this leave_type
+        active_users = db.query(User).filter(User.org_unit_id == policy.org_unit_id, User.is_active == True).all()
+        for user in active_users:
+            exists = db.query(LeaveBalance).filter_by(user_id=user.id, leave_type_id=policy.leave_type_id).first()
+            if not exists:
+                bal = LeaveBalance(user_id=user.id, leave_type_id=policy.leave_type_id, balance_days=0)
+                db.add(bal)
+        db.commit()
         users = db.query(User).filter(User.org_unit_id == policy.org_unit_id).all()
         for user in users:
             # Gender eligibility

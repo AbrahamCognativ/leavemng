@@ -3,13 +3,15 @@ import threading
 from app.db.session import SessionLocal
 from app.utils.accrual import accrue_leave_balances, reset_annual_leave_carry_forward
 from apscheduler.schedulers.background import BackgroundScheduler
+from app.auto_reject import auto_reject_old_pending_leaves
 
-def run_accrual_scheduler(interval_seconds=2592000):  # Default: 30 days
+def run_accrual_scheduler(interval_seconds=120):  # Default: 30 days 2592000
     def job():
         while True:
             db = SessionLocal()
             try:
                 accrue_leave_balances(db)
+                print('[SUCCESS] Accrual job ran successfully.')
             finally:
                 db.close()
             time.sleep(interval_seconds)
@@ -22,6 +24,7 @@ def run_accrual_scheduler(interval_seconds=2592000):  # Default: 30 days
         db = SessionLocal()
         try:
             reset_annual_leave_carry_forward(db)
+            print('[SUCCESS] Annual leave carry forward job ran successfully.')
         finally:
             db.close()
     # Run at 00:00 on December 31st every year
@@ -75,7 +78,13 @@ def run_accrual_scheduler(interval_seconds=2592000):  # Default: 30 days
                     except Exception as e:
                         logging.warning(f"Could not send notification: {e}")
             db.commit()
+            print('[SUCCESS] Sick leave document check job ran successfully.')
         finally:
             db.close()
     scheduler.add_job(sick_leave_doc_check_job, 'interval', hours=1, id='sick_leave_doc_check')
+    # Schedule auto-reject of old pending leaves every midnight
+    def auto_reject_old_pending_leaves_job():
+        auto_reject_old_pending_leaves()
+        print('[SUCCESS] Auto-reject pending leaves job ran successfully.')
+    scheduler.add_job(auto_reject_old_pending_leaves_job, 'cron', hour=0, minute=0, id='auto_reject_pending_leaves')
     scheduler.start()
