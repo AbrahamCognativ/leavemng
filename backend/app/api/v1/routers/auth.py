@@ -155,6 +155,30 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # --- AUTO-CREATE LEAVE BALANCES FOR ELIGIBLE LEAVE TYPES ---
+    from app.models.leave_type import LeaveType
+    from app.models.leave_balance import LeaveBalance
+    from datetime import datetime, timezone
+    leave_types = db.query(LeaveType).all()
+    eligible_leave_types = []
+    for lt in leave_types:
+        code = lt.code.value if hasattr(lt.code, 'value') else str(lt.code)
+        if code == "maternity" and user.gender != "female":
+            continue
+        if code == "paternity" and user.gender != "male":
+            continue
+        eligible_leave_types.append(lt)
+    for lt in eligible_leave_types:
+        balance = LeaveBalance(
+            user_id=user.id,
+            leave_type_id=lt.id,
+            balance_days=lt.default_allocation_days,
+            updated_at=datetime.now(timezone.utc)
+        )
+        db.add(balance)
+    db.commit()
+
     # Send invite email
     from app.utils.email_utils import send_invite_email
     from app.settings import get_settings

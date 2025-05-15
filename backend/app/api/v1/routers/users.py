@@ -57,6 +57,31 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         if hasattr(e, 'orig') and hasattr(e.orig, 'diag') and 'unique' in str(e.orig).lower():
             raise HTTPException(status_code=400, detail="passport_or_id_number already exists")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+    # --- AUTO-CREATE LEAVE BALANCES FOR ELIGIBLE LEAVE TYPES ---
+    from app.models.leave_type import LeaveType
+    from app.models.leave_balance import LeaveBalance
+    from datetime import datetime, timezone
+    leave_types = db.query(LeaveType).all()
+    eligible_leave_types = []
+    gender = getattr(db_user, 'gender', None)
+    for lt in leave_types:
+        code = lt.code.value if hasattr(lt.code, 'value') else str(lt.code)
+        if code == "maternity" and gender != "female":
+            continue
+        if code == "paternity" and gender != "male":
+            continue
+        eligible_leave_types.append(lt)
+    for lt in eligible_leave_types:
+        balance = LeaveBalance(
+            user_id=db_user.id,
+            leave_type_id=lt.id,
+            balance_days=lt.default_allocation_days,
+            updated_at=datetime.now(timezone.utc)
+        )
+        db.add(balance)
+    db.commit()
+
     # Audit: log user creation
     from app.deps.permissions import log_permission_denied
     log_permission_denied(db, db_user.id, "create_user", "user", db_user.id)
