@@ -88,3 +88,10 @@
   </div>
   -->
 </div>
+
+<!-- Edit Leave Modal -->
+<app-edit-leave-modal
+  [(visible)]="editModalVisible"
+  [leaveRequest]="selectedLeaveRequest"
+  (onLeaveUpdated)="onLeaveUpdated($event)">
+</app-edit-leave-modal>

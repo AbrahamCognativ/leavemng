@@ -13,11 +13,21 @@
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 20px;
 
-    h2 {
-      margin: 0;
+    .header-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      h2 {
+        margin: 0;
+      }
+    }
+
+    .header-actions {
+      margin-left: 16px;
     }
 
     .status-badge {
@@ -46,6 +56,50 @@
 
   .details-container {
     padding: 20px 0;
+  }
+  
+  // Edit mode styles
+  .edit-form {
+    margin: 16px 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 16px;
+    background-color: #fafafa;
+  }
+  
+  .document-upload {
+    margin-top: 20px;
+    border: 1px dashed #ccc;
+    padding: 20px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    
+    h4 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: #555;
+    }
+    
+    .document-hints {
+      display: flex;
+      align-items: flex-start;
+      margin-top: 12px;
+      padding: 8px;
+      background-color: #e8f4fd;
+      border-radius: 4px;
+      font-size: 12px;
+      
+      i {
+        color: #2196f3;
+        margin-right: 8px;
+        margin-top: 2px;
+      }
+      
+      .hints-content p {
+        margin: 4px 0;
+        color: #555;
+      }
+    }
   }
 
   .section {
@@ -89,37 +143,45 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-  }
 
-  .document-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-
-    .document-info {
+    .document-item {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      padding: 10px;
+      border: 1px solid #eee;
+      margin-bottom: 10px;
+      border-radius: 4px;
 
-      i {
-        color: #666;
+      &:hover {
+        background-color: #f8f9fa;
       }
 
-      span {
-        color: #333;
+      .document-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        i {
+          font-size: 16px;
+          color: #555;
+        }
+      }
+      
+      .document-actions {
+        display: flex;
+        gap: 8px;
       }
     }
   }
 
   .actions {
     display: flex;
-    gap: 10px;
-    margin-top: 20px;
+    justify-content: flex-end;
     padding-top: 20px;
+    gap: 10px;
     border-top: 1px solid #eee;
+    margin-top: 20px;
 
     .button-loading {
       position: absolute;

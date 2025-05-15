@@ -6,7 +6,9 @@ import {AuthService} from '../../shared/services';
 import {CommonModule} from '@angular/common';
 import {DxLoadIndicatorModule} from 'devextreme-angular/ui/load-indicator';
 import {DxDataGridModule} from 'devextreme-angular/ui/data-grid';
+import {DxPopupModule} from 'devextreme-angular/ui/popup';
 import {Router} from '@angular/router';
+import {EditLeaveModalComponent} from './edit-leave-modal/edit-leave-modal.component';
 
 @Component({
   templateUrl: 'dashboard.component.html',
@@ -26,6 +28,10 @@ export class DashboardComponent {
   isLoading: boolean = false;
   isAdmin: boolean = false;
   remainingLeaveDays: number = 0;
+  
+  // Edit leave modal properties
+  editModalVisible: boolean = false;
+  selectedLeaveRequest: any = null;
 
   constructor(
     private leaveService: LeaveService,
@@ -49,7 +55,25 @@ export class DashboardComponent {
 
   onRowClick(e: any) {
     if (e.rowType === 'data' && e.rowIndex >= 0) {
+      // Navigate to the leave details page for all leave requests
       this.router.navigate(['/leave-request', e.data.id]);
+    }
+  }
+  
+  openEditModal(leaveRequest: any): void {
+    this.selectedLeaveRequest = leaveRequest;
+    this.editModalVisible = true;
+  }
+  
+  closeEditModal(): void {
+    this.editModalVisible = false;
+    this.selectedLeaveRequest = null;
+  }
+  
+  onLeaveUpdated(event: any): void {
+    if (event.success) {
+      // Reload statistics to reflect any changes
+      this.loadStatistics();
     }
   }
 
@@ -147,7 +171,9 @@ export class DashboardComponent {
     DxiSeriesModule,
     DxDataGridModule,
     DxLoadIndicatorModule,
-    CommonModule
+    DxPopupModule,
+    CommonModule,
+    EditLeaveModalComponent
   ],
   providers: [AuthService, LeaveService],
   declarations: [ DashboardComponent ],
