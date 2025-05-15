@@ -90,10 +90,13 @@ export class AuthService {
         data: response
       };
     }
-    catch {
+    catch (error: any) {
+      // Clear any existing auth data
+      this.logOut();
+      
       return {
         isOk: false,
-        message: "Authentication failed"
+        message: error.error?.detail || "Authentication failed"
       };
     }
   }
