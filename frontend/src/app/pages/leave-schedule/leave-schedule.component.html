@@ -41,6 +41,7 @@
           [indicatorUpdateInterval]="10000"
           [shadeUntilCurrentTime]="true"
           [adaptivityEnabled]="true"
+          [editing]="{allowDeleting: false, allowUpdating: false, allowDragging: false}"
           (onAppointmentFormOpening)="onAppointmentFormOpening($event)">
           
           <dxo-scrolling mode="virtual"></dxo-scrolling>
