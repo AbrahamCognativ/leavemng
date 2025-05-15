@@ -5,79 +5,143 @@ from app.models.leave_balance import LeaveBalance
 from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
 from app.models.leave_type import LeaveType
 from app.models.user import User
+from app.utils.audit_log_utils import log_audit
 
-def accrue_leave_balances(db: Session):
-    """
-    Accrue leave balances for all users and policies. For annual leave, accrue only on weekdays, up to entitlement (max 19), and calculate year from joining date.
-    """
+
+def add_existing_users_to_leave_balances(db: Session):
+    from app.models.leave_type import LeaveType, LeaveCodeEnum
+    from app.models.leave_policy import LeavePolicy
     today = datetime.date.today()
-    policies = db.query(LeavePolicy).all()
-    for policy in policies:
-        # Only accrue if monthly
-        if policy.accrual_frequency != AccrualFrequencyEnum.monthly:
-            continue
-        users = db.query(User).filter(User.org_unit_id == policy.org_unit_id).all()
-        for user in users:
-            # Gender eligibility
-            if hasattr(policy, 'leave_type') and hasattr(policy.leave_type, 'code'):
-                code = policy.leave_type.code.value if hasattr(policy.leave_type.code, 'value') else str(policy.leave_type.code)
-            else:
-                code = None
-            gender = None
-            if user.extra_metadata:
-                import json
-                try:
-                    gender = json.loads(user.extra_metadata).get('gender')
-                except Exception:
-                    pass
-            if code == 'maternity' and gender != 'female':
-                continue
-            if code == 'paternity' and gender != 'male':
-                continue
-            # Find or create leave balance
-            bal = db.query(LeaveBalance).filter_by(user_id=user.id, leave_type_id=policy.leave_type_id).first()
-            if not bal:
-                bal = LeaveBalance(user_id=user.id, leave_type_id=policy.leave_type_id, balance_days=0)
+    # Ensure all active users have LeaveBalance for every leave type
+    active_users = db.query(User).filter(User.is_active == True).all()
+    leave_types = db.query(LeaveType).all()
+    for user in active_users:
+        for leave_type in leave_types:
+            exists = db.query(LeaveBalance).filter_by(user_id=user.id, leave_type_id=leave_type.id).first()
+            if not exists:
+                bal = LeaveBalance(
+                    user_id=user.id,
+                    leave_type_id=leave_type.id,
+                    balance_days=leave_type.default_allocation_days if hasattr(leave_type, 'default_allocation_days') else 0,
+                    updated_at=datetime.datetime.now(datetime.timezone.utc)
+                )
                 db.add(bal)
-            # --- Annual Leave Accrual Logic ---
-            if code == 'annual':
-                # Entitlement (max 19)
-                entitlement = 19
-                if policy.allocation_days_per_year:
-                    entitlement = min(float(policy.allocation_days_per_year), 19)
-                # Calculate accrual year from joining date
-                join_date = user.created_at.date() if hasattr(user.created_at, 'date') else user.created_at
-                accrual_year_start = join_date.replace(year=today.year)
-                if accrual_year_start > today:
-                    accrual_year_start = join_date.replace(year=today.year-1)
-                accrual_year_end = accrual_year_start.replace(year=accrual_year_start.year+1)
-                # Count weekdays in this month
-                from calendar import monthrange
-                first, last = today.replace(day=1), today.replace(day=monthrange(today.year, today.month)[1])
-                weekdays_this_month = sum(1 for d in range((last-first).days+1)
-                                         if (first+datetime.timedelta(days=d)).weekday() < 5)
-                # Accrual per month = entitlement / # of months in year (assume 12)
-                accrual_amount = entitlement / 12.0
-                # Add to balance, but cap at entitlement
-                # Calculate total taken in this accrual year
-                from app.models.leave_request import LeaveRequest
-                taken = db.query(LeaveRequest).filter(
-                    LeaveRequest.user_id == user.id,
-                    LeaveRequest.leave_type_id == policy.leave_type_id,
-                    LeaveRequest.start_date >= accrual_year_start,
-                    LeaveRequest.start_date < accrual_year_end,
-                    LeaveRequest.status == 'approved'
-                ).all()
-                taken_days = sum(lr.total_days for lr in taken)
-                # Cap balance to entitlement minus taken (cannot accrue above entitlement)
-                new_balance = float(bal.balance_days or 0) + accrual_amount
-                if new_balance + taken_days > entitlement:
-                    new_balance = entitlement - taken_days
-                bal.balance_days = Decimal(max(new_balance, 0))
-            else:
-                # Default accrual for other leave types
-                bal.balance_days = (bal.balance_days or Decimal(0)) + Decimal(str(policy.accrual_amount_per_period or 0))
     db.commit()
+    log_audit(db, "Add Existing Users to Leave Balances", "Added existing users to leave balances.")
+
+
+# def accrue_annual_leave_balances(db: Session):
+#     """
+#     Accrue annual leave for all active users by adding the policy's accrual_amount_per_period to their balance.
+#     Does not cap by entitlement or check taken leave (simple accrual).
+#     """
+#     from app.models.leave_type import LeaveType, LeaveCodeEnum
+#     from app.models.leave_policy import LeavePolicy
+#     from decimal import Decimal
+#     # Find annual leave type and policy
+#     annual_leave_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.annual).first()
+#     if not annual_leave_type:
+#         log_audit(db, "Annual Leave Accrual", "No annual leave type found. No database update was done.")
+#         return
+#     policy = db.query(LeavePolicy).filter(LeavePolicy.leave_type_id == annual_leave_type.id).first()
+#     if not policy:
+#         log_audit(db, "Annual Leave Accrual", "No annual leave policy found. No database update was done.")
+#         return
+#     accrual_amount = Decimal(str(policy.accrual_amount_per_period or 0))
+#     users = db.query(User).filter(User.is_active == True).all()
+#     for user in users:
+#         bal = db.query(LeaveBalance).filter_by(user_id=user.id, leave_type_id=annual_leave_type.id).first()
+#         if not bal:
+#             bal = LeaveBalance(user_id=user.id, leave_type_id=annual_leave_type.id, balance_days=0)
+#             db.add(bal)
+#         bal.balance_days = (bal.balance_days or Decimal(0)) + accrual_amount
+#     db.commit()
+#     log_audit(db, "Annual Leave Accrual", f"Added {accrual_amount} days to all annual leave balances for active users.")
+
+
+def accrue_monthly_leave_balances(db: Session):
+    """
+    Accrue all monthly leave types for all active users.
+    """
+    from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
+    from app.models.leave_type import LeaveType
+    from decimal import Decimal
+    policies = db.query(LeavePolicy).filter(LeavePolicy.accrual_frequency == AccrualFrequencyEnum.monthly).all()
+    if not policies:
+        log_audit(db, "Monthly Leave Accrual", "No monthly leave policy found. No database update was done.")
+        return
+    users = db.query(User).filter(User.is_active == True).all()
+    affected_types = []
+    for policy in policies:
+        leave_type = db.query(LeaveType).filter(LeaveType.id == policy.leave_type_id).first()
+        if not leave_type:
+            continue
+        accrual_amount = Decimal(str(policy.accrual_amount_per_period or 0))
+        affected_types.append(f"{leave_type.code if hasattr(leave_type, 'code') else leave_type.id}")
+        for user in users:
+            bal = db.query(LeaveBalance).filter_by(user_id=user.id, leave_type_id=leave_type.id).first()
+            if not bal:
+                bal = LeaveBalance(user_id=user.id, leave_type_id=leave_type.id, balance_days=0)
+                db.add(bal)
+            bal.balance_days = (bal.balance_days or Decimal(0)) + accrual_amount
+    db.commit()
+    log_audit(db, "Monthly Leave Accrual", f"Updated leave types: {', '.join(affected_types)}. Accrued {accrual_amount} days per active user (per policy).")
+
+def accrue_quarterly_leave_balances(db: Session):
+    """
+    Accrue all quarterly leave types for all active users.
+    """
+    from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
+    from app.models.leave_type import LeaveType
+    from decimal import Decimal
+    policies = db.query(LeavePolicy).filter(LeavePolicy.accrual_frequency == AccrualFrequencyEnum.quarterly).all()
+    if not policies:
+        log_audit(db, "Quarterly Leave Accrual", "No quarterly leave policy found. No database update was done.")
+        return
+    users = db.query(User).filter(User.is_active == True).all()
+    affected_types = []
+    for policy in policies:
+        leave_type = db.query(LeaveType).filter(LeaveType.id == policy.leave_type_id).first()
+        if not leave_type:
+            continue
+        accrual_amount = Decimal(str(policy.accrual_amount_per_period or 0))
+        affected_types.append(f"{leave_type.code if hasattr(leave_type, 'code') else leave_type.id}")
+        for user in users:
+            bal = db.query(LeaveBalance).filter_by(user_id=user.id, leave_type_id=leave_type.id).first()
+            if not bal:
+                bal = LeaveBalance(user_id=user.id, leave_type_id=leave_type.id, balance_days=0)
+                db.add(bal)
+            bal.balance_days = (bal.balance_days or Decimal(0)) + accrual_amount
+    db.commit()
+    log_audit(db, "Quarterly Leave Accrual", f"Updated leave types: {', '.join(affected_types)}. Accrued {accrual_amount} days per active user (per policy).")
+
+def accrue_yearly_leave_balances(db: Session):
+    """
+    Accrue all yearly leave types for all active users.
+    """
+    from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
+    from app.models.leave_type import LeaveType
+    from decimal import Decimal
+    policies = db.query(LeavePolicy).filter(LeavePolicy.accrual_frequency == AccrualFrequencyEnum.yearly).all()
+    if not policies:
+        log_audit(db, "Yearly Leave Accrual", "No yearly leave policy found. No database update was done.")
+        return
+    users = db.query(User).filter(User.is_active == True).all()
+    affected_types = []
+    for policy in policies:
+        leave_type = db.query(LeaveType).filter(LeaveType.id == policy.leave_type_id).first()
+        if not leave_type:
+            continue
+        accrual_amount = Decimal(str(policy.accrual_amount_per_period or 0))
+        affected_types.append(f"{leave_type.code if hasattr(leave_type, 'code') else leave_type.id}")
+        for user in users:
+            bal = db.query(LeaveBalance).filter_by(user_id=user.id, leave_type_id=leave_type.id).first()
+            if not bal:
+                bal = LeaveBalance(user_id=user.id, leave_type_id=leave_type.id, balance_days=0)
+                db.add(bal)
+            bal.balance_days = (bal.balance_days or Decimal(0)) + accrual_amount
+    db.commit()
+    log_audit(db, "Yearly Leave Accrual", f"Updated leave types: {', '.join(affected_types)}. Accrued {accrual_amount} days per active user (per policy).")
 
 
 def reset_annual_leave_carry_forward(db: Session):
@@ -97,4 +161,3 @@ def reset_annual_leave_carry_forward(db: Session):
         if bal.balance_days > 5:
             bal.balance_days = Decimal(5)
     db.commit()
-

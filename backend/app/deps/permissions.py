@@ -116,3 +116,21 @@ def log_permission_denied(db: Session, user_id: str, action: str, resource: str,
     )
     db.add(entry)
     db.commit()
+
+
+def log_permission_accepted(db: Session, user_id: str, action: str, resource: str, resource_id: str, message: str = None, http_status: int = None):
+    from app.models.audit_log import AuditLog
+    meta = {"attempted_action": action}
+    if message:
+        meta["message"] = message
+    if http_status:
+        meta["http_status"] = http_status
+    entry = AuditLog(
+        user_id=user_id,
+        action="permission_accepted",
+        resource_type=resource,
+        resource_id=resource_id,
+        metadata=meta
+    )
+    db.add(entry)
+    db.commit()

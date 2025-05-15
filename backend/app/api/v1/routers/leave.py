@@ -8,7 +8,7 @@ from app.db.session import get_db
 from uuid import UUID
 from fastapi import Request
 from datetime import datetime, timezone
-from app.deps.permissions import get_current_user, require_role, require_direct_manager, log_permission_denied
+from app.deps.permissions import get_current_user, require_role, require_direct_manager, log_permission_denied, log_permission_accepted
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ def list_leave_requests(db: Session = Depends(get_db), current_user=Depends(get_
         requests = db.query(LeaveRequest).all()
     elif current_user.role_band == "Manager":
         requests = db.query(LeaveRequest).filter(LeaveRequest.user_id.in_([
-            u.id for u in db.query(LeaveRequest).filter(LeaveRequest.user_id == current_user.id)
+            u.id for u in db.query(User).filter(User.manager_id == current_user.id)
         ])).all()
     else:
         requests = db.query(LeaveRequest).filter(LeaveRequest.user_id == current_user.id).all()
@@ -35,7 +35,6 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
     if not leave_type:
         raise HTTPException(status_code=400, detail="Invalid leave_type_id")
 
-
     # Check for duplicate leave request
     existing = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == current_user.id,
@@ -50,195 +49,63 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
     if req.end_date < req.start_date:
         raise HTTPException(status_code=400, detail="End date must be the same as or after start date.")
 
-    # Calculate total_days
-    from datetime import timedelta, date, datetime as dt
-    # Calculate total_days for annual leave (weekdays only) or all days otherwise
-    from datetime import timedelta, date, datetime as dt
-    total_days = 0
-    current = req.start_date
-    leave_code = leave_type.code.value if hasattr(leave_type.code, 'value') else str(leave_type.code)
-    if leave_code.lower() == "annual":
-        # 1. Enforce 3-day prior application rule
-        today = date.today()
-        start_date = req.start_date
-        # Defensive conversion to date
-        if isinstance(start_date, str):
-            try:
-                start_date = dt.fromisoformat(start_date).date()
-            except Exception:
-                raise HTTPException(status_code=400, detail="Invalid start_date format.")
-        elif isinstance(start_date, dt):
-            start_date = start_date.date()
-        # print(f"[DEBUG] leave_code={leave_code}, start_date={start_date}, today={today}, delta_days={(start_date - today).days}")
-        if (start_date - today).days < 3:
-            raise HTTPException(status_code=400, detail="Leave must be requested at least 3 days in advance.")
-
-        # 2. Count only weekdays (Monday=0 to Friday=4)
-        while current <= req.end_date:
-            if current.weekday() < 5:
+    # Validate that annual leave is applied at least 3 days in advance
+    taken = {}
+   
+    if leave_type.code == 'annual':
+        start_date = req.start_date.date()
+        if (start_date - date.today()) < timedelta(days=3):
+            raise HTTPException(status_code=400, detail="Annual leave must be applied at least 3 days in advance")
+        
+        total_days = 0
+        for n in range(int ((req.end_date - req.start_date).days)):
+            day = req.start_date + timedelta(n)
+            if day.weekday() < 5:
                 total_days += 1
-            current += timedelta(days=1)
+        req.total_days = total_days
 
-        # 3. Retrieve user's annual leave entitlement (max 19, from policy or leave_type)
-        from app.models.leave_policy import LeavePolicy
-        policy = db.query(LeavePolicy).filter(LeavePolicy.leave_type_id == leave_type.id, LeavePolicy.org_unit_id == current_user.org_unit_id).first()
-        entitlement = 19
-        if policy and policy.allocation_days_per_year:
-            entitlement = min(float(policy.allocation_days_per_year), 19)
-        elif hasattr(leave_type, 'default_allocation_days'):
-            entitlement = min(float(leave_type.default_allocation_days), 19)
+    elif leave_type.code == 'maternity':
+        if current_user.gender != 'female':
+            raise HTTPException(status_code=400, detail="Only female employees can apply for maternity leave")
+    elif leave_type.code == 'paternity':
+        if current_user.gender != 'male':
+            raise HTTPException(status_code=400, detail="Only male employees can apply for paternity leave")
+   
 
-        # 4. Calculate user's annual leave taken in their accrual year (from joining date)
-        # from app.models.user import User
-        user = db.query(User).filter(User.id == current_user.id).first()
-        join_date = user.created_at.date() if hasattr(user.created_at, 'date') else user.created_at
-        accrual_year_start = join_date.replace(year=today.year)
-        if accrual_year_start > today:
-            accrual_year_start = join_date.replace(year=today.year-1)
-        accrual_year_end = accrual_year_start.replace(year=accrual_year_start.year+1)
-        taken = db.query(LeaveRequest).filter(
-            LeaveRequest.user_id == current_user.id,
-            LeaveRequest.leave_type_id == req.leave_type_id,
-            LeaveRequest.start_date >= accrual_year_start,
-            LeaveRequest.start_date < accrual_year_end,
-            LeaveRequest.status == 'approved'
-        ).all()
-        taken_days = sum(lr.total_days for lr in taken)
+    # Query LeaveBalance, check and deduct req.total_days
+    leave_balance = db.query(LeaveBalance).filter(LeaveBalance.user_id == current_user.id, LeaveBalance.leave_type_id == req.leave_type_id).first()
+    if not leave_balance or leave_balance.balance_days < req.total_days:
+        raise HTTPException(status_code=400, detail="Insufficient leave balance")
 
-        # 5. Check if new request exceeds entitlement
-        if taken_days + total_days > entitlement:
-            raise HTTPException(status_code=400, detail=f"Annual leave request exceeds entitlement ({entitlement} days per year). You have already taken {taken_days} days.")
-    elif leave_code == "sick":
-        # 1. Entitlement: 45 days/year (30 full + 15 half days)
-        SICK_FULL_DAYS = 30
-        SICK_HALF_DAYS = 15
-        SICK_TOTAL = SICK_FULL_DAYS + SICK_HALF_DAYS * 0.5
-        # Calculate user's sick leave taken in accrual year
-        # from app.models.user import User
-        user = db.query(User).filter(User.id == current_user.id).first()
-        join_date = user.created_at.date() if hasattr(user.created_at, 'date') else user.created_at
-        today = date.today()
-        accrual_year_start = join_date.replace(year=today.year)
-        if accrual_year_start > today:
-            accrual_year_start = join_date.replace(year=today.year-1)
-        accrual_year_end = accrual_year_start.replace(year=accrual_year_start.year+1)
-        taken = db.query(LeaveRequest).filter(
-            LeaveRequest.user_id == current_user.id,
-            LeaveRequest.leave_type_id == req.leave_type_id,
-            LeaveRequest.start_date >= accrual_year_start,
-            LeaveRequest.start_date < accrual_year_end,
-            LeaveRequest.status == 'approved'
-        ).all()
-        taken_days = sum(lr.total_days for lr in taken)
-        # Calculate requested days (all days, including weekends)
-        total_days = (req.end_date - req.start_date).days + 1
-        if taken_days + total_days > SICK_TOTAL:
-            raise HTTPException(status_code=400, detail=f"Sick leave request exceeds entitlement (45 days per year). You have already taken {taken_days} days.")
-        # Mark request as pending and require document upload within 48 hours (configurable)
-        # This will be handled by a background job
-    elif leave_code == "paternity":
-        # Only available to male users
-        # from app.models.user import User
-        user = db.query(User).filter(User.id == current_user.id).first()
-        if not user or user.gender != "male":
-            raise HTTPException(status_code=400, detail="Paternity leave is only available to male employees.")
-        PATERNITY_DAYS = 14
-        today = date.today()
-        join_date = user.created_at.date() if hasattr(user.created_at, 'date') else user.created_at
-        accrual_year_start = join_date.replace(year=today.year)
-        if accrual_year_start > today:
-            accrual_year_start = join_date.replace(year=today.year-1)
-        accrual_year_end = accrual_year_start.replace(year=accrual_year_start.year+1)
-        taken = db.query(LeaveRequest).filter(
-            LeaveRequest.user_id == current_user.id,
-            LeaveRequest.leave_type_id == req.leave_type_id,
-            LeaveRequest.start_date >= accrual_year_start,
-            LeaveRequest.start_date < accrual_year_end,
-            LeaveRequest.status == 'approved'
-        ).all()
-        taken_days = sum(lr.total_days for lr in taken)
-        total_days = (req.end_date - req.start_date).days + 1
-        if taken_days + total_days > PATERNITY_DAYS:
-            raise HTTPException(status_code=400, detail=f"Paternity leave request exceeds entitlement (14 days per year). You have already taken {taken_days} days.")
-    elif leave_code == "maternity":
-        # Only available to female users
-        # from app.models.user import User
-        user = db.query(User).filter(User.id == current_user.id).first()
-        if not user or user.gender != "female":
-            raise HTTPException(status_code=400, detail="Maternity leave is only available to female employees.")
-        MATERNITY_DAYS = 90
-        today = date.today()
-        join_date = user.created_at.date() if hasattr(user.created_at, 'date') else user.created_at
-        accrual_year_start = join_date.replace(year=today.year)
-        if accrual_year_start > today:
-            accrual_year_start = join_date.replace(year=today.year-1)
-        accrual_year_end = accrual_year_start.replace(year=accrual_year_start.year+1)
-        taken = db.query(LeaveRequest).filter(
-            LeaveRequest.user_id == current_user.id,
-            LeaveRequest.leave_type_id == req.leave_type_id,
-            LeaveRequest.start_date >= accrual_year_start,
-            LeaveRequest.start_date < accrual_year_end,
-            LeaveRequest.status == 'approved'
-        ).all()
-        taken_days = sum(lr.total_days for lr in taken)
-        total_days = (req.end_date - req.start_date).days + 1
-        if taken_days + total_days > MATERNITY_DAYS:
-            raise HTTPException(status_code=400, detail=f"Maternity leave request exceeds entitlement (90 days per year). You have already taken {taken_days} days.")
-    elif leave_code == "compassionate":
-        # Compassionate: 10 days per quarter, based on start date's quarter
-        # from app.models.user import User
-        user = db.query(User).filter(User.id == current_user.id).first()
-        COMPASSIONATE_DAYS = 10
-        start = req.start_date
-        # Determine quarter for start date
-        quarter = (start.month - 1) // 3 + 1
-        quarter_start = date(start.year, 3 * (quarter - 1) + 1, 1)
-        if quarter == 4:
-            quarter_end = date(start.year, 12, 31)
-        else:
-            quarter_end = date(start.year, 3 * quarter + 1, 1) - timedelta(days=1)
-        taken = db.query(LeaveRequest).filter(
-            LeaveRequest.user_id == current_user.id,
-            LeaveRequest.leave_type_id == req.leave_type_id,
-            LeaveRequest.start_date >= quarter_start,
-            LeaveRequest.start_date <= quarter_end,
-            LeaveRequest.status == 'approved'
-        ).all()
-        taken_days = sum(lr.total_days for lr in taken)
-        total_days = (req.end_date - req.start_date).days + 1
-        if taken_days + total_days > COMPASSIONATE_DAYS:
-            raise HTTPException(status_code=400, detail=f"Compassionate leave request exceeds entitlement (10 days per quarter). You have already taken {taken_days} days this quarter.")
-    else:
-        # Count all days
-        total_days = (req.end_date - req.start_date).days + 1
-    # print(f"DEBUG: Calculated total_days = {total_days} for leave_type = {leave_code}")
-
-
-
-    db_req = LeaveRequest(
-        user_id=current_user.id,
-        leave_type_id=req.leave_type_id,
-        start_date=req.start_date,
-        end_date=req.end_date,
-        total_days=total_days,
-        status='pending',
-        applied_at=dt.now(timezone.utc),
-        comments=req.comments
-    )
-    db.add(db_req)
     try:
+        leave_balance.balance_days -= req.total_days
+        db.add(leave_balance)
+        db_req = LeaveRequest(
+            user_id=current_user.id,
+            leave_type_id=req.leave_type_id,
+            start_date=req.start_date,
+            end_date=req.end_date,
+            total_days=req.total_days,
+            status='pending',
+            applied_at=datetime.now(timezone.utc),
+            comments=req.comments
+        )
+        db.add(db_req)
         db.commit()
         db.refresh(db_req)
     except Exception as e:
         db.rollback()
+        leave_balance.balance_days += req.total_days
+        db.add(leave_balance)
+        db.commit()
         if hasattr(e, 'orig') and hasattr(e.orig, 'diag') and 'unique' in str(e.orig).lower():
             raise HTTPException(status_code=400, detail="Duplicate leave request")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=503, detail="Internal server error")
+
     # Send notification to approver (manager)
     from app.utils.email_utils import send_leave_request_notification
     manager = db.query(User).filter(User.id == current_user.manager_id).first() if current_user.manager_id else None
     if manager:
-        # Use LeaveType.description as the label if available, fallback to code label
         LEAVE_TYPE_LABELS = {
             "annual": "Annual Leave",
             "sick": "Sick Leave",
@@ -248,9 +115,8 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
             "paternity": "Paternity Leave",
             "custom": "Custom Leave"
         }
-        type_label = None
+        type_label = LEAVE_TYPE_LABELS.get(leave_type.code.value, str(leave_type.code.value) if leave_type.code.value else "Unknown")
 
-        # if not type_label:
         code_value = getattr(leave_type, 'code', None)
         if hasattr(code_value, 'value'):
             code_value = code_value.value
@@ -264,7 +130,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
             "Type": type_label,
             "Start Date": str(req.start_date),
             "End Date": str(req.end_date),
-            "Days": total_days,
+            "Days": (req.end_date - req.start_date).days + 1,
             "Comments": req.comments or ""
         }
         send_leave_request_notification(
@@ -276,7 +142,6 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
             requestor_email=current_user.email
         )
     return LeaveRequestRead.model_validate(db_req)
-
 
 @router.get("/{request_id}", tags=["leave"], response_model=LeaveRequestRead)
 def get_leave_request(request_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
@@ -312,7 +177,6 @@ def update_leave_request(request_id: UUID, req_update: LeaveRequestUpdate, db: S
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Could not update leave request")
-    log_permission_denied(db, current_user.id, "update_leave_request", "leave_request", str(request_id))
     return LeaveRequestRead.model_validate(req)
 
 @router.patch("/{request_id}", tags=["leave"], response_model=LeaveRequestRead)
@@ -371,8 +235,6 @@ def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), curre
         db.refresh(req)
     except Exception as e:
         db.rollback()
-        import logging
-        logging.error(f"Error during leave approval DB commit: {e}")
         raise HTTPException(status_code=500, detail=f"Could not approve leave request: {e}")
 
     from app.utils.email_utils import send_leave_approval_notification
@@ -381,12 +243,10 @@ def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), curre
     try:
         if user:
             send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
-        log_permission_denied(db, current_user.id, "approve_leave_request", "leave_request", str(request_id))
     except Exception as e:
         import logging
         logging.error(f"Error sending approval email: {e}")
     return LeaveRequestRead.model_validate(req)
-
 
 @router.patch("/{request_id}/reject", tags=["leave"], response_model=LeaveRequestRead)
 def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user), request: Request = None ):
@@ -409,23 +269,16 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
         req.decided_by = current_user.id
         db.commit()
         db.refresh(req)
-        # Re-add leave days to user's balance
-        from app.models.leave_balance import LeaveBalance
-        leave_balance = db.query(LeaveBalance).filter(
-            LeaveBalance.user_id == req.user_id,
-            LeaveBalance.leave_type_id == req.leave_type_id
-        ).first()
+        
+        # Add total_days back to user's leave balance
+        leave_balance = db.query(LeaveBalance).filter(LeaveBalance.user_id == req.user_id, LeaveBalance.leave_type_id == req.leave_type_id).first()
         if leave_balance:
             leave_balance.balance_days += req.total_days
+            db.add(leave_balance)
             db.commit()
-            db.refresh(leave_balance)
-        else:
-            import logging
-            logging.warning(f"Leave balance record not found for user {req.user_id} and leave type {req.leave_type_id}")
+        log_permission_accepted(db, current_user.id, "reject_leave_request", "leave_request", str(request_id))
     except Exception as e:
         db.rollback()
-        import logging
-        logging.error(f"Error during leave rejection DB commit: {e}")
         raise HTTPException(status_code=500, detail=f"Could not reject leave request: {e}")
 
     from app.utils.email_utils import send_leave_approval_notification
@@ -434,12 +287,10 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
     try:
         if user:
             send_leave_approval_notification(user.email, leave_details, approved=False, request=request)
-        log_permission_denied(db, current_user.id, "reject_leave_request", "leave_request", str(request_id))
     except Exception as e:
         import logging
         logging.error(f"Error sending rejection email: {e}")
     return LeaveRequestRead.model_validate(req)
-
 
 @router.delete("/{request_id}", tags=["leave"], status_code=204)
 def delete_leave_request(request_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
@@ -455,4 +306,3 @@ def delete_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
     db.delete(req)
     db.commit()
     return None
-
