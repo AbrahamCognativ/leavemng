@@ -140,7 +140,9 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     import string
     # Securely generate a random password
     alphabet = string.ascii_letters + string.digits + string.punctuation
-    random_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+    import random
+    password_length = random.randint(8, 10)
+    random_password = ''.join(secrets.choice(alphabet) for _ in range(password_length))
     user = User(
         name=invite.name,
         email=invite.email,
