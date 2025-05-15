@@ -44,6 +44,7 @@ export class ProfileComponent implements OnInit {
   isEditing: boolean = false;
   originalEmployee: Employee = {} as Employee;
   baseUrl: string = environment.apiUrl; // Hardcoded API URL instead of using environment
+  basePlainUrl: string = environment.apiBaseUrl
   isLoading: boolean = false;
   uploadUrl: string = '';
   @ViewChild('fileInput') fileInput!: ElementRef;
@@ -185,8 +186,8 @@ export class ProfileComponent implements OnInit {
     }
     
     // If it's a relative path, prepend the base URL
-    if (url.startsWith('/')) {
-      return `${this.baseUrl}${url}`;
+    if (url.startsWith('/uploads')) {
+      return `${this.basePlainUrl}${url}`;
     }
     
     // Otherwise, assume it's a relative path without leading slash
@@ -384,7 +385,7 @@ export class ProfileComponent implements OnInit {
    */
   handleImageError(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
-    imgElement.src = 'https://via.placeholder.com/150?text=User';
+    imgElement.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
   }
   
   /**

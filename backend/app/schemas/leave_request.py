@@ -27,6 +27,9 @@ class LeaveRequestUpdate(LeaveRequestBase):
     decision_at: Optional[datetime] = None
     decided_by: Optional[UUID] = None
 
+class LeaveRequestPartialUpdate(BaseModel):
+    comments: Optional[str] = None
+
 class LeaveRequestRead(LeaveRequestBase):
     id: UUID
     status: LeaveStatusEnum

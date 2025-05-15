@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate, LeaveRequestUpdate
+from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestPartialUpdate
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
 from app.models.user import User
@@ -313,6 +313,39 @@ def update_leave_request(request_id: UUID, req_update: LeaveRequestUpdate, db: S
         db.rollback()
         raise HTTPException(status_code=500, detail="Could not update leave request")
     log_permission_denied(db, current_user.id, "update_leave_request", "leave_request", str(request_id))
+    return LeaveRequestRead.model_validate(req)
+
+@router.patch("/{request_id}", tags=["leave"], response_model=LeaveRequestRead)
+def partial_update_leave_request(request_id: UUID, req_update: LeaveRequestPartialUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    # Get the leave request
+    req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+    
+    # Check if the request belongs to the current user
+    if str(current_user.id) != str(req.user_id):
+        log_permission_denied(db, current_user.id, "update_leave_request", "leave_request", str(request_id))
+        raise HTTPException(status_code=403, detail="You can only update your own leave requests")
+    
+    # Allow editing for both pending and approved statuses
+    # Leave the validation check commented out for reference
+    # status = req.status if hasattr(req.status, 'value') else str(req.status)
+    # if (status if not hasattr(req.status, 'value') else req.status.value) != "pending":
+    #     raise HTTPException(status_code=400, detail="Only pending leave requests can be updated")
+    
+    # Update only the allowed fields (comments)
+    update_data = req_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        if field == 'comments':
+            setattr(req, field, value)
+    
+    try:
+        db.commit()
+        db.refresh(req)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Could not update leave request: {str(e)}")
+    
     return LeaveRequestRead.model_validate(req)
 
 @router.patch("/{request_id}/approve", tags=["leave"], response_model=LeaveRequestRead)

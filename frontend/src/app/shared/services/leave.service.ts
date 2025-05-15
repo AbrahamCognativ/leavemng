@@ -1,6 +1,6 @@
 // leave.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, retry } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -234,13 +234,30 @@ export class LeaveService {
 
   // Upload file for leave request
   async uploadFile(leaveRequestId: string, file: File): Promise<any> {
+    console.log(`Uploading file for leave request ${leaveRequestId}:`, file.name);
+    
     const formData = new FormData();
-    formData.append('document', file);
-    return this.http.post<any>(`${this.apiUrl}/leave/${leaveRequestId}/documents`, formData)
-      .pipe(
-        retry(1),
-        catchError(this.handleError)
-      ).toPromise() as Promise<any>;
+    formData.append('file', file); // Backend expects 'file', not 'document'
+    
+    const url = `${this.apiUrl}/files/upload/${leaveRequestId}`;
+    console.log('Upload URL:', url);
+    
+    try {
+      const response = await this.http.post<any>(url, formData)
+        .pipe(
+          retry(1),
+          catchError((error) => {
+            console.error('File upload error detail:', error);
+            return this.handleError(error);
+          })
+        ).toPromise();
+      
+      console.log('Upload response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error in uploadFile try-catch:', error);
+      throw error;
+    }
   }
 
   // Create leave request (JSON data only)
@@ -261,13 +278,81 @@ export class LeaveService {
       ).toPromise() as Promise<any>;
   }
 
+  // Update leave request
+  async updateLeaveRequest(leaveId: string, data: any): Promise<any> {
+    console.log(`Updating leave request ${leaveId} with data:`, data);
+    
+    const url = `${this.apiUrl}/leave/${leaveId}`;
+    console.log('API URL for update:', url);
+    
+    const headers = { 'Content-Type': 'application/json' };
+    
+    try {
+      // Using the explicit try-catch to better debug the issue
+      const response = await this.http.patch<any>(url, data, { headers })
+        .pipe(
+          // No retry for PATCH - we don't want to risk double-updating
+          catchError((error) => {
+            console.error('Leave request update error detail:', error);
+            return this.handleError(error);
+          })
+        ).toPromise();
+      
+      console.log('Update response received:', response);
+      return response;
+    } catch (error) {
+      console.error('Error in updateLeaveRequest try-catch:', error);
+      throw error;
+    }
+  }
+
   // Delete leave document
   async deleteLeaveDocument(leaveId: string, documentId: string): Promise<any> {
-    return this.http.delete<any>(`${this.apiUrl}/leave/${leaveId}/documents/${documentId}`)
-      .pipe(
-        retry(1),
-        catchError(this.handleError)
-      ).toPromise() as Promise<any>;
+    if (!leaveId || !documentId) {
+      console.error('Invalid parameters for document deletion', { leaveId, documentId });
+      throw new Error('Invalid parameters for document deletion');
+    }
+    
+    // Ensure we have clean IDs without any extra spaces
+    const cleanLeaveId = leaveId.trim();
+    const cleanDocId = documentId.trim();
+    
+    const url = `${this.apiUrl}/files/delete/${cleanLeaveId}/${cleanDocId}`;
+    console.log('Delete document URL:', url);
+    console.log('Delete params:', { leaveId: cleanLeaveId, documentId: cleanDocId });
+    
+    try {
+      // Use proper headers for the delete request
+      const options = {
+        headers: this.getAuthHeaders()
+      };
+      
+      const response = await this.http.delete<any>(url, options)
+        .pipe(
+          catchError((error) => {
+            console.error('Document delete error detail:', error);
+            return this.handleError(error);
+          })
+        ).toPromise();
+      
+      console.log('Delete response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error in deleteLeaveDocument try-catch:', error);
+      throw error;
+    }
+  }
+  
+  // Using the getAuthHeaders method defined below
+
+  // Download leave document
+  async downloadLeaveDocument(leaveId: string, documentId: string): Promise<Blob> {
+    return this.http.get(`${this.apiUrl}/leave/${leaveId}/documents/${documentId}/download`, {
+      responseType: 'blob'
+    }).pipe(
+      retry(1),
+      catchError(this.handleError)
+    ).toPromise() as Promise<Blob>;
   }
   
   // Get leave policies
@@ -315,8 +400,8 @@ export class LeaveService {
       ).toPromise() as Promise<any[]>;
   }
 
-  // Update leave request
-  async updateLeaveRequest(requestId: string, leaveData: any): Promise<any> {
+  // Fully update leave request (uses PUT)
+  async updateFullLeaveRequest(requestId: string, leaveData: any): Promise<any> {
     return this.http.put<any>(`${this.apiUrl}/leave/${requestId}`, leaveData)
       .pipe(
         catchError(this.handleError)
@@ -375,23 +460,78 @@ export class LeaveService {
 
   // Get leave documents
   async getLeaveDocuments(requestId: string): Promise<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/files/list/${requestId}`)
-      .pipe(
-        retry(1),
-        catchError(this.handleError)
-      ).toPromise() as Promise<any[]>;
+    const url = `${this.apiUrl}/files/list/${requestId}`;
+    console.log('Get documents URL:', url);
+    
+    try {
+      const response = await this.http.get<any[]>(url)
+        .pipe(
+          retry(1),
+          catchError((error) => {
+            console.error('Get documents error detail:', error);
+            return this.handleError(error);
+          })
+        ).toPromise();
+      
+      console.log('Documents list response:', response);
+      return response || [];
+    } catch (error) {
+      console.error('Error in getLeaveDocuments try-catch:', error);
+      return [];
+    }
   }
 
-  // Download leave document
-  async downloadLeaveDocument(requestId: string, documentId: string): Promise<Blob> {
-    return this.http.get(`${this.apiUrl}/files/download/${requestId}/${documentId}`, {
-      responseType: 'blob'
-    }).pipe(
-      catchError(this.handleError)
-    ).toPromise() as Promise<Blob>;
+  // Download leave document from files API
+  async downloadLeaveDocumentFromFiles(requestId: string, documentId: string): Promise<Blob> {
+    if (!requestId || !documentId) {
+      console.error('Invalid parameters for document download', { requestId, documentId });
+      throw new Error('Invalid parameters for document download');
+    }
+    
+    // Ensure we have clean IDs without any extra spaces
+    const cleanRequestId = requestId.trim();
+    const cleanDocId = documentId.trim();
+    
+    const url = `${this.apiUrl}/files/download/${cleanRequestId}/${cleanDocId}`;
+    console.log('Download document URL:', url);
+    
+    try {
+      // Set appropriate headers for blob download
+      const headers = new HttpHeaders({
+        'Accept': 'application/octet-stream'
+      });
+      
+      const response = await this.http.get(url, {
+        headers: headers,
+        responseType: 'blob',
+        observe: 'response'
+      }).pipe(
+        catchError((error) => {
+          console.error('Document download error detail:', error);
+          return this.handleError(error);
+        })
+      ).toPromise();
+      
+      if (!response || !response.body) {
+        console.error('Empty response received');
+        throw new Error('Empty response received from server');
+      }
+      
+      console.log('Download response received:', {
+        status: response.status,
+        type: response.body.type,
+        size: response.body.size
+      });
+      
+      return response.body;
+    } catch (error) {
+      console.error('Error in downloadLeaveDocumentFromFiles try-catch:', error);
+      throw error;
+    }
   }
 
-  private handleError(error: HttpErrorResponse) {
+  // Error handler for HTTP requests
+  handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred';
 
     if (error.error instanceof ErrorEvent) {

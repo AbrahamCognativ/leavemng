@@ -1,0 +1,125 @@
+<dx-popup
+  [width]="600"
+  [height]="auto"
+  [showTitle]="true"
+  [title]="'Edit Leave Request'"
+  [showCloseButton]="true"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [hideOnOutsideClick]="false"
+  [(visible)]="visible"
+  (onHiding)="closeModal()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="edit-leave-form">
+      <dx-load-indicator *ngIf="submitting" [width]="60" [height]="60"></dx-load-indicator>
+      
+      <div class="leave-details" *ngIf="!submitting && leaveRequest">
+        <div class="leave-header">
+          <h4>Leave Details</h4>
+          <span class="leave-status status-{{leaveRequest.status}}">
+            {{leaveRequest.status?.toUpperCase()}}
+          </span>
+        </div>
+        
+        <div class="leave-info">
+          <div class="info-row">
+            <span class="info-label">Leave Type:</span>
+            <span class="info-value">{{leaveRequest.leave_type_description || leaveRequest.leave_type}}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Period:</span>
+            <span class="info-value">{{leaveRequest.start_date | date:'dd MMM yyyy'}} to {{leaveRequest.end_date | date:'dd MMM yyyy'}}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Duration:</span>
+            <span class="info-value">{{leaveRequest.total_days}} day(s)</span>
+          </div>
+        </div>
+        
+        <!-- Editable fields -->
+        <div class="edit-section">
+          <h4>Edit Leave Request</h4>
+          <p class="edit-note">You can update your comments and attach additional files while your request is pending.</p>
+          
+          <dx-form [formData]="editData" [colCount]="1">
+            <dxi-item
+              dataField="comments"
+              editorType="dxTextArea"
+              [editorOptions]="{
+                height: 100,
+                placeholder: 'Provide additional information about your leave request',
+                value: editData.comments,
+                maxLength: 500
+              }">
+              <dxo-label text="Comments/Reason"></dxo-label>
+            </dxi-item>
+          </dx-form>
+          
+          <!-- Document Upload Section -->
+          <div class="document-section">
+            <h5>Supporting Documents</h5>
+            
+            <!-- Existing Documents List -->
+            <div class="existing-documents" *ngIf="existingDocuments && existingDocuments.length > 0">
+              <h6>Existing Documents</h6>
+              <div class="document-list">
+                <div class="document-item" *ngFor="let doc of existingDocuments">
+                  <div class="document-info">
+                    <span class="document-name">{{doc.name}}</span>
+                    <span class="document-size">{{doc.size | bytes}}</span>
+                  </div>
+                  <div class="document-actions">
+                    <button class="remove-btn" (click)="removeDocument(doc.id)" *ngIf="leaveRequest.status === 'pending'">
+                      <i class="dx-icon-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- New File Upload -->
+            <div class="new-documents" *ngIf="leaveRequest.status === 'pending'">
+              <h6>Add New Documents</h6>
+              <dx-file-uploader
+                selectButtonText="Choose Files"
+                labelText="Drag files here or click to browse"
+                accept=".pdf,.doc,.docx,.jpg,.png"
+                [multiple]="true"
+                [showFileList]="true"
+                [(value)]="uploadedFiles"
+                (onValueChanged)="onFileUploaded($event)"
+                uploadMode="useForm"
+                [maxFileSize]="5242880">
+              </dx-file-uploader>
+              
+              <div class="document-hints">
+                <i class="dx-icon-info"></i>
+                <div class="hints-content">
+                  <p>Accepted formats: PDF, DOC, DOCX, JPG, PNG</p>
+                  <p>Maximum file size: 5MB per file</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div *dxTemplate="let data of 'bottom'">
+    <div class="modal-actions">
+      <dx-button
+        text="Cancel"
+        (onClick)="closeModal()"
+        [disabled]="submitting">
+      </dx-button>
+      <dx-button
+        text="Save Changes"
+        type="default"
+        (onClick)="saveChanges()"
+        [disabled]="submitting || leaveRequest?.status !== 'pending'">
+      </dx-button>
+    </div>
+  </div>
+</dx-popup>
