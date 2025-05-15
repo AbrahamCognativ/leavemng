@@ -1,90 +1,91 @@
 import time
 import threading
 from app.db.session import SessionLocal
-from app.utils.accrual import accrue_leave_balances, reset_annual_leave_carry_forward
+from app.utils.accrual import add_existing_users_to_leave_balances, accrue_monthly_leave_balances, accrue_quarterly_leave_balances, accrue_yearly_leave_balances, reset_annual_leave_carry_forward
 from apscheduler.schedulers.background import BackgroundScheduler
-from app.auto_reject import auto_reject_old_pending_leaves
+from app.utils.auto_reject import auto_reject_old_pending_leaves
 
-def run_accrual_scheduler(interval_seconds=120):  # Default: 30 days 2592000
-    def job():
-        while True:
-            db = SessionLocal()
-            try:
-                accrue_leave_balances(db)
-                print('[SUCCESS] Accrual job ran successfully.')
-            finally:
-                db.close()
-            time.sleep(interval_seconds)
-    t = threading.Thread(target=job, daemon=True)
-    t.start()
+import logging
+
+def run_accrual_scheduler():
+    scheduler = BackgroundScheduler()
+
+    # Accrual job: run monthly (for demo/testing, every 2 minutes)
+    def accrual_job_monthly():
+        db = SessionLocal()
+        try:
+            logging.info('[START] Accrual job starting.')
+            add_existing_users_to_leave_balances(db)
+            accrue_monthly_leave_balances(db)
+            db.commit()
+            logging.info('[SUCCESS] Accrual job ran successfully.')
+        except Exception as e:
+            logging.error(f'[ERROR] Accrual job failed: {e}')
+        finally:
+            db.close()
+
+    def yearly_accrual_job():
+        db = SessionLocal()
+        try:
+            logging.info('[START] Yearly accrual job starting.')
+            accrue_yearly_leave_balances
+            db.commit()
+            logging.info('[SUCCESS] Yearly accrual job ran successfully.')
+        except Exception as e:
+            logging.error(f'[ERROR] Yearly accrual job failed: {e}')
+        finally:
+            db.close()
+
+
+    def quarterly_accrual_job():
+        db = SessionLocal()
+        try:
+            logging.info('[START] Quarterly accrual job starting.')
+            accrue_quarterly_leave_balances(db)
+            db.commit()
+            logging.info('[SUCCESS] Quarterly accrual job ran successfully.')
+        except Exception as e:
+            logging.error(f'[ERROR] Quarterly accrual job failed: {e}')
+        finally:
+            db.close()
+
+    # For demo/testing: run every 2 minutes. For real monthly: use 'cron', day=1, hour=0, minute=0
+    # Run monthly on the 1st at 00:00
+    scheduler.add_job(accrual_job_monthly, 'cron', day=1, hour=0, minute=0, id='accrual_job_monthly')
+    # Run yearly on January 1st at 00:00
+    scheduler.add_job(yearly_accrual_job, 'cron', month=1, day=1, hour=0, minute=0, id='yearly_accrual_job')
+    # Run quarterly on the 1st of Jan, Apr, Jul, Oct at 00:00
+    scheduler.add_job(quarterly_accrual_job, 'cron', month='1,4,7,10', day=1, hour=0, minute=0, id='quarterly_accrual_job')
+
 
     # Schedule carry forward logic for Dec 31st at midnight
-    scheduler = BackgroundScheduler()
     def carry_forward_job():
         db = SessionLocal()
         try:
+            logging.info('[START] Annual leave carry forward job starting.')
             reset_annual_leave_carry_forward(db)
-            print('[SUCCESS] Annual leave carry forward job ran successfully.')
+            db.commit()
+            logging.info('[SUCCESS] Annual leave carry forward job ran successfully.')
+        except Exception as e:
+            logging.error(f'[ERROR] Annual leave carry forward job failed: {e}')
         finally:
             db.close()
     # Run at 00:00 on December 31st every year
     scheduler.add_job(carry_forward_job, 'cron', month=12, day=31, hour=0, minute=0, id='annual_leave_carry_forward')
+
     # Schedule sick leave document check every hour
-    def sick_leave_doc_check_job():
-        from sqlalchemy import and_
-        from app.models.leave_request import LeaveRequest
-        from app.models.leave_type import LeaveType, LeaveCodeEnum
-        from app.models.leave_document import LeaveDocument
-        from app.models.leave_balance import LeaveBalance
-        from datetime import datetime, timedelta, timezone
-        from decimal import Decimal
-        import logging
-        db = SessionLocal()
-        try:
-            # Configurable document deadline (hours)
-            DOC_DEADLINE_HOURS = 48
-            now = datetime.now(timezone.utc)
-            # Find pending sick leave requests older than deadline
-            sick_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.sick).first()
-            if not sick_type:
-                return
-            overdue = db.query(LeaveRequest).filter(
-                LeaveRequest.leave_type_id == sick_type.id,
-                LeaveRequest.status == 'pending',
-                LeaveRequest.applied_at < now - timedelta(hours=DOC_DEADLINE_HOURS)
-            ).all()
-            for req in overdue:
-                # Check if document exists
-                doc = db.query(LeaveDocument).filter(LeaveDocument.request_id == req.id).first()
-                if not doc:
-                    # Deduct from annual leave
-                    annual_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.annual).first()
-                    if annual_type:
-                        bal = db.query(LeaveBalance).filter_by(user_id=req.user_id, leave_type_id=annual_type.id).first()
-                        if bal:
-                            bal.balance_days = Decimal(max(float(bal.balance_days) - float(req.total_days), 0))
-                    # Auto-approve
-                    req.status = 'approved'
-                    req.decision_at = now
-                    req.decided_by = req.user_id
-                    # Optionally, notify the user
-                    try:
-                        from app.models.user import User
-                        from app.utils.email import send_leave_approval_notification
-                        user = db.query(User).filter(User.id == req.user_id).first()
-                        if user:
-                            leave_details = f"Type: Annual (auto-deducted for missing sick doc), Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
-                            send_leave_approval_notification(user.email, leave_details, approved=True)
-                    except Exception as e:
-                        logging.warning(f"Could not send notification: {e}")
-            db.commit()
-            print('[SUCCESS] Sick leave document check job ran successfully.')
-        finally:
-            db.close()
+    from app.utils.sick_leave_doc_check import sick_leave_doc_check_job
     scheduler.add_job(sick_leave_doc_check_job, 'interval', hours=1, id='sick_leave_doc_check')
+
     # Schedule auto-reject of old pending leaves every midnight
     def auto_reject_old_pending_leaves_job():
-        auto_reject_old_pending_leaves()
-        print('[SUCCESS] Auto-reject pending leaves job ran successfully.')
+        try:
+            logging.info('[START] Auto-reject pending leaves job starting.')
+            auto_reject_old_pending_leaves()
+            logging.info('[SUCCESS] Auto-reject pending leaves job ran successfully.')
+        except Exception as e:
+            logging.error(f'[ERROR] Auto-reject pending leaves job failed: {e}')
     scheduler.add_job(auto_reject_old_pending_leaves_job, 'cron', hour=0, minute=0, id='auto_reject_pending_leaves')
+
     scheduler.start()
+    logging.info('[INFO] Scheduler started. All jobs are scheduled.')
