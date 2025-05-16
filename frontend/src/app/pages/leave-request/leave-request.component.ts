@@ -119,15 +119,11 @@ export class LeaveRequestComponent implements OnInit {
               const leaveTypeCode = balance.leave_type;
               const leaveType = leaveTypes.find(type => type.code === leaveTypeCode);
 
-              // Set leave type description and total days
+              // Set leave type description and total taken days
               balance.leave_type = leaveType?.description || 'Unknown';
-              balance.total_days = leaveType?.default_allocation_days || 0;
-
-              // Get accumulated used days for this leave type
-              const usedDays = usedDaysByCode[leaveTypeCode] || 0;
-
-              // Calculate remaining balance
-              balance.balance_days = balance.total_days - usedDays;
+              // Assign total taken days for this leave type
+              balance.total_days = usedDaysByCode[leaveTypeCode] || 0;
+              // Do NOT recalculate balance_days, use value from API response
             }
           } else {
             // Initialize empty leave balance array if none exists

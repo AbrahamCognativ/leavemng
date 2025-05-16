@@ -91,8 +91,15 @@ export class DashboardComponent {
       // Get all leave types first
       const types = await this.leaveService.getLeaveTypes();
       this.leaveTypes = types;
+      // const totalAllowableLeaveDays = types.reduce((total, type) => total + (type.default_allocation_days || 0), 0);
 
-      const totalAllowableLeaveDays = types.reduce((total, type) => total + (type.default_allocation_days || 0), 0);
+      // Get leave balance from API (sum of balance_days for the user)
+      const userLeaveData = await this.leaveService.getUserLeave(currentUserId);
+      let totalBalance = 0;
+      if (userLeaveData && userLeaveData.leave_balance && Array.isArray(userLeaveData.leave_balance)) {
+        totalBalance = userLeaveData.leave_balance.reduce((sum: number, bal: any) => sum + (bal.balance_days || 0), 0);
+      }
+      const totalAllowableLeaveDays = totalBalance;
 
       // Get all leave requests for current user
       const allRequests = await this.leaveService.getLeaveRequests();
@@ -101,7 +108,7 @@ export class DashboardComponent {
       
       const pendingAndApprovedRequests = requests.filter(r => r.status === 'pending' || r.status === 'approved');
       const totalUsedLeaveDays = pendingAndApprovedRequests.reduce((total, request) => total + (request.total_days || 0), 0);
-      this.remainingLeaveDays = totalAllowableLeaveDays - totalUsedLeaveDays;
+      this.remainingLeaveDays = totalAllowableLeaveDays ;
 
       // Calculate leave statistics
       this.pendingLeaves = requests.filter(r => r.status === 'pending').length;
@@ -130,20 +137,25 @@ export class DashboardComponent {
             if (type) {
               leaveDistribution[type.description].total = type.default_allocation_days || 0;
               leaveDistribution[type.description].used += request.total_days;
-              leaveDistribution[type.description].remaining = type.default_allocation_days - leaveDistribution[type.description].used;
+              // Set remaining to the backend balance_days for this leave type
+              const backendBalance = userLeaveData.leave_balance?.find((b: any) => b.leave_type === type.code)?.balance_days;
+              leaveDistribution[type.description].remaining = backendBalance !== undefined ? backendBalance : (type.default_allocation_days - leaveDistribution[type.description].used);
             }
           }
         }
       });
 
       // Prepare data for display
-      this.leaveTypeCounts = Object.entries(leaveDistribution).map(([type, data]) => ({
-        type,
-        total: data.total,
-        used: data.used,
-        remaining: data.remaining,
-        percentageUsed: data.total > 0 ? (data.used / data.total) * 100 : 0
-      }));
+      this.leaveTypeCounts = Object.entries(leaveDistribution).map(([type, data]) => {
+        const total = data.used + data.remaining;
+        return {
+          type,
+          total,
+          used: data.used,
+          remaining: data.remaining,
+          percentageUsed: total > 0 ? (data.used / total) * 100 : 0
+        };
+      });
 
       // Calculate total leave balance
       this.leaveBalances = [{
