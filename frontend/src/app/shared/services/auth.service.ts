@@ -40,13 +40,32 @@ export class AuthService {
   }
 
   get isAdmin(): boolean {
-    return this._user?.role_band === 'HR' || this._user?.role_band === 'Admin' || 
-           this._user?.role_title === 'HR' || this._user?.role_title === 'Admin';
+    return this._user?.role_band === 'Admin' || this._user?.role_title === 'Admin';
+  }
+
+  get isHR(): boolean {
+    return this._user?.role_band === 'HR' || this._user?.role_title === 'HR';
+  }
+
+  get isManager(): boolean {
+    return this._user?.role_band === 'Manager' || this._user?.role_title === 'Manager';
   }
 
   private _lastAuthenticatedPath: string = defaultPath;
   set lastAuthenticatedPath(value: string) {
     this._lastAuthenticatedPath = value;
+  }
+
+  async getUserById(userId: string): Promise<any> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get(`${this.API_URL}/users/${userId}`)
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      return null;
+    }
   }
 
   constructor(private router: Router, private http: HttpClient,) {
@@ -82,7 +101,12 @@ export class AuthService {
       this._user = response.user;
       localStorage.setItem('current_user', JSON.stringify(response.user));
       localStorage.setItem('user_token', response.access_token);
-      const target = this._lastAuthenticatedPath || '/dashboard';
+      
+      // Redirect admin/HR/manager users to leaves page
+      const target = this.isAdmin || this.isHR || this.isManager
+        ? '/admin/leaves'
+        : (this._lastAuthenticatedPath || '/dashboard');
+      
       await this.router.navigateByUrl(target);
 
       return {

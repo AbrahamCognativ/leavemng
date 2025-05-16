@@ -44,13 +44,20 @@ export class LeaveRequestDetailsComponent implements OnInit {
   uploadedFiles: File[] = [];
   isSaving: boolean = false;
 
+  private returnUrl: string = '/admin/leaves';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private leaveService: LeaveService,
     private userService: UserService,
     private authService: AuthService
-  ) { }
+  ) { 
+    // Get the return URL from the query params, default to /admin/leaves
+    this.route.queryParams.subscribe(params => {
+      this.returnUrl = params['returnUrl'] || '/admin/leaves';
+    });
+  }
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
@@ -120,7 +127,7 @@ export class LeaveRequestDetailsComponent implements OnInit {
       this.isApproving = true;
       await this.leaveService.approveLeaveRequest(this.requestId);
       await this.loadRequestDetails();
-      this.router.navigate(['/admin/leave-requests']);
+      this.router.navigate([this.returnUrl]);
     } catch (error) {
       console.error('Error approving leave request:', error);
     } finally {
@@ -134,7 +141,7 @@ export class LeaveRequestDetailsComponent implements OnInit {
       this.isRejecting = true;
       await this.leaveService.rejectLeaveRequest(this.requestId);
       await this.loadRequestDetails();
-      this.router.navigate(['/admin/leave-requests']);
+      this.router.navigate([this.returnUrl]);
     } catch (error) {
       console.error('Error rejecting leave request:', error);
       // Log more details about the error

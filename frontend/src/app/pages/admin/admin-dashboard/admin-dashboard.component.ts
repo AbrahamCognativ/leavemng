@@ -88,7 +88,9 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   viewRequest(e: any): void {
-    this.router.navigate(['/admin/leave-request', e.row.data.id]);
+    this.router.navigate(['/admin/leave-request', e.row.data.id], {
+      queryParams: { returnUrl: '/admin/leave-requests' }
+    });
   }
 
   onRowClick(e: any): void {
@@ -97,7 +99,9 @@ export class AdminDashboardComponent implements OnInit {
       if (e.column && e.column.type === 'buttons') {
         return;
       }
-      this.router.navigate(['/admin/leave-request', e.data.id]);
+      this.router.navigate(['/admin/leave-request', e.data.id], {
+        queryParams: { returnUrl: '/admin/leave-requests' }
+      });
     }
   }
 }

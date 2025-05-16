@@ -1,7 +1,7 @@
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { NgModule, inject } from '@angular/core';
+import { Routes, RouterModule, Router } from '@angular/router';
 import { LoginFormComponent, ResetPasswordFormComponent, ChangePasswordFormComponent } from './shared/components';
-import { AuthGuardService } from './shared/services';
+import { AuthGuardService, AuthService } from './shared/services';
 import { ProfileComponent } from './pages/profile/profile.component';
 import {DashboardComponent} from './pages/dashboard/dashboard.component';
 import {LeaveRequestComponent} from './pages/leave-request/leave-request.component';

@@ -1,6 +1,6 @@
 import { Component, NgModule, Output, Input, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { DxTreeViewModule, DxTreeViewComponent, DxTreeViewTypes } from 'devextreme-angular/ui/tree-view';
-import { navigation } from '../../../app-navigation';
+import { getNavigationItems } from '../../../app-navigation';
 import { AuthService } from '../../services';
 import * as events from 'devextreme/events';
 
@@ -34,10 +34,12 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
   private _items!: Record <string, unknown>[];
   get items() {
     if (!this._items) {
+      // Get navigation items based on user role
+      const navigationItems = getNavigationItems(this.authService);
       // Filter out admin menu items for non-admin users
       const filteredNavigation = this.authService.isAdmin ?
-        navigation :
-        navigation.filter(item => item.text !== 'Admin');
+        navigationItems :
+        navigationItems.filter(item => item.text !== 'Admin');
 
       this._items = filteredNavigation.map((item) => {
         if(item.path && !(/^\//.test(item.path))){
