@@ -256,7 +256,8 @@ export class LeaveRequestComponent implements OnInit {
         leave_type_id: leaveType.id,
         start_date: startDate,
         end_date: endDate,
-        comments: this.leave.comments || ''
+        comments: this.leave.comments || '',
+        total_days: this.calculatedDays
         // Don't include user_id or status - backend will set these automatically
       };
 
