@@ -55,8 +55,8 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
     # Validate that annual leave is applied at least 3 days in advance
     taken = {}
 
-    if leave_type.code == 'annual':
-        start_date = req.start_date.date()
+    if leave_type.code.value == 'annual':
+        start_date = req.start_date
         if (start_date - date.today()) < timedelta(days=3):
             raise HTTPException(status_code=400, detail="Annual leave must be applied at least 3 days in advance")
 
@@ -67,10 +67,10 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
                 total_days += 1
         req.total_days = total_days
 
-    elif leave_type.code == 'maternity':
+    elif leave_type.code.value == 'maternity':
         if current_user.gender != 'female':
             raise HTTPException(status_code=400, detail="Only female employees can apply for maternity leave")
-    elif leave_type.code == 'paternity':
+    elif leave_type.code.value == 'paternity':
         if current_user.gender != 'male':
             raise HTTPException(status_code=400, detail="Only male employees can apply for paternity leave")
 

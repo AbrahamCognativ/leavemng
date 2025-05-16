@@ -17,7 +17,7 @@ class LeaveRequestBase(BaseModel):
     comments: Optional[str] = None
 
 class LeaveRequestCreate(LeaveRequestBase):
-    pass
+    total_days: float
 
 class LeaveRequestUpdate(LeaveRequestBase):
     status: Optional[LeaveStatusEnum] = None
