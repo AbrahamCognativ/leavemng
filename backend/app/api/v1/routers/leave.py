@@ -4,10 +4,11 @@ from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate, Leav
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
 from app.models.user import User
+from app.models.leave_balance import LeaveBalance
 from app.db.session import get_db
 from uuid import UUID
 from fastapi import Request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 from app.deps.permissions import get_current_user, require_role, require_direct_manager, log_permission_denied, log_permission_accepted
 
 router = APIRouter()
@@ -49,43 +50,39 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
     if req.end_date < req.start_date:
         raise HTTPException(status_code=400, detail="End date must be the same as or after start date.")
 
+    # Calculate total working days (excluding weekends)
+    total_days = 0
+    for n in range(int((req.end_date - req.start_date).days) + 1):
+        day = req.start_date + timedelta(n)
+        if day.weekday() < 5:  # 0-4 are weekdays (Monday-Friday)
+            total_days += 1
+
     # Validate that annual leave is applied at least 3 days in advance
-    taken = {}
-   
     if leave_type.code == 'annual':
         start_date = req.start_date.date()
         if (start_date - date.today()) < timedelta(days=3):
             raise HTTPException(status_code=400, detail="Annual leave must be applied at least 3 days in advance")
-        
-        total_days = 0
-        for n in range(int ((req.end_date - req.start_date).days)):
-            day = req.start_date + timedelta(n)
-            if day.weekday() < 5:
-                total_days += 1
-        req.total_days = total_days
-
     elif leave_type.code == 'maternity':
         if current_user.gender != 'female':
             raise HTTPException(status_code=400, detail="Only female employees can apply for maternity leave")
     elif leave_type.code == 'paternity':
         if current_user.gender != 'male':
             raise HTTPException(status_code=400, detail="Only male employees can apply for paternity leave")
-   
 
-    # Query LeaveBalance, check and deduct req.total_days
+    # Query LeaveBalance, check and deduct total_days
     leave_balance = db.query(LeaveBalance).filter(LeaveBalance.user_id == current_user.id, LeaveBalance.leave_type_id == req.leave_type_id).first()
-    if not leave_balance or leave_balance.balance_days < req.total_days:
+    if not leave_balance or leave_balance.balance_days < total_days:
         raise HTTPException(status_code=400, detail="Insufficient leave balance")
 
     try:
-        leave_balance.balance_days -= req.total_days
+        leave_balance.balance_days -= total_days
         db.add(leave_balance)
         db_req = LeaveRequest(
             user_id=current_user.id,
             leave_type_id=req.leave_type_id,
             start_date=req.start_date,
             end_date=req.end_date,
-            total_days=req.total_days,
+            total_days=total_days,
             status='pending',
             applied_at=datetime.now(timezone.utc),
             comments=req.comments
@@ -95,7 +92,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
         db.refresh(db_req)
     except Exception as e:
         db.rollback()
-        leave_balance.balance_days += req.total_days
+        leave_balance.balance_days += total_days
         db.add(leave_balance)
         db.commit()
         if hasattr(e, 'orig') and hasattr(e.orig, 'diag') and 'unique' in str(e.orig).lower():

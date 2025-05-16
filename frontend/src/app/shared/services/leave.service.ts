@@ -264,12 +264,8 @@ export class LeaveService {
   async createLeaveRequest(data: any): Promise<any> {
     console.log('Creating leave request with data:', data);
     
-    // Always use application/json for leave requests
-    const headers = { 'Content-Type': 'application/json' };
-    
-    // Don't stringify the data - Angular's HttpClient will do it automatically
-    // when Content-Type is application/json
-    return this.http.post<any>(`${this.apiUrl}/leave`, data, { headers })
+    // The auth interceptor will automatically add the Authorization header
+    return this.http.post<any>(`${this.apiUrl}/leave`, data)
       .pipe(
         catchError((error) => {
           console.error('Leave request creation error:', error);
