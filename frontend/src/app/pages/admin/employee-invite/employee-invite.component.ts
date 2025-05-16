@@ -278,7 +278,17 @@ export class EmployeeInviteComponent implements OnInit {
       'Authorization': `Bearer ${token}`
     });
     
-    this.http.put(`${this.getApiUrl('users')}/${this.selectedUser.id}`, this.selectedUser, { headers })
+    // Only include fields that are allowed to be updated
+    const updateData = {
+      name: this.selectedUser.name,
+      passport_or_id_number: this.selectedUser.passport_or_id_number,
+      gender: this.selectedUser.gender,
+      manager_id: this.selectedUser.manager_id,
+      org_unit_id: this.selectedUser.org_unit_id,
+      is_active: this.selectedUser.is_active
+    };
+    
+    this.http.patch(`${this.getApiUrl('users')}/${this.selectedUser.id}`, updateData, { headers })
       .subscribe({
         next: () => {
           this.isLoading = false;
@@ -317,12 +327,12 @@ export class EmployeeInviteComponent implements OnInit {
       'Authorization': `Bearer ${token}`
     });
     
-    // Use PUT to update the user's is_active status
+    // Use PATCH to update the user's is_active status
     const updateData = {
       is_active: false
     };
     
-    this.http.put(`${this.getApiUrl('users')}/${this.userToDelete.id}`, updateData, { headers })
+    this.http.patch(`${this.getApiUrl('users')}/${this.userToDelete.id}`, updateData, { headers })
       .subscribe({
         next: () => {
           this.isLoading = false;
