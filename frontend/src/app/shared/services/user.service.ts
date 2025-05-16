@@ -16,6 +16,8 @@ export interface IUser {
   profile_image_url?: string;
   extra_metadata?: any;
   created_at?: string;
+  gender?: string;
+  is_active?: boolean;
 }
 
 @Injectable()
@@ -65,7 +67,7 @@ export class UserService {
   async updateUser(user: IUser): Promise<IUser | null> {
     try {
       const updated = await firstValueFrom(
-        this.http.put<IUser>(`${this.API_URL}/users/${user.id}`, user)
+        this.http.patch<IUser>(`${this.API_URL}/users/${user.id}`, user)
       );
       return updated;
     } catch (error) {
