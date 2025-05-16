@@ -185,3 +185,26 @@ def send_leave_approval_notification(to_email: str, leave_details, approved: boo
     '''
     body = f"Hello,\n\nYour leave request has been {status}.\n\nDetails:\n{plain_details}\n\nBest Regards."
     send_email(subject, body, [to_email], request=request, html=html)
+
+def send_leave_sick_doc_reminder(to_email: str, remaining_hours: str, leave_details: dict, request: Request):
+    subject = "Reminder: Please Upload Sick Leave Document"
+    body = f"Hello,\n\nPlease upload a doctor's note or medical certificate to support your sick leave request.\n\nDetails:\n{leave_details}\n\nBest Regards."
+    # Format leave_details dict as HTML table rows
+    table_rows = "".join(
+        f'<tr><td style="padding:4px 8px;border:1px solid #ddd;">{key}</td><td style="padding:4px 8px;border:1px solid #ddd;">{value}</td></tr>'
+        for key, value in leave_details.items()
+    )
+    html = f'''
+    <div style="font-family:sans-serif;max-width:600px;">
+        <p>Hello,</p>
+        <p>You have {remaining_hours} hours left to <b>upload a doctor's note or medical certificate</b> to support your sick leave request.</p>
+        <p style="margin-top:24px;">Details:</p>
+        <table style="border-collapse:collapse;margin:12px 0;">
+            <tr><th style="padding:4px 8px;border:1px solid #ddd;">Key</th><th style="padding:4px 8px;border:1px solid #ddd;">Value</th></tr>
+            {table_rows}
+        </table>
+        <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
+    </div>
+    '''
+    send_email(subject, body, [to_email], request=request, html=html)
+

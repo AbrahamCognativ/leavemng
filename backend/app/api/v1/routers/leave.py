@@ -9,6 +9,7 @@ from app.db.session import get_db
 from uuid import UUID
 from fastapi import Request
 from datetime import datetime, timezone, date, timedelta
+from decimal import Decimal
 from app.deps.permissions import get_current_user, require_role, require_direct_manager, log_permission_denied, log_permission_accepted
 
 router = APIRouter()
@@ -81,7 +82,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
         raise HTTPException(status_code=400, detail="Insufficient leave balance")
 
     try:
-        leave_balance.balance_days -= req.total_days
+        leave_balance.balance_days -= Decimal(str(req.total_days))
         db.add(leave_balance)
         db_req = LeaveRequest(
             user_id=current_user.id,
@@ -98,7 +99,7 @@ def create_leave_request(req: LeaveRequestCreate, db: Session = Depends(get_db),
         db.refresh(db_req)
     except Exception as e:
         db.rollback()
-        leave_balance.balance_days += req.total_days
+        leave_balance.balance_days += Decimal(str(req.total_days))
         db.add(leave_balance)
         db.commit()
         if hasattr(e, 'orig') and hasattr(e.orig, 'diag') and 'unique' in str(e.orig).lower():
@@ -278,7 +279,7 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
         # Add total_days back to user's leave balance
         leave_balance = db.query(LeaveBalance).filter(LeaveBalance.user_id == req.user_id, LeaveBalance.leave_type_id == req.leave_type_id).first()
         if leave_balance:
-            leave_balance.balance_days += req.total_days
+            leave_balance.balance_days += Decimal(str(req.total_days))
             db.add(leave_balance)
             db.commit()
         log_permission_accepted(db, current_user.id, "reject_leave_request", "leave_request", str(request_id))

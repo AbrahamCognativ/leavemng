@@ -1,14 +1,18 @@
 import logging
 from sqlalchemy import and_
 from app.db.session import SessionLocal
+from fastapi import Request
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType, LeaveCodeEnum
 from app.models.leave_document import LeaveDocument
 from app.models.leave_balance import LeaveBalance
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from app.utils.audit_log_utils import log_audit
+from app.utils.email_utils import send_leave_sick_doc_reminder
 
-def sick_leave_doc_check_job():
+
+def sick_leave_doc_check_job(request: Request=None):
     db = SessionLocal()
     try:
         logging.info('[START] Sick leave document check job starting.')
@@ -18,6 +22,7 @@ def sick_leave_doc_check_job():
         # Find pending sick leave requests older than deadline
         sick_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.sick).first()
         if not sick_type:
+            log_audit(db, "Sick Leave Document Check", "No sick leave type found")
             return
         overdue = db.query(LeaveRequest).filter(
             LeaveRequest.leave_type_id == sick_type.id,
@@ -45,12 +50,57 @@ def sick_leave_doc_check_job():
                     user = db.query(User).filter(User.id == req.user_id).first()
                     if user:
                         leave_details = f"Type: Annual (auto-deducted for missing sick doc), Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
-                        send_leave_approval_notification(user.email, leave_details, approved=True)
+                        send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
                 except Exception as e:
-                    logging.warning(f"Could not send notification: {e}")
+                    log_audit(db, "Sick Leave Document Check", f"Could not send notification: {e}")
         db.commit()
-        logging.info('[SUCCESS] Sick leave document check job ran successfully.')
+        log_audit(db, "Sick Leave Document Check", "Sick leave document check job ran successfully.")
     except Exception as e:
-        logging.error(f'[ERROR] Sick leave document check job failed: {e}')
+        log_audit(db, "Sick Leave Document Check", f"Sick leave document check job failed: {e}")
+    finally:
+        db.close()
+
+from app.utils.email_utils import send_leave_sick_doc_reminder
+
+def sick_leave_doc_reminder_job(request: Request=None):
+    db = SessionLocal()
+    try:
+        logging.info('[START] Sick leave document reminder job starting.')
+        # Configurable document deadline (hours)
+        DOC_DEADLINE_HOURS = 48
+        now = datetime.now(timezone.utc)
+        # Find pending sick leave requests older than deadline
+        sick_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.sick).first()
+        if not sick_type:
+            log_audit(db, "Sick Leave Document Reminder", "No sick leave type found")
+            return
+        overdue = db.query(LeaveRequest).filter(
+            LeaveRequest.leave_type_id == sick_type.id,
+            LeaveRequest.status == 'pending',
+            LeaveRequest.applied_at < now - timedelta(hours=DOC_DEADLINE_HOURS/2)
+        ).all()
+        for req in overdue:
+            # Check if document exists
+            doc = db.query(LeaveDocument).filter(LeaveDocument.request_id == req.id).first()
+            if not doc:
+                # Send reminder email
+                try:
+                    from app.models.user import User
+                    user = db.query(User).filter(User.id == req.user_id).first()
+                    leave_details = {
+                        'type': req.leave_type_id,
+                        'start': req.start_date,
+                        'end': req.end_date,
+                        'days': req.total_days
+                    }
+                    if user:
+                        remaining_hours = int((now - req.applied_at).total_seconds() // 3600)
+                        send_leave_sick_doc_reminder(user.email, remaining_hours, leave_details, request=request)
+                except Exception as e:
+                    log_audit(db, "Sick Leave Document Reminder", f"Could not send reminder notification: {e}")
+        db.commit()
+        log_audit(db, "Sick Leave Document Reminder", "Sick leave document reminder job ran successfully.")
+    except Exception as e:
+        log_audit(db, "Sick Leave Document Reminder", f"Sick leave document reminder job failed: {e}")
     finally:
         db.close()

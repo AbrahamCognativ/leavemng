@@ -1,10 +1,9 @@
 import time
-import threading
 from app.db.session import SessionLocal
-from app.utils.accrual import add_existing_users_to_leave_balances, accrue_monthly_leave_balances, accrue_quarterly_leave_balances, accrue_yearly_leave_balances, reset_annual_leave_carry_forward, test_accrue_annual_leave
+from app.utils.accrual import add_existing_users_to_leave_balances, accrue_monthly_leave_balances, accrue_quarterly_leave_balances, accrue_yearly_leave_balances, reset_annual_leave_carry_forward, reset_yearly_leave_balances_on_join_date
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.utils.auto_reject import auto_reject_old_pending_leaves
-
+from app.utils.sick_leave_doc_check import sick_leave_doc_check_job
 import logging
 
 def run_accrual_scheduler():
@@ -24,19 +23,6 @@ def run_accrual_scheduler():
         finally:
             db.close()
 
-    def yearly_accrual_job():
-        db = SessionLocal()
-        try:
-            logging.info('[START] Yearly accrual job starting.')
-            accrue_yearly_leave_balances
-            db.commit()
-            logging.info('[SUCCESS] Yearly accrual job ran successfully.')
-        except Exception as e:
-            logging.error(f'[ERROR] Yearly accrual job failed: {e}')
-        finally:
-            db.close()
-
-
     def quarterly_accrual_job():
         db = SessionLocal()
         try:
@@ -51,26 +37,58 @@ def run_accrual_scheduler():
 
     # For demo/testing: run every 2 minutes. For real monthly: use 'cron', day=1, hour=0, minute=0
     # Run monthly on the 1st at 00:00
-    scheduler.add_job(accrual_job_monthly, 'cron', day=1, hour=0, minute=0, id='accrual_job_monthly')
-    # Run yearly on January 1st at 00:00
-    scheduler.add_job(yearly_accrual_job, 'cron', month=1, day=1, hour=0, minute=0, id='yearly_accrual_job')
+    # scheduler.add_job(accrual_job_monthly, 'cron', day=1, hour=0, minute=0, id='accrual_job_monthly')
+    scheduler.add_job(accrual_job_monthly, 'interval', seconds=90, id='accrual_job_monthly')
+
     # Run quarterly on the 1st of Jan, Apr, Jul, Oct at 00:00
     scheduler.add_job(quarterly_accrual_job, 'cron', month='1,4,7,10', day=1, hour=0, minute=0, id='quarterly_accrual_job')
+    
 
-    # Schedule quarterly accrual for Apr 1st at 00:00
-    def this_is_test_job():
+    # Schedule reset yearly leave balances on join date every midnight
+    def reset_yearly_leave_balances_on_join_date_job():
         db = SessionLocal()
         try:
-            logging.info('[START] Test annual leave accrual job starting.')
-            test_accrue_annual_leave(db)
+            logging.info('[START] Reset yearly leave balances on join date job starting.')
+            reset_yearly_leave_balances_on_join_date(db)
             db.commit()
-            logging.info('[SUCCESS] Test annual leave accrual job ran successfully.')
+            logging.info('[SUCCESS] Reset yearly leave balances on join date job ran successfully.')
         except Exception as e:
-            logging.error(f'[ERROR] Test annual leave accrual job failed: {e}')
+            logging.error(f'[ERROR] Reset yearly leave balances on join date job failed: {e}')
         finally:
             db.close()
-    # For demo/testing: run every 2 minutes. For real monthly: use 'interval', minutes=30
-    scheduler.add_job(this_is_test_job, 'interval', minutes=1, id='this_is_test_job')
+    scheduler.add_job(reset_yearly_leave_balances_on_join_date_job, 'cron', hour=0, minute=0, id='reset_yearly_leave_balances_on_join_date_job')
+
+
+
+    # Schedule sick leave document check every hour
+    def sick_leave_doc_check_job_scheduler():
+        db = SessionLocal()
+        try:
+            logging.info('[START] Sick leave document check job starting.')
+            sick_leave_doc_check_job()
+            db.commit()
+            logging.info('[SUCCESS] Sick leave document check job ran successfully.')
+        except Exception as e:
+            logging.error(f'[ERROR] Sick leave document check job failed: {e}')
+        finally:
+            db.close()
+    # Schedule sick leave document check every hour
+    scheduler.add_job(sick_leave_doc_check_job_scheduler, 'interval', hours=1, id='sick_leave_doc_check')
+
+    # Schedule sick leave document check every 12 hours
+    def sick_leave_doc_reminder_job_scheduler():
+        db = SessionLocal()
+        from app.utils.sick_leave_doc_check import sick_leave_doc_reminder_job
+        try:
+            logging.info('[START] Sick leave document reminder job starting.')
+            sick_leave_doc_reminder_job(db)
+            db.commit()
+            logging.info('[SUCCESS] Sick leave document reminder job ran successfully.')
+        except Exception as e:
+            logging.error(f'[ERROR] Sick leave document reminder job failed: {e}')
+        finally:
+            db.close()
+    scheduler.add_job(sick_leave_doc_reminder_job_scheduler, 'interval', hours=12, id='sick_leave_doc_reminder_job')
 
 
     # Schedule carry forward logic for Dec 31st at midnight
@@ -88,9 +106,7 @@ def run_accrual_scheduler():
     # Run at 00:00 on December 31st every year
     scheduler.add_job(carry_forward_job, 'cron', month=12, day=31, hour=0, minute=0, id='annual_leave_carry_forward')
 
-    # Schedule sick leave document check every hour
-    from app.utils.sick_leave_doc_check import sick_leave_doc_check_job
-    scheduler.add_job(sick_leave_doc_check_job, 'interval', hours=1, id='sick_leave_doc_check')
+   
 
     # Schedule auto-reject of old pending leaves every midnight
     def auto_reject_old_pending_leaves_job():

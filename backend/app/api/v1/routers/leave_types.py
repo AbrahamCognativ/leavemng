@@ -63,6 +63,15 @@ def update_leave_type(leave_type_id: str, update: LeaveTypeCreate, db: Session =
     leave_type = db.query(LeaveType).filter(LeaveType.id == leave_type_id).first()
     if not leave_type:
         raise HTTPException(status_code=404, detail="Leave type not found")
+
+    if leave_type.code != LeaveCodeEnum.annual and update.default_allocation_days != leave_type.default_allocation_days:
+        balances_to_update = db.query(LeaveBalance).filter(
+            LeaveBalance.leave_type_id == leave_type_id,
+            LeaveBalance.balance_days == leave_type.default_allocation_days
+        ).all()
+        for balance in balances_to_update:
+            balance.balance_days = update.default_allocation_days
+
     for k, v in update.model_dump().items():
         setattr(leave_type, k, v)
     leave_type.updated_at = datetime.datetime.now(datetime.timezone.utc)
