@@ -184,3 +184,30 @@ def reset_annual_leave_carry_forward(db: Session):
         if bal.balance_days > 5:
             bal.balance_days = Decimal(5)
     db.commit()
+
+def reset_yearly_leave_balances_on_join_date(db: Session):
+    """
+    At midnight, check for all users who joined today (created_at) and reset their leave types with a policy of accrual frequency of yearly.
+    Should be run once daily (e.g., via scheduled job).
+    """
+    from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
+    from app.models.leave_type import LeaveType
+    from app.models.leave_balance import LeaveBalance
+    from sqlalchemy.orm import joinedload
+    today = datetime.date.today()
+    today_month_day = (today.month, today.day)
+    yearly_policies = db.query(LeavePolicy).filter(LeavePolicy.accrual_frequency == AccrualFrequencyEnum.yearly).all()
+    if not yearly_policies:
+        log_audit(db, "Yearly Leave Accrual", "No yearly leave policy found. No database update was done.")
+        return
+    users = db.query(User).filter(func.extract('month', User.created_at) == today_month_day[0], func.extract('day', User.created_at) == today_month_day[1]).options(joinedload(User.leave_balances)).all()
+    if not users:
+        log_audit(db, "Yearly Leave Accrual", "No users found who joined today. No database update was done.")
+        return
+    for user in users:
+        for leave_balance in user.leave_balances:
+            for policy in yearly_policies:
+                if policy.leave_type_id == leave_balance.leave_type_id:
+                    leave_balance.balance_days = Decimal(policy.default_allocation_days or 0)
+    db.commit()
+    log_audit(db, "Yearly Leave Accrual", f"Reset yearly leave balances for {len(users)} users.")

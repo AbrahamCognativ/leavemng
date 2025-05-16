@@ -16,7 +16,7 @@ def get_or_create_scheduler_user(db: Session):
     if not user:
         user = User(
             name=scheduler_name,
-            email='scheduler@system.local',
+            email='scheduler@cognativ.com',
             hashed_password='!',  # Not used for login
             role_band='IC',
             role_title='Scheduler',

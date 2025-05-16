@@ -58,7 +58,7 @@ def run_accrual_scheduler():
     scheduler.add_job(quarterly_accrual_job, 'cron', month='1,4,7,10', day=1, hour=0, minute=0, id='quarterly_accrual_job')
 
     # Schedule quarterly accrual for Apr 1st at 00:00
-    def test_quarterly_accrual_job():
+    def this_is_test_job():
         db = SessionLocal()
         try:
             logging.info('[START] Test annual leave accrual job starting.')
@@ -70,7 +70,7 @@ def run_accrual_scheduler():
         finally:
             db.close()
     # For demo/testing: run every 2 minutes. For real monthly: use 'interval', minutes=30
-    scheduler.add_job(test_quarterly_accrual_job, 'interval', minutes=1, id='test_quarterly_accrual_job')
+    scheduler.add_job(this_is_test_job, 'interval', minutes=1, id='this_is_test_job')
 
 
     # Schedule carry forward logic for Dec 31st at midnight
