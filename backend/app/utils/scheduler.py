@@ -37,8 +37,8 @@ def run_accrual_scheduler():
 
     # For demo/testing: run every 2 minutes. For real monthly: use 'cron', day=1, hour=0, minute=0
     # Run monthly on the 1st at 00:00
-    # scheduler.add_job(accrual_job_monthly, 'cron', day=1, hour=0, minute=0, id='accrual_job_monthly')
-    scheduler.add_job(accrual_job_monthly, 'interval', seconds=90, id='accrual_job_monthly')
+    scheduler.add_job(accrual_job_monthly, 'cron', day=1, hour=0, minute=0, id='accrual_job_monthly')
+    # scheduler.add_job(accrual_job_monthly, 'interval', seconds=90, id='accrual_job_monthly')
 
     # Run quarterly on the 1st of Jan, Apr, Jul, Oct at 00:00
     scheduler.add_job(quarterly_accrual_job, 'cron', month='1,4,7,10', day=1, hour=0, minute=0, id='quarterly_accrual_job')
@@ -74,6 +74,7 @@ def run_accrual_scheduler():
             db.close()
     # Schedule sick leave document check every hour
     scheduler.add_job(sick_leave_doc_check_job_scheduler, 'interval', hours=1, id='sick_leave_doc_check')
+    # scheduler.add_job(sick_leave_doc_check_job_scheduler, 'interval', seconds=12, id='sick_leave_doc_check')
 
     # Schedule sick leave document check every 12 hours
     def sick_leave_doc_reminder_job_scheduler():
@@ -89,6 +90,8 @@ def run_accrual_scheduler():
         finally:
             db.close()
     scheduler.add_job(sick_leave_doc_reminder_job_scheduler, 'interval', hours=12, id='sick_leave_doc_reminder_job')
+    # scheduler.add_job(sick_leave_doc_reminder_job_scheduler, 'interval', seconds=10, id='sick_leave_doc_reminder_job')
+
 
 
     # Schedule carry forward logic for Dec 31st at midnight
