@@ -6,6 +6,39 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 
+import os
+
+def send_email_background(subject: str, body: str, to_emails: list[str], from_email: Optional[str] = None, html: Optional[str] = None):
+    """
+    Send an email using SendGrid settings from environment variables. Use this for background jobs where FastAPI Request is not available.
+    """
+    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+    if not sendgrid_api_key:
+        logging.error("SENDGRID_API_KEY not configured in environment.")
+        raise Exception("Email service not configured.")
+
+    # from_email = from_email or os.environ.get('EMAIL_USER') or os.environ.get('EMAIL_HOST')
+    # if not from_email:
+    #     logging.error("No from_email configured in environment.")
+    #     raise Exception("Sender email not configured.")
+
+    message = Mail(
+        from_email='info@cognativ.com',
+        to_emails=to_emails,
+        subject=subject,
+        plain_text_content=body,
+        html_content=html or body
+    )
+    try:
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        if response.status_code >= 400:
+            logging.error(f"SendGrid error: {response.status_code} {response.body}")
+            raise Exception("Could not send email.")
+    except Exception as e:
+        logging.error(f"Email sending failed: {e}")
+        raise Exception(f"Could not send email: {e}")
+
 def send_email(subject: str, body: str, to_emails: list[str], request: Request, from_email: Optional[str] = None, html: Optional[str] = None):
     """
     Send an email using SendGrid settings from FastAPI app.state.settings.
@@ -81,11 +114,8 @@ def send_invite_email(to_email: str, to_name: str, invite_link: str, password: s
     </body>
     </html>
     """
-    try:
-        send_email(subject, body, [to_email], request=request, html=html)
-    except HTTPException as e:
-        # Optionally, log or handle further if needed
-        raise
+    send_email(subject, body, [to_email], request=request, html=html)
+        
 
 
 def send_leave_request_notification(to_email: str, requester_name: str, leave_details: dict, request: Request, request_id: int = None, requestor_email: str = None):
@@ -186,7 +216,7 @@ def send_leave_approval_notification(to_email: str, leave_details, approved: boo
     body = f"Hello,\n\nYour leave request has been {status}.\n\nDetails:\n{plain_details}\n\nBest Regards."
     send_email(subject, body, [to_email], request=request, html=html)
 
-def send_leave_sick_doc_reminder(to_email: str, remaining_hours: str, leave_details: dict, request: Request):
+def send_leave_sick_doc_reminder(to_email: str, remaining_hours: str, leave_details: dict):
     subject = "Reminder: Please Upload Sick Leave Document"
     body = f"Hello,\n\nPlease upload a doctor's note or medical certificate to support your sick leave request.\n\nDetails:\n{leave_details}\n\nBest Regards."
     # Format leave_details dict as HTML table rows
@@ -206,5 +236,79 @@ def send_leave_sick_doc_reminder(to_email: str, remaining_hours: str, leave_deta
         <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
     </div>
     '''
-    send_email(subject, body, [to_email], request=request, html=html)
+    send_email_background(subject, body, [to_email], html=html)
 
+def send_leave_auto_approval_notification(to_email: str, leave_details: dict, approved: bool = True):
+    status = "approved" if approved else "rejected"
+    subject = f"Your Leave Request has been Auto-{status.title()}"
+
+    # Format leave_details dict as HTML table rows
+    table_rows = "".join(
+        f'<tr><td style="padding:4px 8px;border:1px solid #ddd;">{key}</td><td style="padding:4px 8px;border:1px solid #ddd;">{value}</td></tr>'
+        for key, value in leave_details.items()
+    )
+    html = f'''
+    <div style="font-family:sans-serif;max-width:600px;">
+        <p>Hello,</p>
+        <p>Your leave request has been Auto-{status.title()}.</p>
+        <p style="margin-top:24px;">Details:</p>
+        <table style="border-collapse:collapse;margin:12px 0;">
+            <tr><th style="padding:4px 8px;border:1px solid #ddd;">Key</th><th style="padding:4px 8px;border:1px solid #ddd;">Value</th></tr>
+            {table_rows}
+        </table>
+        <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
+    </div>
+    '''
+
+    body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
+    send_email_background(subject, body, [to_email], html=html)
+
+def send_leave_auto_reject_notification(to_email: str, leave_details: dict, approved: bool = False):
+    status = "approved" if approved else "rejected"
+    subject = f"Your Leave Request has been Auto-{status.title()}"
+
+    table_rows = "".join(
+        f'<tr><td style="padding:4px 8px;border:1px solid #ddd;">{key}</td><td style="padding:4px 8px;border:1px solid #ddd;">{value}</td></tr>'
+        for key, value in leave_details.items()
+    )
+    html = f'''
+    <div style="font-family:sans-serif;max-width:600px;">
+        <p>Hello,</p>
+        <p>Your leave request has been Auto-{status.title()}.</p>
+        <p style="margin-top:24px;">Details:</p>
+        <table style="border-collapse:collapse;margin:12px 0;">
+            <tr><th style="padding:4px 8px;border:1px solid #ddd;">Key</th><th style="padding:4px 8px;border:1px solid #ddd;">Value</th></tr>
+            {table_rows}
+        </table>
+        <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
+    </div>
+    '''
+    body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
+    send_email_background(subject, body, [to_email], html=html)
+
+
+
+# def send_leave_auto_reject_notification(to_email: str, leave_details: dict, approved: bool = True):
+#     status = "approved" if approved else "rejected"
+#     subject = f"Your Leave Request has been Auto-{status.title()}"
+
+#     # Format leave_details dict as HTML table rows
+#     table_rows = "".join(
+#         f'<tr><td style="padding:4px 8px;border:1px solid #ddd;">{key}</td><td style="padding:4px 8px;border:1px solid #ddd;">{value}</td></tr>'
+#         for key, value in leave_details.items()
+#     )
+#     html = f'''
+#     <div style="font-family:sans-serif;max-width:600px;">
+#         <p>Hello,</p>
+#         <p>Your leave request has been Auto-{status.title()}.</p>
+#         <p style="margin-top:24px;">Details:</p>
+#         <table style="border-collapse:collapse;margin:12px 0;">
+#             <tr><th style="padding:4px 8px;border:1px solid #ddd;">Key</th><th style="padding:4px 8px;border:1px solid #ddd;">Value</th></tr>
+#             {table_rows}
+#         </table>
+#         <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
+#     </div>
+#     '''
+
+#     body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
+#     send_email_background(subject, body, [to_email], html=html)

@@ -177,12 +177,14 @@ def reset_annual_leave_carry_forward(db: Session):
     from sqlalchemy.orm import joinedload
     annual_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.annual).first()
     if not annual_type:
-        return
-    # balances = db.query(LeaveBalance).options(joinedload(LeaveBalance.user_id)).filter(LeaveBalance.leave_type_id == annual_type.id).all()
-    balances = db.query(LeaveBalance).filter(LeaveBalance.leave_type_id == annual_type.id).all()
-    for bal in balances:
-        if bal.balance_days > 5:
-            bal.balance_days = Decimal(5)
+        log_audit(db, "Annual Leave Carry Forward", "No annual leave type found. No database update was done.")
+
+    else:
+        # balances = db.query(LeaveBalance).options(joinedload(LeaveBalance.user_id)).filter(LeaveBalance.leave_type_id == annual_type.id).all()
+        balances = db.query(LeaveBalance).filter(LeaveBalance.leave_type_id == annual_type.id).all()
+        for bal in balances:
+            if bal.balance_days > 5:
+                bal.balance_days = Decimal(5)
     db.commit()
 
 def reset_yearly_leave_balances_on_join_date(db: Session):
@@ -200,6 +202,7 @@ def reset_yearly_leave_balances_on_join_date(db: Session):
     if not yearly_policies:
         log_audit(db, "Yearly Leave Accrual", "No yearly leave policy found. No database update was done.")
         return
+    from sqlalchemy import func
     users = db.query(User).filter(func.extract('month', User.created_at) == today_month_day[0], func.extract('day', User.created_at) == today_month_day[1]).options(joinedload(User.leave_balances)).all()
     if not users:
         log_audit(db, "Yearly Leave Accrual", "No users found who joined today. No database update was done.")

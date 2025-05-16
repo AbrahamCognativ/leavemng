@@ -82,7 +82,7 @@ def run_accrual_scheduler():
         from app.utils.sick_leave_doc_check import sick_leave_doc_reminder_job
         try:
             logging.info('[START] Sick leave document reminder job starting.')
-            sick_leave_doc_reminder_job(db)
+            sick_leave_doc_reminder_job()
             db.commit()
             logging.info('[SUCCESS] Sick leave document reminder job ran successfully.')
         except Exception as e:
@@ -108,6 +108,7 @@ def run_accrual_scheduler():
             db.close()
     # Run at 00:00 on December 31st every year
     scheduler.add_job(carry_forward_job, 'cron', month=12, day=31, hour=0, minute=0, id='annual_leave_carry_forward')
+    # scheduler.add_job(carry_forward_job, 'interval', seconds=10, id='annual_leave_carry_forward')
 
    
 
@@ -120,6 +121,8 @@ def run_accrual_scheduler():
         except Exception as e:
             logging.error(f'[ERROR] Auto-reject pending leaves job failed: {e}')
     scheduler.add_job(auto_reject_old_pending_leaves_job, 'cron', hour=0, minute=0, id='auto_reject_pending_leaves')
+    # scheduler.add_job(auto_reject_old_pending_leaves_job, 'interval', seconds=10, id='auto_reject_pending_leaves')
+
 
     scheduler.start()
     logging.info('[INFO] Scheduler started. All jobs are scheduled.')

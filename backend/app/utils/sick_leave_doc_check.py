@@ -24,37 +24,57 @@ def sick_leave_doc_check_job(request: Request=None):
         if not sick_type:
             log_audit(db, "Sick Leave Document Check", "No sick leave type found")
             return
+        # Find pending sick leave requests applied more than DOC_DEADLINE_HOURS ago
         overdue = db.query(LeaveRequest).filter(
             LeaveRequest.leave_type_id == sick_type.id,
             LeaveRequest.status == 'pending',
-            LeaveRequest.applied_at < now - timedelta(hours=DOC_DEADLINE_HOURS)
+            LeaveRequest.applied_at <= now - timedelta(hours=DOC_DEADLINE_HOURS)
         ).all()
-        for req in overdue:
-            # Check if document exists
-            doc = db.query(LeaveDocument).filter(LeaveDocument.request_id == req.id).first()
-            if not doc:
-                # Deduct from annual leave
-                annual_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.annual).first()
-                if annual_type:
-                    bal = db.query(LeaveBalance).filter_by(user_id=req.user_id, leave_type_id=annual_type.id).first()
-                    if bal:
-                        bal.balance_days = Decimal(max(float(bal.balance_days) - float(req.total_days), 0))
-                # Auto-approve
-                req.status = 'approved'
-                req.decision_at = now
-                req.decided_by = req.user_id
-                # Optionally, notify the user
-                try:
-                    from app.models.user import User
-                    from app.utils.email import send_leave_approval_notification
-                    user = db.query(User).filter(User.id == req.user_id).first()
-                    if user:
-                        leave_details = f"Type: Annual (auto-deducted for missing sick doc), Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
-                        send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
-                except Exception as e:
-                    log_audit(db, "Sick Leave Document Check", f"Could not send notification: {e}")
-        db.commit()
-        log_audit(db, "Sick Leave Document Check", "Sick leave document check job ran successfully.")
+        if not overdue:
+            log_audit(db, "Sick Leave Document Check", "No overdue sick leave requests found")
+        else:
+            for req in overdue:
+                # Check if document exists
+                doc = db.query(LeaveDocument).filter(LeaveDocument.request_id == req.id).first()
+                if not doc:
+                    # Deduct from annual leave
+                    annual_type = db.query(LeaveType).filter(LeaveType.code == LeaveCodeEnum.annual).first()
+                    if annual_type:
+                        annual_bal = db.query(LeaveBalance).filter_by(user_id=req.user_id, leave_type_id=annual_type.id).first()
+                        sick_bal = db.query(LeaveBalance).filter_by(user_id=req.user_id, leave_type_id=sick_type.id).first()
+                        leave_days = float(req.total_days)
+                        if annual_bal and sick_bal:
+                            available_annual = float(annual_bal.balance_days)
+                            if available_annual >= leave_days:
+                                annual_bal.balance_days = Decimal(available_annual - leave_days)
+                                sick_bal.balance_days = Decimal(float(sick_bal.balance_days) + leave_days)
+                            else:
+                                # Deduct all annual, deduct remainder from sick, and credit back sick
+                                annual_bal.balance_days = Decimal(0)
+                                remainder = leave_days - available_annual
+                                sick_bal.balance_days = Decimal(float(sick_bal.balance_days) + remainder)
+
+                    # Auto-approve
+                    req.status = 'approved'
+                    req.decision_at = now
+                    req.decided_by = req.user_id
+                    # Optionally, notify the user
+                    try:
+                        from app.models.user import User
+                        from app.utils.email_utils import send_leave_auto_approval_notification
+                        user = db.query(User).filter(User.id == req.user_id).first()
+                        if user:
+                            leave_details = {
+                                "Type": "Annual (auto-deducted for missing sick doc)",
+                                "Start": str(req.start_date),
+                                "End": str(req.end_date),
+                                "Days": str(req.total_days)
+                            }
+                            send_leave_auto_approval_notification(user.email, leave_details, approved=True)
+                    except Exception as e:
+                        log_audit(db, "Sick Leave Document Check", f"Could not send notification: {e}")
+            db.commit()
+            log_audit(db, "Sick Leave Document Check", "Sick leave document check job ran successfully.")
     except Exception as e:
         log_audit(db, "Sick Leave Document Check", f"Sick leave document check job failed: {e}")
     finally:
@@ -62,7 +82,7 @@ def sick_leave_doc_check_job(request: Request=None):
 
 from app.utils.email_utils import send_leave_sick_doc_reminder
 
-def sick_leave_doc_reminder_job(request: Request=None):
+def sick_leave_doc_reminder_job():
     db = SessionLocal()
     try:
         logging.info('[START] Sick leave document reminder job starting.')
@@ -74,32 +94,46 @@ def sick_leave_doc_reminder_job(request: Request=None):
         if not sick_type:
             log_audit(db, "Sick Leave Document Reminder", "No sick leave type found")
             return
+        # Overdue: sick type, pending, applied within last 48h, and no leave document attached
+        from sqlalchemy.orm import aliased
+        from sqlalchemy.sql import exists, and_
         overdue = db.query(LeaveRequest).filter(
             LeaveRequest.leave_type_id == sick_type.id,
             LeaveRequest.status == 'pending',
-            LeaveRequest.applied_at < now - timedelta(hours=DOC_DEADLINE_HOURS/2)
+            LeaveRequest.applied_at >= now - timedelta(hours=DOC_DEADLINE_HOURS),
+            LeaveRequest.applied_at <= now,
+            ~db.query(LeaveDocument).filter(LeaveDocument.request_id == LeaveRequest.id).exists()
         ).all()
-        for req in overdue:
-            # Check if document exists
-            doc = db.query(LeaveDocument).filter(LeaveDocument.request_id == req.id).first()
-            if not doc:
-                # Send reminder email
-                try:
-                    from app.models.user import User
-                    user = db.query(User).filter(User.id == req.user_id).first()
-                    leave_details = {
-                        'type': req.leave_type_id,
-                        'start': req.start_date,
-                        'end': req.end_date,
-                        'days': req.total_days
-                    }
-                    if user:
-                        remaining_hours = int((now - req.applied_at).total_seconds() // 3600)
-                        send_leave_sick_doc_reminder(user.email, remaining_hours, leave_details, request=request)
-                except Exception as e:
-                    log_audit(db, "Sick Leave Document Reminder", f"Could not send reminder notification: {e}")
-        db.commit()
-        log_audit(db, "Sick Leave Document Reminder", "Sick leave document reminder job ran successfully.")
+        if not overdue:
+            log_audit(db, "Sick Leave Document Reminder", "No overdue sick leave requests found")
+        else:
+            for req in overdue:
+                # Check if document exists
+                doc = db.query(LeaveDocument).filter(LeaveDocument.request_id == req.id).first()
+                if not doc:
+                    # Send reminder email
+                    try:
+                        from app.models.user import User
+                        user = db.query(User).filter(User.id == req.user_id).first()
+                        leave_details = {
+                            'type': req.leave_type_id,
+                            'start': req.start_date,
+                            'end': req.end_date,
+                            'days': req.total_days
+                        }
+                        if not user:
+                            log_audit(db, "Sick Leave Document Reminder", f"User not found for leave request {req.id}")
+                            continue
+                        elapsed = (now - req.applied_at).total_seconds() / 3600
+                        DOC_DEADLINE_HOURS = 48
+                        remaining_hours = max(0, int(DOC_DEADLINE_HOURS - elapsed))
+                        # Use background email sending for jobs (no FastAPI Request)
+                        from app.utils.email_utils import send_email_background
+                        send_leave_sick_doc_reminder(user.email, remaining_hours, leave_details)
+                    except Exception as e:
+                        log_audit(db, "Sick Leave Document Reminder", f"Could not send reminder notification: {e}")
+            db.commit()
+            log_audit(db, "Sick Leave Document Reminder", "Sick leave document reminder job ran successfully.")
     except Exception as e:
         log_audit(db, "Sick Leave Document Reminder", f"Sick leave document reminder job failed: {e}")
     finally:
