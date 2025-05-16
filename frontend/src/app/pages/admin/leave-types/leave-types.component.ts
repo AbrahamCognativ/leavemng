@@ -8,17 +8,6 @@ import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { LeaveService } from '../../../shared/services/leave.service';
 import { DxiItemModule } from 'devextreme-angular/ui/nested';
 
-// Default leave types matching backend LeaveCodeEnum
-const DEFAULT_LEAVE_TYPES = [
-  { code: 'annual', description: 'Annual Leave', default_allocation_days: 19 },
-  { code: 'sick', description: 'Sick Leave', default_allocation_days: 37 },
-  { code: 'maternity', description: 'Maternity Leave', default_allocation_days: 90 },
-  { code: 'paternity', description: 'Paternity Leave', default_allocation_days: 14 },
-  { code: 'compassionate', description: 'Compassionate Leave', default_allocation_days: 10 },
-  { code: 'unpaid', description: 'Unpaid Leave', default_allocation_days: 0 }
-];
-
-
 @Component({
   selector: 'app-leave-types',
   templateUrl: './leave-types.component.html',
@@ -35,7 +24,6 @@ const DEFAULT_LEAVE_TYPES = [
   ]
 })
 export class LeaveTypesComponent implements OnInit {
-  readonly DEFAULT_LEAVE_TYPES = DEFAULT_LEAVE_TYPES;
   leaveTypes: any[] = [];
   leavePolicies: any[] = [];
   isLoading: boolean = false;
@@ -126,15 +114,6 @@ export class LeaveTypesComponent implements OnInit {
       this.isLoading = true;
       this.leaveTypes = await this.leaveService.getLeaveTypes();
       this.orgUnits = await this.leaveService.getOrgUnits();
-
-      const existingCodes = new Set(this.leaveTypes.map(t => t.code));
-
-      // // Create only missing leave types
-      // for (const type of DEFAULT_LEAVE_TYPES) {
-      //   if (!existingCodes.has(type.code)) {
-      //     await this.leaveService.createLeaveType(type);
-      //   }
-      // }
 
       this.leaveTypes = await this.leaveService.getLeaveTypes();
       this.leavePolicies = await this.leaveService.getLeavePolicies();
