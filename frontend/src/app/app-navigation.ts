@@ -1,4 +1,6 @@
-export const navigation = [
+import { AuthService } from './shared/services';
+
+export const getNavigationItems = (authService: AuthService) => [
   {
     text: 'Dashboard',
     path: '/dashboard',
@@ -19,7 +21,13 @@ export const navigation = [
       {
         text: 'Schedule',
         path: '/leave/schedule',
-      }
+      },
+      ...(authService.isAdmin || authService.isHR || authService.isManager ? [
+        {
+          text: 'Requests',
+          path: '/admin/leaves',
+        }
+      ] : [])
     ]
   },
   {
@@ -30,6 +38,7 @@ export const navigation = [
         text: 'Dashboard',
         path: '/admin/leave-requests',
       },
+
       {
         text: 'Leave Types',
         path: '/admin/leave-types',

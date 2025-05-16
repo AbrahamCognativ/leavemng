@@ -13,6 +13,7 @@ import { LeaveRequestDetailsComponent } from './leave-request-details/leave-requ
 import { OrgUnitsComponent } from './org-units/org-units.component';
 import { EmployeeInviteComponent } from './employee-invite/employee-invite.component';
 import { AuditLogsComponent } from './audit-logs/audit-logs.component';
+import { LeavesComponent } from './leaves/leaves.component';
 import { AuthService } from '../../shared/services';
 import { Router, CanActivate } from '@angular/router';
 import { Injectable } from '@angular/core';
@@ -24,7 +25,7 @@ export class AdminGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(): boolean {
-    if (!this.authService.isAdmin) {
+    if (!this.authService.isAdmin && !this.authService.isHR && !this.authService.isManager) {
       this.router.navigate(['/dashboard']);
       return false;
     }
@@ -33,6 +34,16 @@ export class AdminGuard implements CanActivate {
 }
 
 const routes: Routes = [
+  {
+    path: '',
+    redirectTo: 'leaves',
+    pathMatch: 'full'
+  },
+  {
+    path: 'leaves',
+    component: LeavesComponent,
+    canActivate: [AdminGuard]
+  },
   {
     path: 'leave-requests',
     component: AdminDashboardComponent,

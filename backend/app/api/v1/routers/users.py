@@ -182,6 +182,7 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
 
 
 
+@router.patch("/{user_id}", tags=["users"], response_model=UserRead)
 def update_user(user_id: UUID, user_update: UserUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

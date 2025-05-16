@@ -5,6 +5,7 @@ import {DxFileUploaderModule} from 'devextreme-angular/ui/file-uploader';
 import {DxTextBoxModule} from 'devextreme-angular/ui/text-box';
 import {CommonModule} from '@angular/common';
 import {HttpClient, HttpClientModule, HttpHeaders} from '@angular/common/http';
+import {AuthService} from '../../shared/services';
 import { environment } from '../../../environments/environment';
 
 interface Employee {
@@ -60,7 +61,7 @@ export class ProfileComponent implements OnInit {
   passwordErrorMessage: string = '';
   passwordPattern: RegExp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private authService: AuthService) {
     this.colCountByScreen = {
       xs: 1,
       sm: 2,
@@ -153,7 +154,7 @@ export class ProfileComponent implements OnInit {
     };
     
     // Call API to update user with new password
-    this.http.put(this.getApiUrl(`users/${this.employee.id}`), payload, { headers })
+    this.http.patch(this.getApiUrl(`users/${this.employee.id}`), payload, { headers })
       .subscribe({
         next: () => {
           this.isChangingPassword = false;
@@ -207,17 +208,14 @@ export class ProfileComponent implements OnInit {
           const updatedEmployee = {
             ...this.employee,
             ...userData,
-            // Ensure ID is preserved exactly as it was
             id: this.employee.id
           };
-          
-          // Fix profile image URL if needed
-          if (updatedEmployee.profile_image_url) {
-            updatedEmployee.profile_image_url = this.formatImageUrl(updatedEmployee.profile_image_url);
-          }
-          
           this.employee = updatedEmployee;
+          this.originalEmployee = { ...updatedEmployee };
           
+          // Update both localStorage and auth service
+          localStorage.setItem('current_user', JSON.stringify(updatedEmployee));
+          this.authService['_user'] = updatedEmployee; // Update auth service user directly
           // Update local storage with fresh data
           localStorage.setItem('current_user', JSON.stringify(this.employee));
           
@@ -265,7 +263,15 @@ export class ProfileComponent implements OnInit {
     
     // Only make API call if there are changes
     if (Object.keys(updateData).length > 0) {
-      this.http.put(this.getApiUrl(`users/${this.employee.id}`), updateData)
+      // Get auth token
+      const token = localStorage.getItem('user_token');
+      const headers = new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      });
+
+      // Use PATCH instead of PUT for partial updates
+      this.http.patch(this.getApiUrl(`users/${this.employee.id}`), updateData, { headers })
         .subscribe({
           next: (response: any) => {
             // Update local storage with new user data
