@@ -56,9 +56,8 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ]
   },
   {
-    path: 'change-password/:recoveryCode',
-    component: ChangePasswordFormComponent,
-    canActivate: [ AuthGuardService ]
+    path: 'change-password/:token',
+    component: ChangePasswordFormComponent
   },
   {
     path: '**',
