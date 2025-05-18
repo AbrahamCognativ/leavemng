@@ -83,6 +83,7 @@ export class DashboardComponent {
 
       const userResp = await this.authService.getUser();
       const currentUserId = userResp?.data?.id;
+      const userGender = userResp?.data?.gender?.toLowerCase();
       if (!currentUserId) {
         console.error("Current user not found");
         return;
@@ -91,13 +92,23 @@ export class DashboardComponent {
       // Get all leave types first
       const types = await this.leaveService.getLeaveTypes();
       this.leaveTypes = types;
-      // const totalAllowableLeaveDays = types.reduce((total, type) => total + (type.default_allocation_days || 0), 0);
 
       // Get leave balance from API (sum of balance_days for the user)
       const userLeaveData = await this.leaveService.getUserLeave(currentUserId);
       let totalBalance = 0;
       if (userLeaveData && userLeaveData.leave_balance && Array.isArray(userLeaveData.leave_balance)) {
-        totalBalance = userLeaveData.leave_balance.reduce((sum: number, bal: any) => sum + (bal.balance_days || 0), 0);
+        totalBalance = userLeaveData.leave_balance.reduce((sum: number, bal: any) => {
+          // Skip maternity/paternity leave if user is not eligible
+          const leaveType = types.find(t => t.id === bal.leave_type_id);
+          if (leaveType) {
+            const code = leaveType.code.toLowerCase();
+            if ((code === 'maternity' && userGender !== 'female') || 
+                (code === 'paternity' && userGender !== 'male')) {
+              return sum;
+            }
+          }
+          return sum + (bal.balance_days || 0);
+        }, 0);
       }
       const totalAllowableLeaveDays = totalBalance;
 
@@ -107,8 +118,19 @@ export class DashboardComponent {
       this.leaveRequests = requests;
       
       const pendingAndApprovedRequests = requests.filter(r => r.status === 'pending' || r.status === 'approved');
-      const totalUsedLeaveDays = pendingAndApprovedRequests.reduce((total, request) => total + (request.total_days || 0), 0);
-      this.remainingLeaveDays = totalAllowableLeaveDays ;
+      const totalUsedLeaveDays = pendingAndApprovedRequests.reduce((total, request) => {
+        // Skip maternity/paternity leave if user is not eligible
+        const leaveType = types.find(t => t.id === request.leave_type_id);
+        if (leaveType) {
+          const code = leaveType.code.toLowerCase();
+          if ((code === 'maternity' && userGender !== 'female') || 
+              (code === 'paternity' && userGender !== 'male')) {
+            return total;
+          }
+        }
+        return total + (request.total_days || 0);
+      }, 0);
+      this.remainingLeaveDays = totalAllowableLeaveDays;
 
       // Calculate leave statistics
       this.pendingLeaves = requests.filter(r => r.status === 'pending').length;
@@ -116,15 +138,19 @@ export class DashboardComponent {
       this.rejectedLeaves = requests.filter(r => r.status === 'rejected').length;
 
       // Calculate leave balances and distribution
-      const leaveDistribution: { [key: string]: { total: number; used: number; remaining: number } } = {};
+      const leaveDistribution: { [key: string]: { total: number; used: number; remaining: number; isEligible: boolean } } = {};
       const currentYear = new Date().getFullYear();
 
       // Initialize distribution
       types.forEach(type => {
+        const code = type.code.toLowerCase();
+        const isEligible = !((code === 'maternity' && userGender !== 'female') || 
+                           (code === 'paternity' && userGender !== 'male'));
         leaveDistribution[type.description] = {
           total: type.default_allocation_days || 0,
           used: 0,
-          remaining: type.default_allocation_days || 0
+          remaining: type.default_allocation_days || 0,
+          isEligible: isEligible
         };
       });
 
@@ -135,8 +161,12 @@ export class DashboardComponent {
           if (requestYear === currentYear) {
             const type = types.find(t => t.id === request.leave_type_id);
             if (type) {
+              const code = type.code.toLowerCase();
+              const isEligible = !((code === 'maternity' && userGender !== 'female') || 
+                                 (code === 'paternity' && userGender !== 'male'));
               leaveDistribution[type.description].total = type.default_allocation_days || 0;
               leaveDistribution[type.description].used += request.total_days;
+              leaveDistribution[type.description].isEligible = isEligible;
               // Set remaining to the backend balance_days for this leave type
               const backendBalance = userLeaveData.leave_balance?.find((b: any) => b.leave_type === type.code)?.balance_days;
               leaveDistribution[type.description].remaining = backendBalance !== undefined ? backendBalance : (type.default_allocation_days - leaveDistribution[type.description].used);
@@ -153,7 +183,8 @@ export class DashboardComponent {
           total,
           used: data.used,
           remaining: data.remaining,
-          percentageUsed: total > 0 ? (data.used / total) * 100 : 0
+          percentageUsed: total > 0 ? (data.used / total) * 100 : 0,
+          isEligible: data.isEligible
         };
       });
 

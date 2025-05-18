@@ -56,7 +56,7 @@
 
       <div class="leave-distribution">
         <h6>Leave Type Distribution</h6>
-        <div class="distribution-item" *ngFor="let item of leaveTypeCounts">
+        <div class="distribution-item" *ngFor="let item of leaveTypeCounts" [ngClass]="{'ineligible': !item.isEligible}">
           <div class="distribution-header">
             <div class="type-name">{{item.type}}</div>
             <div class="type-stats">

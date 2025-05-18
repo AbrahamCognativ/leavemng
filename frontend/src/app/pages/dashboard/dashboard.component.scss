@@ -76,6 +76,38 @@
       background: #f8f9fa;
       border-radius: 6px;
 
+      &.ineligible {
+        background: #e9ecef;
+        opacity: 0.7;
+        
+        .type-name {
+          color: #6c757d;
+          text-decoration: line-through;
+        }
+        
+        .type-stats {
+          color: #6c757d;
+          
+          .used, .remaining {
+            color: #6c757d;
+            text-decoration: line-through;
+          }
+        }
+        
+        .progress-bar {
+          background: #dee2e6;
+          
+          .progress {
+            background: #adb5bd;
+          }
+        }
+        
+        .progress-label {
+          color: #6c757d;
+          text-decoration: line-through;
+        }
+      }
+
       .distribution-header {
         display: flex;
         justify-content: space-between;
