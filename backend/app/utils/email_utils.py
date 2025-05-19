@@ -263,10 +263,13 @@ def send_leave_auto_approval_notification(to_email: str, leave_details: dict, ap
     body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
     send_email_background(subject, body, [to_email], html=html)
 
-def send_leave_auto_reject_notification(to_email: str, leave_details: dict, approved: bool = False):
+
+
+def send_leave_auto_reject_notification(to_email: str, leave_details: dict, approved: bool = True):
     status = "approved" if approved else "rejected"
     subject = f"Your Leave Request has been Auto-{status.title()}"
 
+    # Format leave_details dict as HTML table rows
     table_rows = "".join(
         f'<tr><td style="padding:4px 8px;border:1px solid #ddd;">{key}</td><td style="padding:4px 8px;border:1px solid #ddd;">{value}</td></tr>'
         for key, value in leave_details.items()
@@ -283,32 +286,6 @@ def send_leave_auto_reject_notification(to_email: str, leave_details: dict, appr
         <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
     </div>
     '''
+
     body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
     send_email_background(subject, body, [to_email], html=html)
-
-
-
-# def send_leave_auto_reject_notification(to_email: str, leave_details: dict, approved: bool = True):
-#     status = "approved" if approved else "rejected"
-#     subject = f"Your Leave Request has been Auto-{status.title()}"
-
-#     # Format leave_details dict as HTML table rows
-#     table_rows = "".join(
-#         f'<tr><td style="padding:4px 8px;border:1px solid #ddd;">{key}</td><td style="padding:4px 8px;border:1px solid #ddd;">{value}</td></tr>'
-#         for key, value in leave_details.items()
-#     )
-#     html = f'''
-#     <div style="font-family:sans-serif;max-width:600px;">
-#         <p>Hello,</p>
-#         <p>Your leave request has been Auto-{status.title()}.</p>
-#         <p style="margin-top:24px;">Details:</p>
-#         <table style="border-collapse:collapse;margin:12px 0;">
-#             <tr><th style="padding:4px 8px;border:1px solid #ddd;">Key</th><th style="padding:4px 8px;border:1px solid #ddd;">Value</th></tr>
-#             {table_rows}
-#         </table>
-#         <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
-#     </div>
-#     '''
-
-#     body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
-#     send_email_background(subject, body, [to_email], html=html)
