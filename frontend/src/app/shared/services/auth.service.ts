@@ -31,8 +31,36 @@ export class AuthService {
   private _user: IUser | null = null;
   private API_URL = environment.apiUrl;
 
+  private isTokenExpired(token: string): boolean {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      const { exp } = JSON.parse(jsonPayload);
+
+      const currentTime = Math.floor(Date.now() / 1000);
+      return exp < currentTime;
+    } catch {
+      return true;
+    }
+  }
+
+  private validateToken(): boolean {
+    const token = localStorage.getItem('user_token');
+    if (!token) {
+      return false;
+    }
+    return !this.isTokenExpired(token);
+  }
+
   get loggedIn(): boolean {
-    return !!this._user;
+    if (!this._user || !localStorage.getItem('user_token')) {
+      return false;
+    }
+    return this.validateToken();
   }
 
   get user(): IUser | null {
@@ -72,6 +100,10 @@ export class AuthService {
     const storedUser = localStorage.getItem('current_user');
     if (storedUser) {
       this._user = JSON.parse(storedUser);
+      // Check token validity on initialization
+      if (!this.validateToken()) {
+        this.logOut();
+      }
     }
   }
 
@@ -84,7 +116,7 @@ export class AuthService {
       const response = await firstValueFrom(
         this.http.post<LoginResponse>(`${this.API_URL}/auth/login`, formData)
       );
-      
+
       // Set default avatarUrl if user doesn't have a profile image
       if (!response.user.profile_image_url && !response.user.avatarUrl) {
         // Use gender-specific default avatars if gender is available
@@ -97,16 +129,16 @@ export class AuthService {
           response.user.avatarUrl = 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
         }
       }
-      
+
       this._user = response.user;
       localStorage.setItem('current_user', JSON.stringify(response.user));
       localStorage.setItem('user_token', response.access_token);
-      
+
       // Redirect admin/HR/manager users to leaves page
       const target = this.isAdmin || this.isHR || this.isManager
         ? '/admin/leaves'
         : (this._lastAuthenticatedPath || '/dashboard');
-      
+
       await this.router.navigateByUrl(target);
 
       return {
@@ -117,7 +149,7 @@ export class AuthService {
     catch (error: any) {
       // Clear any existing auth data
       this.logOut();
-      
+
       return {
         isOk: false,
         message: error.error?.detail || "Authentication failed"
