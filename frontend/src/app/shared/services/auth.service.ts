@@ -20,7 +20,7 @@ interface LoginResponse {
   user: IUser;
 }
 
-const defaultPath = '/login-form';
+const defaultPath = '/dashboard';
 const defaultUser = {
   email: 'sandra@example.com',
   avatarUrl: 'https://js.devexpress.com/Demos/WidgetsGallery/JSDemos/images/employees/06.png'
