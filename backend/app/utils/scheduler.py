@@ -73,8 +73,7 @@ def run_accrual_scheduler():
         finally:
             db.close()
     # Schedule sick leave document check every hour
-    scheduler.add_job(sick_leave_doc_check_job_scheduler, 'interval', hours=1, id='sick_leave_doc_check')
-    # scheduler.add_job(sick_leave_doc_check_job_scheduler, 'interval', seconds=12, id='sick_leave_doc_check')
+    scheduler.add_job(sick_leave_doc_check_job_scheduler, 'cron', minute=0, id='sick_leave_doc_check')
 
     # Schedule sick leave document check every 12 hours
     def sick_leave_doc_reminder_job_scheduler():
@@ -89,8 +88,7 @@ def run_accrual_scheduler():
             logging.error(f'[ERROR] Sick leave document reminder job failed: {e}')
         finally:
             db.close()
-    scheduler.add_job(sick_leave_doc_reminder_job_scheduler, 'interval', hours=12, id='sick_leave_doc_reminder_job')
-    # scheduler.add_job(sick_leave_doc_reminder_job_scheduler, 'interval', seconds=10, id='sick_leave_doc_reminder_job')
+    scheduler.add_job(sick_leave_doc_reminder_job_scheduler, 'cron', hour='0,12', id='sick_leave_doc_reminder_job')
 
 
 
