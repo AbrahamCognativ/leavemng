@@ -10,6 +10,7 @@ class ProductionSettings(BaseSettings):
     SECRET_KEY: str
     SENDGRID_API_KEY: str
     REGISTER_URL: str
+    DDB_URL: str
     UPLOAD_DIR: str = "/app/api/uploads"
 
     class Config:
@@ -27,6 +28,7 @@ class DevelopmentSettings(BaseSettings):
     SECRET_KEY: str
     SENDGRID_API_KEY: str
     REGISTER_URL: str
+    DDB_URL: str
     UPLOAD_DIR: str = "/app/api/uploads"
 
     class Config:

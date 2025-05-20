@@ -2,6 +2,15 @@ import sys
 import os
 from logging.config import fileConfig
 
+from dotenv import load_dotenv
+# Load .env.prod if it exists
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env.prod'))
+
+# Set sqlalchemy.url from DDB_URL if present
+if 'DDB_URL' in os.environ:
+    from alembic import context
+    context.config.set_main_option('sqlalchemy.url', os.environ['DDB_URL'])
+
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
