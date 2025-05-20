@@ -196,7 +196,7 @@ def invite_user(invite: InviteRequest, db: Session = Depends(get_db), current_us
     db.add(reset_token)
     db.commit()
     # Invite link with token
-    invite_link = f"{base_url}/register?email={user.email}&token={token}"
+    invite_link = f"{base_url}/change-password?email={user.email}&token={token}"
     send_invite_email(user.email, user.name, invite_link, random_password, request=request)
     return UserRead.from_orm(user)
 
