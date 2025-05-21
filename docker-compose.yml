@@ -11,7 +11,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/files:/app/app/api/uploads/
-      - ./backend/logs:/app/logs
+      - ./backend/logs:/logs/
 
     restart: unless-stopped
 
