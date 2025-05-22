@@ -4,7 +4,7 @@ from app.models.audit_log import AuditLog
 from app.models.user import User
 from sqlalchemy.orm import Session
 
-LOG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', '..', 'logs', 'accrual_audit.log')
+LOG_PATH = os.path.join(os.path.dirname(__file__), '..', 'api', 'uploads', 'logs', 'accrual_audit.log')
 LOG_PATH = os.path.abspath(LOG_PATH)
 
 # Scheduler will use or create this user for audit logs

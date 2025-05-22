@@ -10,8 +10,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/files:/app/app/api/uploads/
-      - ./backend/logs:/app/logs/
+      - ./files:/app/app/api/uploads/
+      # - ./backend/logs:/app/logs/
 
     restart: unless-stopped
 
@@ -47,7 +47,7 @@ services:
 volumes:
   pgdata:
   leavemng_files:
-  audit_logs:
+  # audit_logs:
 
 # Notes:
 # - SSL provision: Place your SSL cert and key in ./nginx/certs and adjust nginx.conf to use them.

@@ -73,7 +73,8 @@ def run_accrual_scheduler():
         finally:
             db.close()
     # Schedule sick leave document check every hour
-    scheduler.add_job(sick_leave_doc_check_job_scheduler, 'cron', minute=0, id='sick_leave_doc_check')
+    # scheduler.add_job(sick_leave_doc_check_job_scheduler, 'cron', minute=0, id='sick_leave_doc_check')
+    scheduler.add_job(sick_leave_doc_check_job_scheduler, 'interval', seconds=80, id='sick_leave_doc_check')
 
     # Schedule sick leave document check every 12 hours
     def sick_leave_doc_reminder_job_scheduler():
