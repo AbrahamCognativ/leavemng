@@ -105,7 +105,7 @@ export class LeaveRequestComponent implements OnInit {
             // If there are leave requests, calculate used days for each leave type
             if (userLeaveData.leave_request && userLeaveData.leave_request.length > 0) {
               for (const request of userLeaveData.leave_request) {
-                if (request.leave_type && request.total_days) {
+                if (request.leave_type && request.total_days && request.status !== 'rejected') {
                   // Get current used days for this leave type, or initialize to 0
                   const currentUsed = usedDaysByCode[request.leave_type] || 0;
                   // Add days from this request to the accumulated total
@@ -263,13 +263,13 @@ export class LeaveRequestComponent implements OnInit {
       var daysCount = this.leave.endDate.getTime() - this.leave.startDate.getTime();
       daysCount = daysCount / (1000 * 60 * 60 * 24);
       const leaveBalance = this.leaveBalances.find(b => b.leave_type === leaveType.description);
-      
+
       if (!leaveBalance) {
         this.showToast(`No leave balance found for ${leaveType.description}`, 'error');
         this.submitting = false;
         return;
       }
-      
+
       if (daysCount > leaveBalance.balance_days) {
         this.showToast(`Leave balance not enough for ${leaveType.description}. Available: ${leaveBalance.balance_days} days`, 'error');
         this.submitting = false;
@@ -279,32 +279,32 @@ export class LeaveRequestComponent implements OnInit {
       // Step 1: Create the leave request
       const response = await this.leaveService.createLeaveRequest(leaveData);
       console.log('Leave request created successfully:', response);
-      
+
       if (!response || !response.id) {
         throw new Error('Failed to create leave request - no ID returned');
       }
-      
+
       this.leave.id = response.id;
 
       // Step 2: Upload any attached documents
       let uploadSuccess = true;
       let failedUploads: string[] = [];
-      
+
       if (response.id && this.uploadedFiles.length > 0) {
         console.log(`Uploading ${this.uploadedFiles.length} documents for leave request ${response.id}`);
-        
+
         for (const file of this.uploadedFiles) {
           try {
             console.log(`Uploading file: ${file.name}`);
             console.log(`Uploading file ${file.name} to leave request ${response.id}`);
             const result = await this.leaveService.uploadLeaveDocument(response.id, file);
             console.log('Document upload result:', result);
-            
+
             // The backend returns document_id in the response
             if (result && (result.document_id || result.id)) {
               const docId = result.document_id || result.id;
               console.log(`Document uploaded successfully with ID: ${docId}`);
-              
+
               this.leave.documents.push({
                 id: docId,
                 name: file.name,
@@ -331,7 +331,7 @@ export class LeaveRequestComponent implements OnInit {
       } else {
         this.showToast(`Leave request created but some documents failed to upload: ${failedUploads.join(', ')}`, 'warning');
       }
-      
+
       // Reset form and navigate away
       this.uploadedFiles = [];
       this.leave = {
@@ -350,7 +350,7 @@ export class LeaveRequestComponent implements OnInit {
     } catch (error: any) {
       console.error('Leave request submission error:', error);
       let errorMessage = 'Error submitting leave request';
-      
+
       if (error && typeof error === 'object') {
         if (error.error && typeof error.error === 'object' && 'detail' in error.error) {
           errorMessage = `Error: ${error.error.detail}`;
@@ -358,13 +358,13 @@ export class LeaveRequestComponent implements OnInit {
           errorMessage = `Error: ${error.message}`;
         }
       }
-      
+
       this.showToast(errorMessage, 'error');
     } finally {
       this.submitting = false;
     }
   }
-  
+
   // Helper method to format dates in YYYY-MM-DD format
   private formatDateForAPI(date: Date): string {
     if (!date) return '';
