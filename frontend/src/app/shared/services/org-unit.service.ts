@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
+import { catchError, retry, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { OrgNode } from '../../models/org.model';
+import { AuthService } from './auth.service';
+
 export interface OrgUnit {
   id: string;
   name: string;
@@ -54,6 +57,32 @@ export class OrgUnitService {
       ).toPromise() as Promise<any>;
   }
 
+  // Get organization chart
+  getOrgChart(): Observable<OrgNode[]> {
+    const headers = this.getAuthHeaders();
+    console.log('Getting org chart data from API with headers:', headers);
+    // Use responseType: 'json' with the generic type OrgNode[] and parse the response
+    return this.http.get(`${this.apiUrl}/org/chart/tree`, { 
+      headers, 
+      responseType: 'text' 
+    }).pipe(
+      map(response => {
+        // Parse the text response manually
+        console.log('Raw response:', response);
+        try {
+          const parsedData = JSON.parse(response) as OrgNode[];
+          console.log('Successfully parsed org chart data:', parsedData);
+          return parsedData;
+        } catch (error) {
+          console.error('Error parsing org chart response:', error);
+          return [];
+        }
+      }),
+      retry(1),
+      catchError(this.handleError)
+    );
+  }
+
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred';
 
@@ -67,5 +96,11 @@ export class OrgUnitService {
 
     console.error(errorMessage);
     return throwError(() => new Error(errorMessage));
+  }
+
+  // Helper method to get auth headers
+  private getAuthHeaders(): Record<string, string> {
+    const token = localStorage.getItem('token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 }

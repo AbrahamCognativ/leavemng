@@ -1,0 +1,59 @@
+<div class="content-block">
+  <div class="chart-header">
+    <h2>Organizational Chart</h2>
+    <div class="data-source-toggle">
+      <span class="toggle-label">Data Source: {{ dataSource }}</span>
+      <dx-switch 
+        [value]="isTestData" 
+        (onValueChanged)="toggleDataSource()"
+        [switchedOffText]="'DB'"
+        [switchedOnText]="'Test'"
+      ></dx-switch>
+    </div>
+  </div>
+
+  <div class="dx-card wide-card">
+    <div *ngIf="loading" class="loading-indicator">
+      <dx-load-indicator [height]="60" [width]="60"></dx-load-indicator>
+      <span>Loading org chart data...</span>
+    </div>
+    
+    <div *ngIf="error" class="error-message">
+      <i class="dx-icon-warning"></i> {{ error }}
+    </div>
+    
+    <div *ngIf="!loading && !error" class="org-chart-container">
+      <div *ngIf="!orgData || orgData.length === 0" class="empty-state">
+        <i class="dx-icon-info"></i>
+        <span>No organizational structure found.</span>
+      </div>
+      
+      <div *ngIf="orgData && orgData.length > 0" class="org-tree">
+        <ng-container *ngTemplateOutlet="nodeTemplate; context:{ nodes: orgData, level: 0 }"></ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recursive template for rendering org nodes -->
+<ng-template #nodeTemplate let-nodes="nodes" let-level="level">
+  <ul class="org-level" [class.level-{{level}}]="true">
+    <li *ngFor="let node of nodes" class="org-node" [class.unit]="node.type === 'unit'" [class.role]="node.type === 'role'" [class.manager]="node.is_manager">
+      <div class="node-content" [ngStyle]="getNodeStyle(node)">
+        <h3>{{ node.type === 'unit' ? node.name : node.title }}</h3>
+        <div *ngIf="node.users && node.users.length > 0" class="node-users">
+          <span *ngFor="let user of node.users" class="user-name">
+            <i class="dx-icon-user" *ngIf="node.is_manager"></i>
+            {{ user.name }}
+          </span>
+        </div>
+        <div *ngIf="node.type === 'unit'" class="node-type">Department</div>
+        <div *ngIf="node.type === 'role'" class="node-type">{{ node.is_manager ? 'Manager' : 'Staff' }}</div>
+      </div>
+      
+      <ng-container *ngIf="node.children && node.children.length > 0">
+        <ng-container *ngTemplateOutlet="nodeTemplate; context:{ nodes: node.children, level: level + 1 }"></ng-container>
+      </ng-container>
+    </li>
+  </ul>
+</ng-template>
