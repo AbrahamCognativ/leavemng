@@ -8,6 +8,8 @@ import {LeaveRequestComponent} from './pages/leave-request/leave-request.compone
 import {LeaveHistoryComponent} from './pages/leave-history/leave-history.component';
 import {LeaveRequestDetailsComponent} from './pages/admin/leave-request-details/leave-request-details.component';
 import {LeaveScheduleComponent} from './pages/leave-schedule/leave-schedule.component';
+import {OrgChartComponent} from './pages/org-chart/org-chart.component';
+import {SimpleOrgChartComponent} from './pages/org-chart/simple-org-chart.component';
 
 const routes: Routes = [
   {
@@ -38,6 +40,16 @@ const routes: Routes = [
   {
     path: 'dashboard',
     component: DashboardComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'org-chart',
+    component: OrgChartComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'org-structure',
+    component: SimpleOrgChartComponent,
     canActivate: [ AuthGuardService ]
   },
   {

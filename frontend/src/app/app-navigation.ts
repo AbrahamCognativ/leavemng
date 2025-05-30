@@ -46,6 +46,16 @@ export const getNavigationItems = (authService: AuthService) => [
       {
         text: 'Org Units',
         path: '/admin/org-units',
+        items: [
+          // {
+          //   text: 'Org Chart',
+          //   path: '/org-chart',
+          // },
+          {
+            text: 'Org Structure',
+            path: '/org-structure',
+          }
+        ]
       },
       {
         text: 'Users',
