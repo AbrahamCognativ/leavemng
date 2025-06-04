@@ -411,27 +411,20 @@ export class EmployeeInviteComponent implements OnInit {
   
   // Open leave balance edit popup
   editLeaveBalance(leaveBalance: any): void {
-    console.log('Opening leave balance edit popup with data:', leaveBalance);
     this.selectedLeaveBalance = { ...leaveBalance };
     this.editedBalance = leaveBalance.balance_days;
     this.isEditingLeaveBalance = true;
     
-    // Log the selected leave balance and leave type ID
-    console.log('Selected leave balance:', this.selectedLeaveBalance);
-    
     // Check if leave type ID exists
     if (!this.selectedLeaveBalance.leave_type_id && this.leaveTypes.length > 0) {
-      console.log('No leave_type_id found, attempting to find it from leave types:', this.leaveTypes);
       const matchingLeaveType = this.leaveTypes.find(type => 
         type.code === this.selectedLeaveBalance.leave_type ||
         type.name === this.selectedLeaveBalance.leave_type_name
       );
       
       if (matchingLeaveType) {
-        console.log('Found matching leave type:', matchingLeaveType);
         this.selectedLeaveBalance.leave_type_id = matchingLeaveType.id;
       } else {
-        console.warn('Could not find matching leave type for:', this.selectedLeaveBalance);
       }
     }
   }
@@ -459,27 +452,19 @@ export class EmployeeInviteComponent implements OnInit {
       balance_days: this.editedBalance
     };
     
-    console.log('Updating leave balance with data:', {
-      userId: this.selectedUser.id,
-      selectedLeaveBalance: this.selectedLeaveBalance,
-      editedBalance: this.editedBalance
-    });
     
     try {
       // Find the leave type ID based on the leave type code
       let leaveTypeId = this.selectedLeaveBalance.leave_type_id;
-      console.log('Initial leave type ID:', leaveTypeId);
       
       // If we don't have a leave type ID, try to find it from the leave types
       if (!leaveTypeId && this.leaveTypes.length > 0) {
-        console.log('Looking up leave type ID from available types:', this.leaveTypes);
         const leaveType = this.leaveTypes.find(type => 
           type.code === this.selectedLeaveBalance.leave_type ||
           type.name === this.selectedLeaveBalance.leave_type_name
         );
         if (leaveType) {
           leaveTypeId = leaveType.id;
-          console.log('Found leave type ID:', leaveTypeId);
         } else {
           console.error('Could not find matching leave type:', {
             leaveTypes: this.leaveTypes,
@@ -493,7 +478,6 @@ export class EmployeeInviteComponent implements OnInit {
       }
       
       const url = `${this.baseUrl}/leave/balance/${this.selectedUser.id}/${leaveTypeId}`;
-      console.log('Making API request to:', url, 'with data:', updateData);
       
       // Call the new endpoint to update leave balance
       const response = await this.http.put(
@@ -502,7 +486,6 @@ export class EmployeeInviteComponent implements OnInit {
         { headers }
       ).toPromise();
       
-      console.log('API response:', response);
       
       // Success handling
       this.isLoading = false;
@@ -515,7 +498,6 @@ export class EmployeeInviteComponent implements OnInit {
     } catch (error: any) {
       this.isLoading = false;
       this.errorMessage = error.error?.detail || 'Failed to update leave balance. Please try again.';
-      console.error('Error updating leave balance:', error);
     }
   }
 }
