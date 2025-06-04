@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.org_unit import OrgUnitRead, OrgUnitCreate
+from app.schemas.org_unit import OrgUnitRead, OrgUnitCreate, OrgUnitTree
 from app.models.org_unit import OrgUnit
+from app.models.user import User
 from app.db.session import get_db
 from uuid import UUID
+from typing import List, Optional
 
 router = APIRouter()
 
@@ -13,6 +15,41 @@ from app.deps.permissions import get_current_user, require_role
 def list_org_units(db: Session = Depends(get_db)):
     units = db.query(OrgUnit).all()
     return [OrgUnitRead.model_validate(unit) for unit in units]
+
+@router.get("/tree", tags=["org"], response_model=List[OrgUnitTree], dependencies=[Depends(require_role(["HR", "Admin"]))])
+def get_org_tree(db: Session = Depends(get_db)):
+    """
+    Get the complete organization tree structure with managers for each unit.
+    Returns a list of root-level org units with their complete hierarchy.
+    """
+    def get_unit_tree(unit: OrgUnit) -> OrgUnitTree:
+        # Get all managers for this unit
+        managers = db.query(User).filter(
+            User.org_unit_id == unit.id,
+            User.manager_id.is_(None)  # Only get top-level managers
+        ).all()
+        
+        # Get all children recursively
+        children = [get_unit_tree(child) for child in unit.children]
+        
+        return OrgUnitTree(
+            id=unit.id,
+            name=unit.name,
+            parent_unit_id=unit.parent_unit_id,
+            managers=[{
+                "id": manager.id,
+                "name": manager.name,
+                "email": manager.email,
+                "role_title": manager.role_title
+            } for manager in managers],
+            children=children
+        )
+    
+    # Get all root-level org units (those without parents)
+    root_units = db.query(OrgUnit).filter(OrgUnit.parent_unit_id.is_(None)).all()
+    
+    # Build the tree for each root unit
+    return [get_unit_tree(unit) for unit in root_units]
 
 @router.post("/", tags=["org"], response_model=OrgUnitRead, dependencies=[Depends(require_role(["HR", "Admin"]))])
 def create_org_unit(unit: OrgUnitCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
