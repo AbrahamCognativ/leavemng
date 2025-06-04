@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
@@ -7,8 +7,11 @@ import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 import { DxTreeViewModule } from 'devextreme-angular/ui/tree-view';
-import { OrgUnitService, OrgUnit, OrgUnitTree } from '../../../shared/services/org-unit.service';
+import { OrgUnitService, OrgUnit, TreeItem } from '../../../shared/services/org-unit.service';
 import { DxiItemModule } from 'devextreme-angular/ui/nested';
+import { Subscription, forkJoin } from 'rxjs';
+import { ItemClickEvent } from 'devextreme/ui/tree_view';
+import { UserService, IUser } from '../../../shared/services/user.service';
 
 @Component({
   selector: 'app-org-units',
@@ -27,35 +30,84 @@ import { DxiItemModule } from 'devextreme-angular/ui/nested';
     DxiItemModule
   ]
 })
-export class OrgUnitsComponent implements OnInit {
+export class OrgUnitsComponent implements OnInit, OnDestroy {
   orgUnits: OrgUnit[] = [];
-  orgTree: OrgUnitTree[] = [];
+  orgTree: TreeItem[] = [];
   isLoading: boolean = false;
   isPopupVisible: boolean = false;
+  isUserPopupVisible: boolean = false;
   selectedUnit: OrgUnit | null = null;
+  selectedUser: IUser | null = null;
   formData: Partial<OrgUnit> = {
     name: '',
     parent_unit_id: undefined
   };
+  userFormData: Partial<IUser> = {};
+  managers: IUser[] = [];
+  private subscriptions: Subscription[] = [];
 
-  constructor(private orgUnitService: OrgUnitService) {}
+  constructor(
+    private orgUnitService: OrgUnitService,
+    private userService: UserService
+  ) {}
 
   ngOnInit() {
     this.loadData();
   }
 
-  async loadData() {
-    try {
-      this.isLoading = true;
-      [this.orgUnits, this.orgTree] = await Promise.all([
-        this.orgUnitService.getOrgUnits(),
-        this.orgUnitService.getOrgTree()
-      ]);
-    } catch (error) {
-      console.error('Error loading organization units:', error);
-    } finally {
-      this.isLoading = false;
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  loadData() {
+    this.isLoading = true;
+    const subscription = forkJoin({
+      units: this.orgUnitService.getOrgUnits(),
+      tree: this.orgUnitService.getOrgChart()
+    }).subscribe({
+      next: (result) => {
+        this.orgUnits = result.units;
+        this.orgTree = this.processTreeItems(result.tree);
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading organization units:', error);
+        this.isLoading = false;
+      }
+    });
+    this.subscriptions.push(subscription);
+  }
+
+  private processTreeItems(items: TreeItem[]): TreeItem[] {
+    // Find root items (items without parent_unit_id)
+    const rootItems = items.filter(item => !item.parent_unit_id);
+    
+    // If there's only one root item, expand it and its immediate children
+    if (rootItems.length === 1) {
+      return items.map(item => {
+        if (!item.parent_unit_id) {
+          // Root item - expand it
+          return {
+            ...item,
+            expanded: true,
+            children: item.children?.map(child => ({
+              ...child,
+              expanded: false // Keep children collapsed
+            }))
+          };
+        }
+        return {
+          ...item,
+          expanded: false // Keep all other items collapsed
+        };
+      });
     }
+    
+    // If there are multiple root items, keep them all collapsed
+    return items.map(item => ({
+      ...item,
+      expanded: false
+    }));
   }
 
   onAdd() {
@@ -67,39 +119,80 @@ export class OrgUnitsComponent implements OnInit {
     this.isPopupVisible = true;
   }
 
-  onEdit(e: any) {
-    this.selectedUnit = e.data;
-    this.formData = { ...e.data };
+  onEdit(unit: OrgUnit) {
+    this.selectedUnit = unit;
+    this.formData = { ...unit };
     this.isPopupVisible = true;
   }
 
-  async save() {
-    try {
-      this.isLoading = true;
-      if (this.selectedUnit) {
-        await this.orgUnitService.updateOrgUnit(this.selectedUnit.id, this.formData);
-      } else {
-        await this.orgUnitService.createOrgUnit(this.formData);
+  onUserClick(user: IUser) {
+    this.selectedUser = user;
+    this.userFormData = { ...user };
+    this.loadManagers();
+    this.isUserPopupVisible = true;
+  }
+
+  loadManagers() {
+    const subscription = this.userService.getUsers().subscribe({
+      next: (users: IUser[]) => {
+        this.managers = users.filter(user => user.role_title?.toLowerCase().includes('manager'));
+      },
+      error: (error: any) => {
+        console.error('Error loading managers:', error);
       }
-      await this.loadData();
-      this.isPopupVisible = false;
-    } catch (error) {
-      console.error('Error saving organization unit:', error);
-    } finally {
-      this.isLoading = false;
+    });
+    this.subscriptions.push(subscription);
+  }
+
+  save() {
+    this.isLoading = true;
+    const request = this.selectedUnit
+      ? this.orgUnitService.updateOrgUnit(this.selectedUnit.id, this.formData)
+      : this.orgUnitService.createOrgUnit(this.formData);
+
+    const subscription = request.subscribe({
+      next: () => {
+        this.loadData();
+        this.isPopupVisible = false;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error saving organization unit:', error);
+        this.isLoading = false;
+      }
+    });
+    this.subscriptions.push(subscription);
+  }
+
+  saveUser() {
+    if (this.selectedUser) {
+      const subscription = this.userService.updateUser(this.selectedUser.id, this.userFormData)
+        .subscribe({
+          next: () => {
+            this.isUserPopupVisible = false;
+            this.loadData();
+          },
+          error: (error: any) => {
+            console.error('Error updating user:', error);
+          }
+        });
+      this.subscriptions.push(subscription);
     }
   }
 
-  async delete(e: any) {
-    try {
-      this.isLoading = true;
-      await this.orgUnitService.deleteOrgUnit(e.data.id);
-      await this.loadData();
-    } catch (error) {
-      console.error('Error deleting organization unit:', error);
-    } finally {
-      this.isLoading = false;
-    }
+  delete(e: any) {
+    this.isLoading = true;
+    const subscription = this.orgUnitService.deleteOrgUnit(e.data.id).subscribe({
+      next: () => {
+        this.loadData();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error deleting organization unit:', error);
+        this.isLoading = false;
+      }
+    });
+    this.subscriptions.push(subscription);
   }
 
   getParentName(parentId: string | undefined): string {
@@ -111,5 +204,18 @@ export class OrgUnitsComponent implements OnInit {
 
   getManagerNames(managers: any[]): string {
     return managers.map(m => m.name).join(', ');
+  }
+
+  onTreeItemClick(e: ItemClickEvent) {
+    if (e.itemData && e.itemData['type'] === 'unit') {
+      const item = e.itemData as TreeItem;
+      this.selectedUnit = {
+        id: item.id,
+        name: item.name,
+        parent_unit_id: item.parent_unit_id
+      };
+      this.formData = { ...this.selectedUnit };
+      this.isPopupVisible = true;
+    }
   }
 }

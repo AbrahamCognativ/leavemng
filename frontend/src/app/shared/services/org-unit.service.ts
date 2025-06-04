@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
+import { catchError, retry, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { OrgNode } from '../../models/org.model';
+import { AuthService } from './auth.service';
 
 export interface Manager {
   id: string;
@@ -23,6 +25,17 @@ export interface OrgUnitTree extends OrgUnit {
   children: OrgUnitTree[];
 }
 
+export interface TreeItem {
+  id: string;
+  name: string;
+  type?: 'unit' | 'role';
+  is_manager?: boolean;
+  users?: any[];
+  managers?: any[];
+  children?: TreeItem[];
+  parent_unit_id?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,12 +45,12 @@ export class OrgUnitService {
   constructor(private http: HttpClient) {}
 
   // Get all organization units
-  async getOrgUnits(): Promise<OrgUnit[]> {
+  getOrgUnits(): Observable<OrgUnit[]> {
     return this.http.get<OrgUnit[]>(`${this.apiUrl}/org`)
       .pipe(
         retry(1),
         catchError(this.handleError)
-      ).toPromise() as Promise<OrgUnit[]>;
+      );
   }
 
   // Get organization tree structure
@@ -50,30 +63,39 @@ export class OrgUnitService {
   }
 
   // Create organization unit
-  async createOrgUnit(orgUnit: Partial<OrgUnit>): Promise<OrgUnit> {
+  createOrgUnit(orgUnit: Partial<OrgUnit>): Observable<OrgUnit> {
     return this.http.post<OrgUnit>(`${this.apiUrl}/org`, orgUnit)
       .pipe(
         retry(1),
         catchError(this.handleError)
-      ).toPromise() as Promise<OrgUnit>;
+      );
   }
 
   // Update organization unit
-  async updateOrgUnit(id: string, orgUnit: Partial<OrgUnit>): Promise<OrgUnit> {
+  updateOrgUnit(id: string, orgUnit: Partial<OrgUnit>): Observable<OrgUnit> {
     return this.http.put<OrgUnit>(`${this.apiUrl}/org/${id}`, orgUnit)
       .pipe(
         retry(1),
         catchError(this.handleError)
-      ).toPromise() as Promise<OrgUnit>;
+      );
   }
 
   // Delete organization unit
-  async deleteOrgUnit(id: string): Promise<any> {
+  deleteOrgUnit(id: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/org/${id}`)
       .pipe(
         retry(1),
         catchError(this.handleError)
-      ).toPromise() as Promise<any>;
+      );
+  }
+
+  // Get organization chart structure
+  getOrgChart(): Observable<TreeItem[]> {
+    return this.http.get<TreeItem[]>(`${this.apiUrl}/org/chart/tree`)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      );
   }
 
   private handleError(error: HttpErrorResponse) {
@@ -89,5 +111,11 @@ export class OrgUnitService {
 
     console.error(errorMessage);
     return throwError(() => new Error(errorMessage));
+  }
+
+  // Helper method to get auth headers
+  private getAuthHeaders(): Record<string, string> {
+    const token = localStorage.getItem('token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, firstValueFrom } from 'rxjs';
+import { User } from '../../models/user.model';
 import { environment } from '../../../environments/environment';
 
 export interface IUser {
@@ -20,32 +21,39 @@ export interface IUser {
   is_active?: boolean;
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class UserService {
-  private API_URL = environment.apiUrl;
+  private apiUrl = `${environment.apiUrl}/users`;
 
   constructor(private http: HttpClient) {}
 
+  // Observable-based methods
+  getUsers(): Observable<User[]> {
+    return this.http.get<User[]>(this.apiUrl);
+  }
 
+  getUser(id: string): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/${id}`);
+  }
+
+  updateUser(id: string, user: Partial<User>): Observable<User> {
+    return this.http.put<User>(`${this.apiUrl}/${id}`, user);
+  }
+
+  createUser(user: Partial<User>): Observable<User> {
+    return this.http.post<User>(this.apiUrl, user);
+  }
+
+  deleteUser(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  // Promise-based methods for backward compatibility
   async getUserById(id: string): Promise<IUser | null> {
-    const token = this.getToken();
-
-    if (!token) {
-      console.error("Token not found");
-      return null;
-    }
-
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
-
     try {
-      const user = await firstValueFrom(
-        this.http.get<IUser>(`${this.API_URL}/users/${id}`, { headers: {
-          'Authorization': `Bearer ${token}`
-        } })
-      );
-      return user;
+      return await firstValueFrom(this.http.get<IUser>(`${this.apiUrl}/${id}`));
     } catch (error) {
       console.error('Failed to fetch user:', error);
       return null;
@@ -54,42 +62,29 @@ export class UserService {
 
   async getAllUsers(): Promise<IUser[]> {
     try {
-      const users = await firstValueFrom(
-        this.http.get<IUser[]>(`${this.API_URL}/users`)
-      );
-      return users;
+      return await firstValueFrom(this.http.get<IUser[]>(this.apiUrl));
     } catch (error) {
       console.error('Failed to fetch all users:', error);
       return [];
     }
   }
 
-  async updateUser(user: IUser): Promise<IUser | null> {
+  async updateUserAsync(user: IUser): Promise<IUser | null> {
     try {
-      const updated = await firstValueFrom(
-        this.http.patch<IUser>(`${this.API_URL}/users/${user.id}`, user)
-      );
-      return updated;
+      return await firstValueFrom(this.http.put<IUser>(`${this.apiUrl}/${user.id}`, user));
     } catch (error) {
       console.error('Failed to update user:', error);
       return null;
     }
   }
 
-  async deleteUser(userId: string): Promise<boolean> {
+  async deleteUserAsync(userId: string): Promise<boolean> {
     try {
-      await firstValueFrom(
-        this.http.delete(`${this.API_URL}/users/${userId}`)
-      );
+      await firstValueFrom(this.http.delete(`${this.apiUrl}/${userId}`));
       return true;
     } catch (error) {
       console.error('Failed to delete user:', error);
       return false;
     }
   }
-
-  getToken(): string | null {
-    return localStorage.getItem('user_token');
-  }
-
 }
