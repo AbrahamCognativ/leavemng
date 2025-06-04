@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestPartialUpdate
+from app.schemas.leave_balance import LeaveBalanceUpdate, LeaveBalanceRead
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
 from app.models.user import User
@@ -312,3 +313,60 @@ def delete_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
     db.delete(req)
     db.commit()
     return None
+
+
+@router.put("/balance/{user_id}/{leave_type_id}", tags=["leave"], response_model=LeaveBalanceRead)
+def update_leave_balance(user_id: UUID, leave_type_id: UUID, balance_update: LeaveBalanceUpdate, 
+                         db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """Update leave balance for a specific user and leave type.
+    
+    Only HR, Admin, and Managers can update leave balances.
+    Managers can only update balances for their direct reports.
+    """
+    # First check if the user exists
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if the leave type exists
+    leave_type = db.query(LeaveType).filter(LeaveType.id == leave_type_id).first()
+    if not leave_type:
+        raise HTTPException(status_code=404, detail="Leave type not found")
+    
+    # Check permissions: HR/Admin can update any, Manager can update direct reports
+    is_admin_or_hr = current_user.role_band in ("HR", "Admin") or current_user.role_title in ("HR", "Admin")
+    is_manager_of_user = user.manager_id == current_user.id
+    
+    if not (is_admin_or_hr or is_manager_of_user):
+        log_permission_denied(db, current_user.id, "update_leave_balance", "leave_balance", str(user_id))
+        raise HTTPException(status_code=403, detail="Insufficient permissions to update leave balance")
+    
+    # Get the leave balance record
+    leave_balance = db.query(LeaveBalance).filter(
+        LeaveBalance.user_id == user_id,
+        LeaveBalance.leave_type_id == leave_type_id
+    ).first()
+    
+    if not leave_balance:
+        # If balance doesn't exist, create it
+        leave_balance = LeaveBalance(
+            user_id=user_id,
+            leave_type_id=leave_type_id,
+            balance_days=balance_update.balance_days,
+            updated_at=datetime.now(timezone.utc)
+        )
+        db.add(leave_balance)
+    else:
+        # Update existing balance
+        leave_balance.balance_days = Decimal(str(balance_update.balance_days))
+        leave_balance.updated_at = datetime.now(timezone.utc)
+    
+    try:
+        db.commit()
+        db.refresh(leave_balance)
+        log_permission_accepted(db, current_user.id, "update_leave_balance", "leave_balance", str(user_id))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Could not update leave balance: {str(e)}")
+    
+    return LeaveBalanceRead.model_validate(leave_balance)

@@ -10,6 +10,9 @@ class LeaveBalanceBase(BaseModel):
 class LeaveBalanceCreate(LeaveBalanceBase):
     pass
 
+class LeaveBalanceUpdate(BaseModel):
+    balance_days: float
+
 class LeaveBalanceRead(LeaveBalanceBase):
     id: UUID
     updated_at: datetime

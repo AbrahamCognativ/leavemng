@@ -5,10 +5,12 @@ import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
+import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../shared/services';
 import { UserService, IUser } from '../../../shared/services/user.service';
+import { LeaveService } from '../../../shared/services/leave.service';
 import { environment } from '../../../../environments/environment';
 
 interface NewEmployee {
@@ -44,6 +46,7 @@ interface OrgUnit {
     DxLoadIndicatorModule,
     DxDataGridModule,
     DxPopupModule,
+    DxNumberBoxModule,
     CommonModule, 
     HttpClientModule
   ]
@@ -67,12 +70,19 @@ export class EmployeeInviteComponent implements OnInit {
   loadingUsers: boolean = false;
   successMessage: string = '';
   errorMessage: string = '';
-  
   allUsers: IUser[] = [];
   selectedUser: IUser | null = null;
   isEditMode: boolean = false;
   isDeleteConfirmVisible: boolean = false;
   userToDelete: IUser | null = null;
+  
+  // Leave balance properties
+  userLeaveBalances: any[] = [];
+  leaveTypes: any[] = [];
+  loadingLeaveData: boolean = false;
+  isEditingLeaveBalance: boolean = false;
+  selectedLeaveBalance: any = null;
+  editedBalance: number = 0;
   
   colCountByScreen: object;
   baseUrl: string = environment.apiUrl;
@@ -80,7 +90,8 @@ export class EmployeeInviteComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private leaveService: LeaveService
   ) {
     this.colCountByScreen = {
       xs: 1,
@@ -262,11 +273,18 @@ export class EmployeeInviteComponent implements OnInit {
   editUser(user: IUser): void {
     this.selectedUser = { ...user };
     this.isEditMode = true;
+    
+    // Fetch leave balances and types when editing a user
+    this.fetchUserLeaveBalances(user.id);
+    this.fetchLeaveTypes();
   }
   
   cancelEdit(): void {
     this.selectedUser = null;
     this.isEditMode = false;
+    this.userLeaveBalances = [];
+    this.isEditingLeaveBalance = false;
+    this.selectedLeaveBalance = null;
   }
   
   saveUserChanges(): void {
@@ -347,5 +365,139 @@ export class EmployeeInviteComponent implements OnInit {
           console.error('Error deactivating user:', error);
         }
       });
+  }
+  
+  // Fetch leave balances for a specific user
+  async fetchUserLeaveBalances(userId: string): Promise<void> {
+    if (!userId) return;
+    
+    this.loadingLeaveData = true;
+    try {
+      const userData = await this.leaveService.getUserLeave(userId);
+      if (userData && userData.leave_balance) {
+        // Map the leave_balance array to include leave_type_name
+        this.userLeaveBalances = userData.leave_balance.map((balance: any) => {
+          // Find the matching leave type to get its name
+          const leaveType = this.leaveTypes.find(type => type.code === balance.leave_type);
+          return {
+            ...balance,
+            leave_type_id: leaveType?.id || '',
+            leave_type_name: leaveType?.name || balance.leave_type,
+            updated_at: new Date().toISOString() // The API doesn't return updated_at, so we use current date
+          };
+        });
+      } else {
+        this.userLeaveBalances = [];
+      }
+    } catch (error) {
+      console.error('Error fetching user leave balances:', error);
+      this.errorMessage = 'Failed to load leave balances. Please try again.';
+      this.userLeaveBalances = [];
+    } finally {
+      this.loadingLeaveData = false;
+    }
+  }
+  
+  // Fetch all leave types
+  async fetchLeaveTypes(): Promise<void> {
+    try {
+      this.leaveTypes = await this.leaveService.getLeaveTypes();
+    } catch (error) {
+      console.error('Error fetching leave types:', error);
+      this.errorMessage = 'Failed to load leave types. Please try again.';
+      this.leaveTypes = [];
+    }
+  }
+  
+  // Open leave balance edit popup
+  editLeaveBalance(leaveBalance: any): void {
+    this.selectedLeaveBalance = { ...leaveBalance };
+    this.editedBalance = leaveBalance.balance_days;
+    this.isEditingLeaveBalance = true;
+    
+    // Check if leave type ID exists
+    if (!this.selectedLeaveBalance.leave_type_id && this.leaveTypes.length > 0) {
+      const matchingLeaveType = this.leaveTypes.find(type => 
+        type.code === this.selectedLeaveBalance.leave_type ||
+        type.name === this.selectedLeaveBalance.leave_type_name
+      );
+      
+      if (matchingLeaveType) {
+        this.selectedLeaveBalance.leave_type_id = matchingLeaveType.id;
+      } else {
+      }
+    }
+  }
+  
+  // Cancel leave balance edit
+  cancelLeaveBalanceEdit(): void {
+    this.selectedLeaveBalance = null;
+    this.isEditingLeaveBalance = false;
+  }
+  
+  // Save leave balance changes
+  async saveLeaveBalanceChanges(): Promise<void> {
+    if (!this.selectedLeaveBalance || !this.selectedUser) {
+      console.error('Missing required data:', { selectedLeaveBalance: this.selectedLeaveBalance, selectedUser: this.selectedUser });
+      return;
+    }
+    
+    this.isLoading = true;
+    const token = localStorage.getItem('user_token') || '';
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    
+    const updateData = {
+      balance_days: this.editedBalance
+    };
+    
+    
+    try {
+      // Find the leave type ID based on the leave type code
+      let leaveTypeId = this.selectedLeaveBalance.leave_type_id;
+      
+      // If we don't have a leave type ID, try to find it from the leave types
+      if (!leaveTypeId && this.leaveTypes.length > 0) {
+        const leaveType = this.leaveTypes.find(type => 
+          type.code === this.selectedLeaveBalance.leave_type ||
+          type.name === this.selectedLeaveBalance.leave_type_name
+        );
+        if (leaveType) {
+          leaveTypeId = leaveType.id;
+        } else {
+          console.error('Could not find matching leave type:', {
+            leaveTypes: this.leaveTypes,
+            searchCriteria: {
+              code: this.selectedLeaveBalance.leave_type,
+              name: this.selectedLeaveBalance.leave_type_name
+            }
+          });
+          throw new Error('Could not determine leave type ID for update');
+        }
+      }
+      
+      const url = `${this.baseUrl}/leave/balance/${this.selectedUser.id}/${leaveTypeId}`;
+      
+      // Call the new endpoint to update leave balance
+      const response = await this.http.put(
+        url,
+        updateData,
+        { headers }
+      ).toPromise();
+      
+      
+      // Success handling
+      this.isLoading = false;
+      this.successMessage = `Leave balance for ${this.selectedLeaveBalance.leave_type_name} has been updated successfully.`;
+      this.isEditingLeaveBalance = false;
+      this.selectedLeaveBalance = null;
+      
+      // Refresh leave balances
+      await this.fetchUserLeaveBalances(this.selectedUser.id);
+    } catch (error: any) {
+      this.isLoading = false;
+      this.errorMessage = error.error?.detail || 'Failed to update leave balance. Please try again.';
+    }
   }
 }
