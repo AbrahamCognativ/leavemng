@@ -3,11 +3,24 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, retry } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+
+export interface Manager {
+  id: string;
+  name: string;
+  email: string;
+  role_title: string;
+}
+
 export interface OrgUnit {
   id: string;
   name: string;
   parent_unit_id?: string;
   children?: OrgUnit[];
+}
+
+export interface OrgUnitTree extends OrgUnit {
+  managers: Manager[];
+  children: OrgUnitTree[];
 }
 
 @Injectable({
@@ -25,6 +38,15 @@ export class OrgUnitService {
         retry(1),
         catchError(this.handleError)
       ).toPromise() as Promise<OrgUnit[]>;
+  }
+
+  // Get organization tree structure
+  async getOrgTree(): Promise<OrgUnitTree[]> {
+    return this.http.get<OrgUnitTree[]>(`${this.apiUrl}/org/tree`)
+      .pipe(
+        retry(1),
+        catchError(this.handleError)
+      ).toPromise() as Promise<OrgUnitTree[]>;
   }
 
   // Create organization unit

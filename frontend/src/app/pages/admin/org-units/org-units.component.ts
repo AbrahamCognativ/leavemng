@@ -6,7 +6,8 @@ import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
-import { OrgUnitService, OrgUnit } from '../../../shared/services/org-unit.service';
+import { DxTreeViewModule } from 'devextreme-angular/ui/tree-view';
+import { OrgUnitService, OrgUnit, OrgUnitTree } from '../../../shared/services/org-unit.service';
 import { DxiItemModule } from 'devextreme-angular/ui/nested';
 
 @Component({
@@ -22,11 +23,13 @@ import { DxiItemModule } from 'devextreme-angular/ui/nested';
     DxButtonModule,
     DxPopupModule,
     DxToolbarModule,
+    DxTreeViewModule,
     DxiItemModule
   ]
 })
 export class OrgUnitsComponent implements OnInit {
   orgUnits: OrgUnit[] = [];
+  orgTree: OrgUnitTree[] = [];
   isLoading: boolean = false;
   isPopupVisible: boolean = false;
   selectedUnit: OrgUnit | null = null;
@@ -44,7 +47,10 @@ export class OrgUnitsComponent implements OnInit {
   async loadData() {
     try {
       this.isLoading = true;
-      this.orgUnits = await this.orgUnitService.getOrgUnits();
+      [this.orgUnits, this.orgTree] = await Promise.all([
+        this.orgUnitService.getOrgUnits(),
+        this.orgUnitService.getOrgTree()
+      ]);
     } catch (error) {
       console.error('Error loading organization units:', error);
     } finally {
@@ -101,5 +107,9 @@ export class OrgUnitsComponent implements OnInit {
     if (!this.orgUnits || this.orgUnits.length === 0) return '';
     const parent = this.orgUnits.find(u => u.id === parentId);
     return parent ? parent.name : 'Unknown';
+  }
+
+  getManagerNames(managers: any[]): string {
+    return managers.map(m => m.name).join(', ');
   }
 }
