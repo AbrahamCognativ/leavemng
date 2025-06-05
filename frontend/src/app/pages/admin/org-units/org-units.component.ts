@@ -48,6 +48,8 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
   userFormData: Partial<IUser> = {};
   managers: IUser[] = [];
   private subscriptions: Subscription[] = [];
+  public popupTitle: string = '';
+  public isAddingChildMode: boolean = false;
 
   parentUnitOptions = {
     dataSource: this.orgUnits,
@@ -116,7 +118,7 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
       
       return {
         ...item,
-        displayName: displayName,
+        displayName: displayName?.trim() == "undefined" ? null : displayName,
         level: level,
         expanded: level === 0, // Only expand root level items
         children: processedChildren,
@@ -134,6 +136,7 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
       managerIds: []
     };
     this.selectedUnit = null;
+    this.isAddingChildMode = false;
     this.isPopupVisible = true;
   }
 
@@ -143,6 +146,7 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
       ...unit,
       managerIds: unit.managers?.map((m: Manager) => m.id) || []
     };
+    this.isAddingChildMode = false;
     this.isPopupVisible = true;
   }
 
@@ -275,19 +279,24 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
       managerIds: []
     };
     this.isPopupVisible = false;
+    this.isAddingChildMode = false;
   }
 
   closeUserPopup() {
     this.isUserPopupVisible = false;
   }
 
-  onAddChild(parentUnit: OrgUnit) {
+  onAddChild(parentUnit: OrgUnit, e: any) { // Changed type to any
+    if (e && e.event && typeof e.event.stopPropagation === 'function') {
+      e.event.stopPropagation();
+    }
     this.formData = {
       name: '',
       parent_unit_id: parentUnit.id,
       managerIds: []
     };
     this.selectedUnit = null;
+    this.isAddingChildMode = true;
     this.isPopupVisible = true;
   }
 }

@@ -30,14 +30,14 @@
                 <i class="dx-icon" [ngClass]="getIconClass(item)"></i>
               </div>
               <div class="item-content">
-                <span class="item-name">{{item.displayName || item.name}}</span>
+                <span class="item-name">{{item.displayName || item.title}}</span>
                 <span class="item-type" *ngIf="item.type">{{item.type}}</span>
                 <span class="manager-badge" *ngIf="item.is_manager">Manager</span>
                 <dx-button
                   *ngIf="item.type === 'unit'"
                   text="Add Child"
                   stylingMode="text"
-                  (onClick)="onAddChild({id: item.id, name: item.name})"
+                  (onClick)="onAddChild({id: item.id, name: item.name}, $event)"
                   class="add-child-btn">
                 </dx-button>
               </div>
@@ -86,7 +86,7 @@
     <dx-popup
       [visible]="isPopupVisible"
       [showTitle]="true"
-      [title]="selectedUnit ? 'Edit Organization Unit' : 'Add Organization Unit'"
+      [title]="isAddingChildMode ? 'Add Organization Unit' : (selectedUnit ? 'Edit Organization Unit' : 'Add Organization Unit')"
       [width]="500"
       [height]="350"
       [dragEnabled]="false"
@@ -126,7 +126,7 @@
               <dxi-validation-rule type="required" message="Parent unit is required"></dxi-validation-rule>
             </dxi-item>
 
-            <dxi-item
+            <!-- <dxi-item
               *ngIf="selectedUnit"
               dataField="managerIds"
               editorType="dxTagBox"
@@ -140,7 +140,7 @@
                 searchExpr: ['name'],
                 searchMode: 'contains'
               }">
-            </dxi-item>
+            </dxi-item> -->
           </dx-form>
         </dx-validation-group>
         

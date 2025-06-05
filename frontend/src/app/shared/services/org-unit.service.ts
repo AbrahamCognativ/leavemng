@@ -29,7 +29,7 @@ export interface OrgUnitTree extends OrgUnit {
 export interface TreeItem {
   id: string;
   name: string;
-  displayName?: string;
+  displayName?: string | null;
   level?: number;
   type?: 'unit' | 'role';
   is_manager: boolean;
@@ -38,6 +38,7 @@ export interface TreeItem {
   children?: TreeItem[];
   parent_unit_id?: string;
   expanded?: boolean;
+  title?: string;
 }
 
 @Injectable({
