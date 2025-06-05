@@ -38,7 +38,7 @@
             top: 0;
             bottom: 0;
             width: 2px;
-            background-color: #666;
+            background-color: #e0e0e0;
             z-index: 1;
           }
 
@@ -57,69 +57,72 @@
               top: 50%;
               width: 16px;
               height: 2px;
-              background-color: #666;
+              background-color: #e0e0e0;
               z-index: 1;
             }
-
-            &:hover {
-              background-color: transparent !important;
-            }
-          }
-        }
-
-        .dx-treeview-item {
-          &:hover {
-            background-color: transparent !important;
           }
         }
       }
     }
     
     .tree-item {
-      padding: 8px;
-      border-radius: 4px;
+      padding: 12px;
+      border-radius: 6px;
       transition: all 0.2s ease;
       position: relative;
-      z-index: 0;
-      margin-left: 0;
-
-      &:hover {
-        background-color: transparent;
-      }
+      margin-bottom: 8px;
+      width: 100%;
+      box-sizing: border-box;
 
       &.unit-item {
-        border: 2px solid #4a90e2;
         background-color: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         width: 100%;
+
+        &:not(.has-children) {
+          background-color: #ffffff;
+          border-left: 4px solid #2196f3;
+        }
+
+        &.has-children {
+          background-color: #f8f9fa;
+          border-left: 4px solid #90caf9;
+        }
       }
 
       &.role-item {
-        border: 1px solid #e0e0e0;
         background-color: white;
-        width: 90%;
-        margin-left: 5%;
+        border: 1px solid #e0e0e0;
       }
 
       &.user-item {
-        border: 1px solid #e0e0e0;
         background-color: white;
-        width: 80%;
-        margin-left: 10%;
+        border: 1px solid #e0e0e0;
+      }
+
+      &.manager-role {
+        border-left: 4px solid #4a90e2;
+      }
+
+      &.has-manager {
+        border-left: 4px solid #4a90e2;
       }
       
       .item-header {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 8px;
+        gap: 12px;
         
         .item-icon {
-          width: 24px;
-          height: 24px;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
           color: #666;
+          background-color: #f8f9fa;
+          border-radius: 50%;
           
           i {
             font-size: 18px;
@@ -127,123 +130,94 @@
         }
         
         .item-content {
-          flex: 1;
           display: flex;
           align-items: center;
           gap: 8px;
+          flex: 1;
           
           .item-name {
-            font-weight: 500;
-            color: #333;
+            font-family: monospace;
+            white-space: pre;
           }
           
           .item-type {
             font-size: 12px;
             color: #666;
             text-transform: capitalize;
+            background-color: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 12px;
           }
           
           .manager-badge {
             font-size: 11px;
-            padding: 2px 6px;
+            padding: 2px 8px;
             background-color: #4a90e2;
             color: white;
             border-radius: 12px;
+          }
+
+          .add-child-btn {
+            margin-left: auto;
+            font-size: 12px;
+            padding: 2px 8px;
+            
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.05);
+            }
           }
         }
       }
       
       .item-details {
-        margin-left: 34px;
-        padding: 8px;
-        background-color: #f8f9fa;
-        border-radius: 4px;
+        margin-left: 44px;
+        margin-top: 8px;
         
         .detail-row {
           display: flex;
           margin-bottom: 8px;
-
-          &:last-child {
-            margin-bottom: 0;
-          }
           
           .detail-label {
-            width: 100px;
+            width: 80px;
             font-weight: 500;
             color: #666;
+            font-size: 12px;
           }
           
           .detail-value {
             flex: 1;
-            color: #333;
-
+            
             .user-list {
               display: flex;
               flex-direction: column;
               gap: 4px;
-
+              
               .user-item {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                padding: 4px 8px;
+                padding: 6px 12px;
                 border-radius: 4px;
                 cursor: pointer;
                 transition: background-color 0.2s ease;
-
+                background-color: #f8f9fa;
+                
                 &:hover {
                   background-color: #e9ecef;
                 }
-
+                
                 &.manager {
                   background-color: #e3f2fd;
                 }
-
+                
                 i {
                   color: #666;
                 }
-
+                
                 .user-name {
                   font-weight: 500;
+                  font-size: 13px;
                 }
-
-                .user-email {
-                  color: #666;
-                  font-size: 0.9em;
-                }
-
-                .manager-badge {
-                  font-size: 11px;
-                  padding: 2px 6px;
-                  background-color: #4a90e2;
-                  color: white;
-                  border-radius: 12px;
-                }
-              }
-            }
-
-            .empty-state {
-              padding: 8px;
-              background-color: #f8f9fa;
-              border-radius: 4px;
-              color: #666;
-              font-style: italic;
-              border: 1px dashed #dee2e6;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-
-              &::before {
-                content: '!';
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 20px;
-                height: 20px;
-                background-color: #dee2e6;
-                color: #666;
-                border-radius: 50%;
-                font-weight: bold;
               }
             }
           }
@@ -289,6 +263,55 @@
   
       .dx-icon-edit, .dx-icon-trash {
         font-size: 18px;
+      }
+    }
+
+    // Update width calculations for different levels
+    @for $i from 0 through 10 {
+      .level-#{$i} {
+        padding-left: #{$i * 20}px;
+        width: calc(100% - (#{$i} * 8%));
+        margin-left: #{$i * 10}px;
+        
+        // Add transition for smooth width changes
+        transition: width 0.3s ease, margin-left 0.3s ease;
+        
+        // Ensure content doesn't overflow
+        .item-content {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          
+          .item-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
+    }
+
+    // Specific adjustments for deeper levels
+    .level-2 {
+      width: 85%;
+    }
+
+    .level-3 {
+      width: 75%;
+    }
+
+    .level-4 {
+      width: 65%;
+    }
+
+    .level-5 {
+      width: 55%;
+    }
+
+    // For levels beyond 5, maintain a minimum width
+    @for $i from 6 through 10 {
+      .level-#{$i} {
+        width: 50%;
       }
     }
   }

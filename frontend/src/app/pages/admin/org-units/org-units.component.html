@@ -24,45 +24,35 @@
         (onItemClick)="onTreeItemClick($event)">
         
         <div *dxTemplate="let item of 'item'">
-          <div class="tree-item" [ngClass]="{
-            'unit-item': item.type === 'unit',
-            'role-item': item.type === 'role',
-            'user-item': !item.type,
-            'manager-role': item.is_manager
-          }">
+          <div class="tree-item" [ngClass]="getItemClasses(item)">
             <div class="item-header">
               <div class="item-icon">
-                <i class="dx-icon" [ngClass]="{
-                  'dx-icon-folder': item.type === 'unit',
-                  'dx-icon-group': item.type === 'role',
-                  'dx-icon-user': !item.type
-                }"></i>
+                <i class="dx-icon" [ngClass]="getIconClass(item)"></i>
               </div>
               <div class="item-content">
-                <span class="item-name">{{item.name}}</span>
+                <span class="item-name">{{item.displayName || item.name}}</span>
                 <span class="item-type" *ngIf="item.type">{{item.type}}</span>
                 <span class="manager-badge" *ngIf="item.is_manager">Manager</span>
+                <dx-button
+                  *ngIf="item.type === 'unit'"
+                  text="Add Child"
+                  stylingMode="text"
+                  (onClick)="onAddChild({id: item.id, name: item.name})"
+                  class="add-child-btn">
+                </dx-button>
               </div>
             </div>
             
             <div class="item-details" *ngIf="item.type === 'unit'">
-              <div class="detail-row" *ngIf="item.managers?.length">
+              <div class="detail-row" *ngIf="item.users?.length">
                 <span class="detail-label">Managers:</span>
                 <div class="detail-value">
                   <div class="user-list">
-                    <div class="user-item manager" *ngFor="let manager of item.managers" (click)="onUserClick(manager)">
+                    <div class="user-item manager" *ngFor="let user of item.users" (click)="onUserClick(user)">
                       <i class="dx-icon-user"></i>
-                      <span class="user-name">{{manager.name}}</span>
-                      <span class="user-email" *ngIf="manager.email">({{manager.email}})</span>
-                      <span class="manager-badge">Manager</span>
+                      <span class="user-name">{{user.name}}</span>
                     </div>
                   </div>
-                </div>
-              </div>
-              <div class="detail-row" *ngIf="!item.managers?.length">
-                <span class="detail-label">Managers:</span>
-                <div class="detail-value">
-                  <div class="empty-state">No managers assigned to this unit</div>
                 </div>
               </div>
             </div>
@@ -75,45 +65,9 @@
                     <div class="user-item" *ngFor="let user of item.users" (click)="onUserClick(user)">
                       <i class="dx-icon-user"></i>
                       <span class="user-name">{{user.name}}</span>
-                      <span class="user-email" *ngIf="user.email">({{user.email}})</span>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div class="detail-row" *ngIf="!item.users?.length">
-                <span class="detail-label">Users:</span>
-                <div class="detail-value">
-                  <div class="empty-state">No users in this role</div>
-                </div>
-              </div>
-              <div class="detail-row" *ngIf="item.children?.length">
-                <span class="detail-label">Subordinates:</span>
-                <div class="detail-value">
-                  <div class="user-list">
-                    <div class="user-item" *ngFor="let child of item.children">
-                      <i class="dx-icon-group"></i>
-                      <span>{{child.title}}</span>
-                      <span class="user-count">({{child.users?.length || 0}} users)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="detail-row" *ngIf="!item.children?.length">
-                <span class="detail-label">Subordinates:</span>
-                <div class="detail-value">
-                  <div class="empty-state">No subordinate roles</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="item-details" *ngIf="!item.type">
-              <div class="detail-row" *ngIf="item.role_title">
-                <span class="detail-label">Role:</span>
-                <span class="detail-value">{{item.role_title}}</span>
-              </div>
-              <div class="detail-row" *ngIf="item.email">
-                <span class="detail-label">Email:</span>
-                <span class="detail-value">{{item.email}}</span>
               </div>
             </div>
           </div>
@@ -133,36 +87,69 @@
       [visible]="isPopupVisible"
       [showTitle]="true"
       [title]="selectedUnit ? 'Edit Organization Unit' : 'Add Organization Unit'"
-      [width]="400"
-      [height]="250"
+      [width]="500"
+      [height]="350"
       [dragEnabled]="false"
       [closeOnOutsideClick]="true"
-      (onHiding)="isPopupVisible = false">
+      (onHiding)="closePopup()">
       
       <div *dxTemplate="let data of 'content'">
-        <dx-form
-          [formData]="formData"
-          labelLocation="top"
-          [showColonAfterLabel]="true">
-          <dxi-item dataField="name" editorType="dxTextBox"></dxi-item>
-          <dxi-item
-            dataField="parent_unit_id"
-            editorType="dxSelectBox"
-            [editorOptions]="{
-              dataSource: orgUnits,
-              displayExpr: 'name',
-              valueExpr: 'id',
-              placeholder: 'Select parent unit'
-            }">
-          </dxi-item>
-        </dx-form>
+        <dx-validation-group>
+          <dx-form
+            [formData]="formData"
+            labelLocation="top"
+            [showColonAfterLabel]="true"
+            [showValidationSummary]="true">
+            <dxi-item
+              dataField="name"
+              editorType="dxTextBox"
+              [editorOptions]="{
+                placeholder: 'Enter organization unit name',
+                showClearButton: true
+              }">
+              <dxi-validation-rule type="required" message="Name is required"></dxi-validation-rule>
+            </dxi-item>
+            
+            <dxi-item
+              dataField="parent_unit_id"
+              editorType="dxSelectBox"
+              [editorOptions]="{
+                dataSource: orgUnits,
+                displayExpr: 'name',
+                valueExpr: 'id',
+                placeholder: 'Select parent unit',
+                searchEnabled: true,
+                showClearButton: true,
+                searchExpr: ['name'],
+                searchMode: 'contains'
+              }">
+              <dxi-validation-rule type="required" message="Parent unit is required"></dxi-validation-rule>
+            </dxi-item>
+
+            <dxi-item
+              *ngIf="selectedUnit"
+              dataField="managerIds"
+              editorType="dxTagBox"
+              [editorOptions]="{
+                dataSource: managers,
+                displayExpr: 'name',
+                valueExpr: 'id',
+                placeholder: 'Select managers',
+                searchEnabled: true,
+                showClearButton: true,
+                searchExpr: ['name'],
+                searchMode: 'contains'
+              }">
+            </dxi-item>
+          </dx-form>
+        </dx-validation-group>
         
         <div class="popup-buttons">
           <dx-button
             text="Cancel"
             type="normal"
             stylingMode="outlined"
-            (onClick)="isPopupVisible = false"
+            (onClick)="closePopup()"
             style="margin-right: 10px;">
           </dx-button>
           
@@ -170,7 +157,8 @@
             [text]="selectedUnit ? 'Update' : 'Save'"
             type="default"
             stylingMode="contained"
-            (onClick)="save()">
+            (onClick)="save()"
+            [disabled]="!formData.name">
           </dx-button>
         </div>
       </div>
@@ -185,7 +173,7 @@
       [height]="500"
       [dragEnabled]="false"
       [closeOnOutsideClick]="true"
-      (onHiding)="isUserPopupVisible = false">
+      (onHiding)="closeUserPopup()">
       
       <div *dxTemplate="let data of 'content'">
         <dx-form
@@ -199,22 +187,12 @@
           <dxi-item
             dataField="org_unit_id"
             editorType="dxSelectBox"
-            [editorOptions]="{
-              dataSource: orgUnits,
-              displayExpr: 'name',
-              valueExpr: 'id',
-              placeholder: 'Select organization unit'
-            }">
+            [editorOptions]="orgUnitOptions">
           </dxi-item>
           <dxi-item
             dataField="manager_id"
             editorType="dxSelectBox"
-            [editorOptions]="{
-              dataSource: managers,
-              displayExpr: 'name',
-              valueExpr: 'id',
-              placeholder: 'Select manager'
-            }">
+            [editorOptions]="managerOptions">
           </dxi-item>
         </dx-form>
         
@@ -223,7 +201,7 @@
             text="Cancel"
             type="normal"
             stylingMode="outlined"
-            (onClick)="isUserPopupVisible = false"
+            (onClick)="closeUserPopup()"
             style="margin-right: 10px;">
           </dx-button>
           

@@ -7,7 +7,8 @@ import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 import { DxTreeViewModule } from 'devextreme-angular/ui/tree-view';
-import { OrgUnitService, OrgUnit, TreeItem } from '../../../shared/services/org-unit.service';
+import { DxValidationGroupModule } from 'devextreme-angular/ui/validation-group';
+import { OrgUnitService, OrgUnit, TreeItem, Manager } from '../../../shared/services/org-unit.service';
 import { DxiItemModule } from 'devextreme-angular/ui/nested';
 import { Subscription, forkJoin } from 'rxjs';
 import { ItemClickEvent } from 'devextreme/ui/tree_view';
@@ -27,7 +28,8 @@ import { UserService, IUser } from '../../../shared/services/user.service';
     DxPopupModule,
     DxToolbarModule,
     DxTreeViewModule,
-    DxiItemModule
+    DxiItemModule,
+    DxValidationGroupModule
   ]
 })
 export class OrgUnitsComponent implements OnInit, OnDestroy {
@@ -38,13 +40,35 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
   isUserPopupVisible: boolean = false;
   selectedUnit: OrgUnit | null = null;
   selectedUser: IUser | null = null;
-  formData: Partial<OrgUnit> = {
+  formData: Partial<OrgUnit> & { managerIds?: string[] } = {
     name: '',
-    parent_unit_id: undefined
+    parent_unit_id: undefined,
+    managerIds: []
   };
   userFormData: Partial<IUser> = {};
   managers: IUser[] = [];
   private subscriptions: Subscription[] = [];
+
+  parentUnitOptions = {
+    dataSource: this.orgUnits,
+    displayExpr: 'name',
+    valueExpr: 'id',
+    placeholder: 'Select parent unit'
+  };
+
+  orgUnitOptions = {
+    dataSource: this.orgUnits,
+    displayExpr: 'name',
+    valueExpr: 'id',
+    placeholder: 'Select organization unit'
+  };
+
+  managerOptions = {
+    dataSource: this.managers,
+    displayExpr: 'name',
+    valueExpr: 'id',
+    placeholder: 'Select manager'
+  };
 
   constructor(
     private orgUnitService: OrgUnitService,
@@ -79,41 +103,35 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
   }
 
   private processTreeItems(items: TreeItem[]): TreeItem[] {
-    // Find root items (items without parent_unit_id)
-    const rootItems = items.filter(item => !item.parent_unit_id);
-    
-    // If there's only one root item, expand it and its immediate children
-    if (rootItems.length === 1) {
-      return items.map(item => {
-        if (!item.parent_unit_id) {
-          // Root item - expand it
-          return {
-            ...item,
-            expanded: true,
-            children: item.children?.map(child => ({
-              ...child,
-              expanded: false // Keep children collapsed
-            }))
-          };
-        }
-        return {
-          ...item,
-          expanded: false // Keep all other items collapsed
-        };
-      });
-    }
-    
-    // If there are multiple root items, keep them all collapsed
-    return items.map(item => ({
-      ...item,
-      expanded: false
-    }));
+    const processItem = (item: TreeItem, level: number = 0): TreeItem => {
+      // Process children recursively
+      const processedChildren = item.children?.map(child => processItem(child, level + 1)) || [];
+      
+      // Check if this item has a manager
+      const hasManager = item.type === 'role' && item.users?.some(user => user.is_manager) || false;
+      
+      // Create display name with indentation
+      const indent = '  '.repeat(level);
+      const displayName = `${indent}${item.name}`;
+      
+      return {
+        ...item,
+        displayName: displayName,
+        level: level,
+        expanded: level === 0, // Only expand root level items
+        children: processedChildren,
+        is_manager: hasManager
+      };
+    };
+
+    return items.map(item => processItem(item));
   }
 
   onAdd() {
     this.formData = {
       name: '',
-      parent_unit_id: undefined
+      parent_unit_id: undefined,
+      managerIds: []
     };
     this.selectedUnit = null;
     this.isPopupVisible = true;
@@ -121,7 +139,10 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
 
   onEdit(unit: OrgUnit) {
     this.selectedUnit = unit;
-    this.formData = { ...unit };
+    this.formData = { 
+      ...unit,
+      managerIds: unit.managers?.map((m: Manager) => m.id) || []
+    };
     this.isPopupVisible = true;
   }
 
@@ -145,6 +166,10 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
   }
 
   save() {
+    if (!this.formData.name) {
+      return;
+    }
+
     this.isLoading = true;
     const request = this.selectedUnit
       ? this.orgUnitService.updateOrgUnit(this.selectedUnit.id, this.formData)
@@ -217,5 +242,52 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
       this.formData = { ...this.selectedUnit };
       this.isPopupVisible = true;
     }
+  }
+
+  getItemClasses(item: TreeItem): { [key: string]: boolean } {
+    const hasChildren = item.children ? item.children.length > 0 : false;
+    return {
+      'unit-item': item.type === 'unit',
+      'role-item': item.type === 'role',
+      'user-item': !item.type,
+      'manager-role': item.is_manager,
+      'has-manager': this.hasManager(item),
+      'has-children': hasChildren,
+      [`level-${item.level}`]: true
+    };
+  }
+
+  private hasManager(item: TreeItem): boolean {
+    if (!item.users) return false;
+    return item.users.some(u => u.is_manager);
+  }
+
+  getIconClass(item: TreeItem): string {
+    if (item.type === 'unit') return 'dx-icon-folder';
+    if (item.type === 'role') return 'dx-icon-group';
+    return 'dx-icon-user';
+  }
+
+  closePopup() {
+    this.formData = {
+      name: '',
+      parent_unit_id: undefined,
+      managerIds: []
+    };
+    this.isPopupVisible = false;
+  }
+
+  closeUserPopup() {
+    this.isUserPopupVisible = false;
+  }
+
+  onAddChild(parentUnit: OrgUnit) {
+    this.formData = {
+      name: '',
+      parent_unit_id: parentUnit.id,
+      managerIds: []
+    };
+    this.selectedUnit = null;
+    this.isPopupVisible = true;
   }
 }
