@@ -285,6 +285,8 @@ export class EmployeeInviteComponent implements OnInit {
       gender: this.selectedUser.gender,
       manager_id: this.selectedUser.manager_id,
       org_unit_id: this.selectedUser.org_unit_id,
+      role_band: this.selectedUser.role_band,
+      role_title: this.selectedUser.role_title,
       is_active: this.selectedUser.is_active
     };
     
