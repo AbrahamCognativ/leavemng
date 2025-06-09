@@ -1,35 +1,235 @@
 .org-units-container {
     padding: 20px;
+    height: calc(100vh - 100px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background-color: #f5f5f5;
     
     h2 {
-      margin-bottom: 20px;
+      margin: 0;
+      color: #333;
     }
 
     
     .toolbar {
-      margin-bottom: 15px;
       display: flex;
-      justify-content: flex-end;
+      gap: 10px;
     }
     
-    dx-load-indicator {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 1000;
+    .org-tree-container {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: auto;
+      padding: 20px;
+      min-height: 0;
+
+      ::ng-deep {
+        .dx-treeview-node {
+          padding: 4px 2rem;
+          position: relative;
+
+          &::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #e0e0e0;
+            z-index: 1;
+          }
+
+          &:last-child::before {
+            height: 50%;
+          }
+
+          .dx-treeview-item {
+            padding-left: 30px;
+            position: relative;
+
+            &::before {
+              content: '';
+              position: absolute;
+              left: 12px;
+              top: 50%;
+              width: 16px;
+              height: 2px;
+              background-color: #e0e0e0;
+              z-index: 1;
+            }
+          }
+        }
+      }
+    }
+    
+    .tree-item {
+      padding: 12px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      position: relative;
+      margin-bottom: 8px;
+      width: 100%;
+      box-sizing: border-box;
+
+      &.unit-item {
+        background-color: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        width: 100%;
+
+        &:not(.has-children) {
+          background-color: #ffffff;
+          border-left: 4px solid #2196f3;
+        }
+
+        &.has-children {
+          background-color: #f8f9fa;
+          border-left: 4px solid #90caf9;
+        }
+      }
+
+      &.role-item {
+        background-color: white;
+        border: 1px solid #e0e0e0;
+      }
+
+      &.user-item {
+        background-color: white;
+        border: 1px solid #e0e0e0;
+      }
+
+      &.manager-role {
+        border-left: 4px solid #4a90e2;
+      }
+
+      &.has-manager {
+        border-left: 4px solid #4a90e2;
+      }
+      
+      .item-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        
+        .item-icon {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #666;
+          background-color: #f8f9fa;
+          border-radius: 50%;
+          
+          i {
+            font-size: 18px;
+          }
+        }
+        
+        .item-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+          
+          .item-name {
+            font-family: monospace;
+            white-space: pre;
+          }
+          
+          .item-type {
+            font-size: 12px;
+            color: #666;
+            text-transform: capitalize;
+            background-color: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 12px;
+          }
+          
+          .manager-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            background-color: #4a90e2;
+            color: white;
+            border-radius: 12px;
+          }
+
+          .add-child-btn {
+            margin-left: auto;
+            font-size: 12px;
+            padding: 2px 8px;
+            
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.05);
+            }
+          }
+        }
+      }
+      
+      .item-details {
+        margin-left: 44px;
+        margin-top: 8px;
+        
+        .detail-row {
+          display: flex;
+          margin-bottom: 8px;
+          
+          .detail-label {
+            width: 80px;
+            font-weight: 500;
+            color: #666;
+            font-size: 12px;
+          }
+          
+          .detail-value {
+            flex: 1;
+            
+            .user-list {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              
+              .user-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+                background-color: #f8f9fa;
+                
+                &:hover {
+                  background-color: #e9ecef;
+                }
+                
+                &.manager {
+                  background-color: #e3f2fd;
+                }
+                
+                i {
+                  color: #666;
+                }
+                
+                .user-name {
+                  font-weight: 500;
+                  font-size: 13px;
+                }
+              }
+            }
+          }
+        }
+      }
     }
     
     .popup-buttons {
+        margin-top: 20px;
         display: flex;
         justify-content: flex-end;
-        gap: 12px;
-        margin-top: 16px;
-
-
-        dx-button{
-            margin-right: 10px;
-        }
+        gap: 10px;
     }
   
     .action-buttons {
@@ -42,7 +242,7 @@
       background: none;
       border: none;
       cursor: pointer;
-      padding: 5px;
+      padding: 4px;
       border-radius: 4px;
       display: flex;
       align-items: center;
@@ -54,15 +254,145 @@
       }
   
       &.edit-btn {
-        color: #3498db;
+        color: #2a7ee4;
       }
   
       &.delete-btn {
-        color: #e74c3c;
+        color: #f44336;
       }
   
       .dx-icon-edit, .dx-icon-trash {
         font-size: 18px;
       }
     }
+
+    // Update width calculations for different levels
+    @for $i from 0 through 10 {
+      .level-#{$i} {
+        padding-left: #{$i * 20}px;
+        width: calc(100% - (#{$i} * 8%));
+        margin-left: #{$i * 10}px;
+        
+        // Add transition for smooth width changes
+        transition: width 0.3s ease, margin-left 0.3s ease;
+        
+        // Ensure content doesn't overflow
+        .item-content {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          
+          .item-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
+    }
+
+    // Specific adjustments for deeper levels
+    .level-2 {
+      width: 85%;
+    }
+
+    .level-3 {
+      width: 75%;
+    }
+
+    .level-4 {
+      width: 65%;
+    }
+
+    .level-5 {
+      width: 55%;
+    }
+
+    // For levels beyond 5, maintain a minimum width
+    @for $i from 6 through 10 {
+      .level-#{$i} {
+        width: 50%;
+      }
+    }
   }
+
+.org-tree-container {
+  margin-top: 30px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  
+  h3 {
+    margin-bottom: 15px;
+  }
+  
+  .tree-item {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0;
+    
+    .unit-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .managers {
+      font-size: 0.9em;
+      color: #666;
+    }
+  }
+  
+  ::ng-deep {
+    .dx-treeview-item {
+      padding: 8px 0;
+    }
+    
+    .dx-treeview-node {
+      padding-left: 20px;
+    }
+  }
+}
+
+dx-load-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+// Specific styles for different item types
+.unit-item {
+  background-color: #f8f9fa;
+  border-left: 4px solid #2196f3;
+
+  .item-icon {
+    background-color: #e3f2fd;
+    color: #1976d2;
+  }
+}
+
+.role-item {
+  background-color: #fff;
+  border-left: 4px solid #4caf50;
+
+  .item-icon {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+}
+
+.user-item {
+  background-color: #fff;
+  border-left: 4px solid #ff9800;
+
+  .item-icon {
+    background-color: #fff3e0;
+    color: #f57c00;
+  }
+}
+
+.manager-role {
+  background-color: #e3f2fd;
+  border-left: 4px solid #1976d2;
+}
