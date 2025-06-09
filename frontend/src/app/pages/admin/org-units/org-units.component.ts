@@ -13,6 +13,7 @@ import { DxiItemModule } from 'devextreme-angular/ui/nested';
 import { Subscription, forkJoin } from 'rxjs';
 import { ItemClickEvent } from 'devextreme/ui/tree_view';
 import { UserService, IUser } from '../../../shared/services/user.service';
+import { User } from "../../../models/user.model"
 
 @Component({
   selector: 'app-org-units',
@@ -39,14 +40,14 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
   isPopupVisible: boolean = false;
   isUserPopupVisible: boolean = false;
   selectedUnit: OrgUnit | null = null;
-  selectedUser: IUser | null = null;
+  selectedUser: User | null = null;
   formData: Partial<OrgUnit> & { managerIds?: string[] } = {
     name: '',
     parent_unit_id: undefined,
     managerIds: []
   };
-  userFormData: Partial<IUser> = {};
-  managers: IUser[] = [];
+  userFormData: Partial<User> = {};
+  managers: User[] = [];
   private subscriptions: Subscription[] = [];
   public popupTitle: string = '';
   public isAddingChildMode: boolean = false;
@@ -58,27 +59,42 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
     placeholder: 'Select parent unit'
   };
 
-  orgUnitOptions = {
-    dataSource: this.orgUnits,
-    displayExpr: 'name',
-    valueExpr: 'id',
-    placeholder: 'Select organization unit'
-  };
-
-  managerOptions = {
-    dataSource: this.managers,
-    displayExpr: 'name',
-    valueExpr: 'id',
-    placeholder: 'Select manager'
-  };
+  orgUnitOptions: any;
+  managerOptions: any;
 
   constructor(
     private orgUnitService: OrgUnitService,
     private userService: UserService
-  ) {}
+  ) {
+    this.orgUnitOptions = {
+      dataSource: this.orgUnits,
+      displayExpr: 'name',
+      valueExpr: 'id',
+      placeholder: 'Select organization unit'
+    };
+
+    this.managerOptions = {
+      dataSource: this.managers,
+      displayExpr: 'name',
+      valueExpr: 'id',
+      placeholder: 'Select manager'
+    };
+  }
 
   ngOnInit() {
     this.loadData();
+  }
+
+  private updateOptions(): void {
+    this.orgUnitOptions = {
+      ...this.orgUnitOptions,
+      dataSource: this.orgUnits
+    };
+
+    this.managerOptions = {
+      ...this.managerOptions,
+      dataSource: this.managers
+    };
   }
 
   ngOnDestroy() {
@@ -150,17 +166,36 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
     this.isPopupVisible = true;
   }
 
-  onUserClick(user: IUser) {
+  onUserClick(user: User) {
     this.selectedUser = user;
-    this.userFormData = { ...user };
+    this.userService.getUser(user.id).subscribe({
+      next: (user: User) => {
+        this.selectedUser = user;
+        this.userFormData = { ...user };
+        console.log("User Details:", user);
+      },
+      error: (error: any) => {
+        console.error('Error loading user details:', error);
+      }
+    });
     this.loadManagers();
     this.isUserPopupVisible = true;
   }
 
   loadManagers() {
     const subscription = this.userService.getUsers().subscribe({
-      next: (users: IUser[]) => {
-        this.managers = users.filter(user => user.role_title?.toLowerCase().includes('manager'));
+      next: (users: User[]) => {
+        this.managers = users.filter(user => {
+          const roleTitle = user.role_title?.toLowerCase() || '';
+          const roleBand = user.role_band?.toLowerCase() || '';
+          return roleTitle.includes('manager') || 
+                 roleBand.includes('manager') ||
+                 roleTitle.includes('admin') ||
+                 roleBand.includes('admin') ||
+                 roleTitle.includes('hr') ||
+                 roleBand.includes('hr');
+        });
+        this.updateOptions();
       },
       error: (error: any) => {
         console.error('Error loading managers:', error);
@@ -193,20 +228,83 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
     this.subscriptions.push(subscription);
   }
 
-  saveUser() {
-    if (this.selectedUser) {
-      const subscription = this.userService.updateUser(this.selectedUser.id, this.userFormData)
-        .subscribe({
-          next: () => {
-            this.isUserPopupVisible = false;
-            this.loadData();
-          },
-          error: (error: any) => {
-            console.error('Error updating user:', error);
-          }
-        });
-      this.subscriptions.push(subscription);
+  private validateManagerOrgUnit(): boolean {
+    // If no manager is selected, allow the update
+    if (!this.userFormData.manager_id) {
+      return true;
     }
+
+    // Find the selected manager
+    const selectedManager = this.managers.find(m => m.id === this.userFormData.manager_id);
+    if (!selectedManager) {
+      alert('Selected manager not found');
+      return false;
+    }
+
+    // Find the user's org unit
+    const userOrgUnit = this.orgUnits.find(u => u.id === this.userFormData.org_unit_id);
+    if (!userOrgUnit) {
+      alert('User organization unit not found');
+      return false;
+    }
+
+    // Find the manager's org unit
+    const managerOrgUnit = this.orgUnits.find(u => u.id === selectedManager.org_unit_id);
+    if (!managerOrgUnit) {
+      alert('Manager organization unit not found');
+      return false;
+    }
+
+    // Check if the manager's org unit is in the user's org unit's hierarchy
+    const isSameOrgUnit = userOrgUnit.id === managerOrgUnit.id;
+    const isManagerInHierarchy = this.checkOrgUnitHierarchy(userOrgUnit, managerOrgUnit);
+
+    if (!isSameOrgUnit && !isManagerInHierarchy) {
+      alert('Selected manager must belong to the same organization unit or be in the hierarchy of the user\'s org unit');
+      return false;
+    }
+
+    return true;
+  }
+
+  private checkOrgUnitHierarchy(userOrgUnit: OrgUnit, managerOrgUnit: OrgUnit): boolean {
+    // Check if manager's org unit is a child of user's org unit
+    const isChild = this.orgUnits.some(unit => {
+      return unit.id === managerOrgUnit.id && unit.parent_unit_id === userOrgUnit.id;
+    });
+
+    if (isChild) {
+      return true;
+    }
+
+    // Check if manager's org unit is a parent of user's org unit
+    const isParent = userOrgUnit.parent_unit_id === managerOrgUnit.id;
+
+    return isParent;
+  }
+
+  saveUser() {
+    if (!this.selectedUser) {
+      return;
+    }
+
+    // Validate manager-org unit relationship
+    if (!this.validateManagerOrgUnit()) {
+      return;
+    }
+
+    const subscription = this.userService.updateUser(this.selectedUser.id, this.userFormData)
+      .subscribe({
+        next: () => {
+          this.isUserPopupVisible = false;
+          this.loadData();
+        },
+        error: (error: any) => {
+          console.error('Error updating user:', error);
+          alert('Error updating user: ' + error.message);
+        }
+      });
+    this.subscriptions.push(subscription);
   }
 
   delete(e: any) {
