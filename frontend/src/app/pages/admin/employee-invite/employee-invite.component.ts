@@ -303,7 +303,9 @@ export class EmployeeInviteComponent implements OnInit {
       gender: this.selectedUser.gender,
       manager_id: this.selectedUser.manager_id,
       org_unit_id: this.selectedUser.org_unit_id,
-      is_active: this.selectedUser.is_active
+      is_active: this.selectedUser.is_active,
+      role_band: this.selectedUser.role_band,
+      role_title: this.selectedUser.role_title
     };
     
     this.http.patch(`${this.getApiUrl('users')}/${this.selectedUser.id}`, updateData, { headers })

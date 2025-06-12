@@ -68,15 +68,15 @@ export class AuthService {
   }
 
   get isAdmin(): boolean {
-    return this._user?.role_band === 'Admin' || this._user?.role_title === 'Admin';
+    return this._user?.role_band === 'Admin';
   }
 
   get isHR(): boolean {
-    return this._user?.role_band === 'HR' || this._user?.role_title === 'HR';
+    return this._user?.role_band === 'HR';
   }
 
   get isManager(): boolean {
-    return this._user?.role_band === 'Manager' || this._user?.role_title === 'Manager';
+    return this._user?.role_band === 'Manager';
   }
 
   private _lastAuthenticatedPath: string = defaultPath;

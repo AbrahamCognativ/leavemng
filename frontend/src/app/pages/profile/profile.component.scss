@@ -70,6 +70,16 @@
   &.editable {
     cursor: pointer;
     
+    // Show overlay immediately when in edit mode
+    .image-upload-overlay {
+      opacity: 0.8;
+    }
+    
+    // Apply slight blur when in edit mode
+    .profile-image {
+      filter: blur(1px);
+    }
+    
     &:hover {
       .image-upload-overlay {
         opacity: 1;

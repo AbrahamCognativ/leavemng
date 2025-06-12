@@ -14,6 +14,7 @@ import { LeaveCalendarComponent } from './leave-calendar/leave-calendar.componen
 import {DxButtonModule} from 'devextreme-angular/ui/button';
 import {UserService} from './shared/services/user.service';
 import {LeaveService} from './shared/services/leave.service';
+import { UserStateService } from './shared/services/user-state.service';
 import {DxiItemModule, DxiSeriesModule} from 'devextreme-angular/ui/nested';
 import {DashboardModule} from './pages/dashboard/dashboard.component';
 import {AuthInterceptor} from './shared/services/authinceptor.service';
@@ -59,7 +60,8 @@ configureDevExtreme();
     AppInfoService,
     UserService,
     LeaveService, 
-    OrgUnitService
+    OrgUnitService,
+    UserStateService
   ],
   exports: [
   ],
