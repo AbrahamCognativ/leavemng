@@ -137,53 +137,56 @@ export class DashboardComponent {
       this.approvedLeaves = requests.filter(r => r.status === 'approved').length;
       this.rejectedLeaves = requests.filter(r => r.status === 'rejected').length;
 
-      // Calculate leave balances and distribution
-      const leaveDistribution: { [key: string]: { total: number; used: number; remaining: number; isEligible: boolean } } = {};
+      // Calculate leave balances and distribution for display
+      const leaveDistribution: { [key: string]: { used: number; remaining: number; isEligible: boolean } } = {};
       const currentYear = new Date().getFullYear();
 
-      // Initialize distribution
+      // Initialize leaveDistribution with actual remaining balances from userLeaveData and zero used days
       types.forEach(type => {
-        const code = type.code.toLowerCase();
-        const isEligible = !((code === 'maternity' && userGender !== 'female') || 
-                           (code === 'paternity' && userGender !== 'male'));
-        leaveDistribution[type.description] = {
-          total: type.default_allocation_days || 0,
-          used: 0,
-          remaining: type.default_allocation_days || 0,
+        const typeDescription = type.description; // Use description as key, consistent with original
+        const typeCode = type.code.toLowerCase();
+        const isEligible = !((typeCode === 'maternity' && userGender !== 'female') || 
+                           (typeCode === 'paternity' && userGender !== 'male'));
+        
+        const balanceRecord = userLeaveData.leave_balance?.find((b: any) => b.leave_type === type.code);
+        // Default to 0 remaining if no balance record exists for this leave type for the user
+        const currentRemainingDays = balanceRecord ? (balanceRecord.balance_days || 0) : 0;
+
+        leaveDistribution[typeDescription] = {
+          used: 0, // Initialize used days to 0
+          remaining: currentRemainingDays,
           isEligible: isEligible
         };
       });
 
-      // Calculate used days for each leave type
-      requests.forEach(request => {
-        if (request.status === 'approved' || request.status === 'pending') {
-          const requestYear = new Date(request.start_date).getFullYear();
-          if (requestYear === currentYear) {
-            const type = types.find(t => t.id === request.leave_type_id);
-            if (type) {
-              const code = type.code.toLowerCase();
-              const isEligible = !((code === 'maternity' && userGender !== 'female') || 
-                                 (code === 'paternity' && userGender !== 'male'));
-              leaveDistribution[type.description].total = type.default_allocation_days || 0;
-              leaveDistribution[type.description].used += request.total_days;
-              leaveDistribution[type.description].isEligible = isEligible;
-              // Set remaining to the backend balance_days for this leave type
-              const backendBalance = userLeaveData.leave_balance?.find((b: any) => b.leave_type === type.code)?.balance_days;
-              leaveDistribution[type.description].remaining = backendBalance !== undefined ? backendBalance : (type.default_allocation_days - leaveDistribution[type.description].used);
-            }
+      // Calculate 'Used Days' from APPROVED leave requests for the current year
+      const approvedRequestsCurrentYear = requests.filter(request => {
+        const requestStartDate = request.start_date ? new Date(request.start_date) : null;
+        const requestYear = requestStartDate ? requestStartDate.getFullYear() : null;
+        return request.status === 'approved' && requestYear === currentYear;
+      });
+
+      approvedRequestsCurrentYear.forEach(request => {
+        const leaveTypeInfo = types.find(t => t.id === request.leave_type_id);
+        if (leaveTypeInfo) {
+          const typeDescription = leaveTypeInfo.description;
+          // Ensure the leave type exists in our distribution map and the user is eligible
+          if (leaveDistribution[typeDescription] && leaveDistribution[typeDescription].isEligible) {
+            leaveDistribution[typeDescription].used += (request.total_days || 0);
           }
         }
       });
 
-      // Prepare data for display
-      this.leaveTypeCounts = Object.entries(leaveDistribution).map(([type, data]) => {
-        const total = data.used + data.remaining;
+      // Prepare data for display (this.leaveTypeCounts)
+      this.leaveTypeCounts = Object.entries(leaveDistribution).map(([typeDescription, data]) => {
+        // 'totalEntitlement' is the sum of dynamically calculated 'used' and actual 'remaining'
+        const totalEntitlement = data.used + data.remaining; 
         return {
-          type,
-          total,
+          type: typeDescription,
+          total: totalEntitlement, // This is the effective total entitlement for progress bar context
           used: data.used,
           remaining: data.remaining,
-          percentageUsed: total > 0 ? (data.used / total) * 100 : 0,
+          percentageUsed: totalEntitlement > 0 ? (data.used / totalEntitlement) * 100 : 0,
           isEligible: data.isEligible
         };
       });

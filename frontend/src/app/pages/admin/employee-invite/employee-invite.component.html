@@ -254,6 +254,50 @@
         <dxi-item itemType="empty"></dxi-item>
       </dx-form>
       
+      <!-- Leave Balances Section -->
+      <div class="leave-balances-section">
+        <h3>Leave Balances</h3>
+        
+        <div *ngIf="loadingLeaveData" class="loading-container">
+          <dx-load-indicator width="50" height="50"></dx-load-indicator>
+          <p>Loading leave balances...</p>
+        </div>
+        
+        <div *ngIf="!loadingLeaveData && userLeaveBalances.length === 0" class="no-data-message">
+          <p>No leave balances found for this user.</p>
+        </div>
+        
+        <dx-data-grid
+          *ngIf="!loadingLeaveData && userLeaveBalances.length > 0"
+          [dataSource]="userLeaveBalances"
+          [showBorders]="true"
+          [columnAutoWidth]="true"
+          [rowAlternationEnabled]="true"
+        >
+          <dxi-column dataField="leave_type_name" caption="Leave Type"></dxi-column>
+          <dxi-column dataField="balance_days" caption="Balance (Days)"></dxi-column>
+          <dxi-column dataField="updated_at" caption="Last Updated" cellTemplate="dateTemplate"></dxi-column>
+          <dxi-column caption="Actions" cellTemplate="actionsTemplate" [width]="120"></dxi-column>
+          
+          <div *dxTemplate="let data of 'dateTemplate'">
+            {{ formatDate(data.value) }}
+          </div>
+          
+          <div *dxTemplate="let balance of 'actionsTemplate'">
+            <div class="action-buttons">
+              <dx-button
+                icon="edit"
+                type="default"
+                [stylingMode]="'text'"
+                (onClick)="editLeaveBalance(balance.data)"
+                [disabled]="isLoading"
+                hint="Edit Balance"
+              ></dx-button>
+            </div>
+          </div>
+        </dx-data-grid>
+      </div>
+      
       <div class="popup-buttons">
         <dx-button
           text="Save Changes"
@@ -303,6 +347,54 @@
           (onClick)="cancelDelete()"
           [disabled]="isLoading"
         ></dx-button>
+      </div>
+    </div>
+  </dx-popup>
+  
+  <!-- Leave Balance Edit Popup -->
+  <dx-popup
+    [width]="400"
+    [height]="'auto'"
+    [showTitle]="true"
+    title="Edit Leave Balance"
+    [dragEnabled]="true"
+    [closeOnOutsideClick]="false"
+    [(visible)]="isEditingLeaveBalance"
+    position="center"
+  >
+    <div *dxTemplate="let data of 'content'" class="edit-leave-balance-container">
+      <div *ngIf="selectedLeaveBalance" class="leave-balance-form">
+        <p>
+          <strong>Leave Type:</strong> {{ selectedLeaveBalance.leave_type_name }}
+        </p>
+        
+        <div class="form-field">
+          <label for="balanceDays">Balance Days:</label>
+          <dx-number-box
+            id="balanceDays"
+            [(value)]="editedBalance"
+            [min]="0"
+            [showSpinButtons]="true"
+            [step]="0.5"
+          ></dx-number-box>
+        </div>
+        
+        <div class="popup-buttons">
+          <dx-button
+            text="Save"
+            type="success"
+            (onClick)="saveLeaveBalanceChanges()"
+            [disabled]="isLoading"
+            [width]="120"
+          ></dx-button>
+          <dx-button
+            text="Cancel"
+            type="normal"
+            (onClick)="cancelLeaveBalanceEdit()"
+            [disabled]="isLoading"
+            [width]="120"
+          ></dx-button>
+        </div>
       </div>
     </div>
   </dx-popup>
