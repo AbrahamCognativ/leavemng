@@ -167,7 +167,7 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
                     if role_key not in users_by_role:
                         # Create a new role entry
                         role_band = user.role_band if hasattr(user, 'role_band') else 'unknown'
-                        role_id = f"role_{role_band}_{role_key.replace(' ', '_')}"
+                        role_id = f"role_{role_band}_{role_key.replace(' ', '_')}_{unit.id}"
 
                         users_by_role[role_key] = {
                             "id": role_id,
