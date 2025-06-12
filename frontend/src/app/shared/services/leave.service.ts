@@ -34,15 +34,11 @@ export class LeaveService {
   // Get all approved leave requests
   async getAllApprovedLeaves(): Promise<any[]> {
     try {
-      console.log('Fetching all leave requests from:', `${this.apiUrl}/leave`);
-      // Get all leave requests
       const leaveRequests = await this.http.get<any[]>(`${this.apiUrl}/leave`)
         .pipe(
           retry(1),
           catchError(this.handleError)
         ).toPromise() as any[];
-      
-      console.log('Raw leave requests from API:', JSON.stringify(leaveRequests, null, 2));
       
       if (!leaveRequests || !Array.isArray(leaveRequests)) {
         console.error('Invalid leave requests data:', leaveRequests);
@@ -52,11 +48,8 @@ export class LeaveService {
       // Filter for approved leaves only
       const approvedLeaves = leaveRequests.filter(request => {
         const isApproved = request.status && request.status.toLowerCase() === 'approved';
-        console.log(`Leave ID: ${request.id}, Status: ${request.status}, Is Approved: ${isApproved}`);
         return isApproved;
       });
-      
-      console.log('Approved leaves after filtering:', JSON.stringify(approvedLeaves, null, 2));
       
       if (!approvedLeaves.length) {
         console.warn('No approved leaves found');
@@ -66,14 +59,12 @@ export class LeaveService {
       // Only refresh user cache if it's empty or expired
       const now = Date.now();
       if (this.userCache.size === 0 || (now - this.lastFetchTime) > this.cacheExpiry) {
-        console.log('Refreshing user cache...');
         await this.refreshUserCache(approvedLeaves);
         this.lastFetchTime = now;
       }
 
       // Enrich leave requests with cached user details
       const enrichedLeaves = this.enrichLeaveRequests(approvedLeaves);
-      console.log('Enriched leaves:', JSON.stringify(enrichedLeaves, null, 2));
       return enrichedLeaves;
 
     } catch (error) {
@@ -234,13 +225,10 @@ export class LeaveService {
 
   // Upload file for leave request
   async uploadFile(leaveRequestId: string, file: File): Promise<any> {
-    console.log(`Uploading file for leave request ${leaveRequestId}:`, file.name);
-    
     const formData = new FormData();
     formData.append('file', file); // Backend expects 'file', not 'document'
     
     const url = `${this.apiUrl}/files/upload/${leaveRequestId}`;
-    console.log('Upload URL:', url);
     
     try {
       const response = await this.http.post<any>(url, formData)
@@ -252,7 +240,6 @@ export class LeaveService {
           })
         ).toPromise();
       
-      console.log('Upload response:', response);
       return response;
     } catch (error) {
       console.error('Error in uploadFile try-catch:', error);
@@ -261,9 +248,7 @@ export class LeaveService {
   }
 
   // Create leave request (JSON data only)
-  async createLeaveRequest(data: any): Promise<any> {
-    console.log('Creating leave request with data:', data);
-    
+  async createLeaveRequest(data: any): Promise<any> {  
     // The auth interceptor will automatically add the Authorization header
     return this.http.post<any>(`${this.apiUrl}/leave`, data)
       .pipe(
@@ -274,17 +259,11 @@ export class LeaveService {
       ).toPromise() as Promise<any>;
   }
 
-  // Update leave request
-  async updateLeaveRequest(leaveId: string, data: any): Promise<any> {
-    console.log(`Updating leave request ${leaveId} with data:`, data);
-    
+  async updateLeaveRequest(leaveId: string, data: any): Promise<any> { 
     const url = `${this.apiUrl}/leave/${leaveId}`;
-    console.log('API URL for update:', url);
-    
     const headers = { 'Content-Type': 'application/json' };
     
     try {
-      // Using the explicit try-catch to better debug the issue
       const response = await this.http.patch<any>(url, data, { headers })
         .pipe(
           // No retry for PATCH - we don't want to risk double-updating
@@ -294,7 +273,6 @@ export class LeaveService {
           })
         ).toPromise();
       
-      console.log('Update response received:', response);
       return response;
     } catch (error) {
       console.error('Error in updateLeaveRequest try-catch:', error);
@@ -314,11 +292,8 @@ export class LeaveService {
     const cleanDocId = documentId.trim();
     
     const url = `${this.apiUrl}/files/delete/${cleanLeaveId}/${cleanDocId}`;
-    console.log('Delete document URL:', url);
-    console.log('Delete params:', { leaveId: cleanLeaveId, documentId: cleanDocId });
     
     try {
-      // Use proper headers for the delete request
       const options = {
         headers: this.getAuthHeaders()
       };
@@ -331,7 +306,6 @@ export class LeaveService {
           })
         ).toPromise();
       
-      console.log('Delete response:', response);
       return response;
     } catch (error) {
       console.error('Error in deleteLeaveDocument try-catch:', error);
@@ -429,9 +403,6 @@ export class LeaveService {
     // This is defined in the FastAPI endpoint as 'file: UploadFile = File(...)'
     formData.append('file', file, file.name);
     
-    console.log(`Uploading file '${file.name}' (${file.size} bytes) to request ${requestId}`);
-    console.log(`Upload URL: ${this.apiUrl}/files/upload/${requestId}`);
-    
     // Don't set Content-Type header - browser will set it with correct boundary
     try {
       const response = await this.http.post<any>(`${this.apiUrl}/files/upload/${requestId}`, formData, {
@@ -440,7 +411,6 @@ export class LeaveService {
         headers: this.getAuthHeaders()
       }).toPromise();
       
-      console.log('Document upload response:', response);
       return response;
     } catch (error) {
       console.error('Document upload error:', error);
@@ -457,7 +427,6 @@ export class LeaveService {
   // Get leave documents
   async getLeaveDocuments(requestId: string): Promise<any[]> {
     const url = `${this.apiUrl}/files/list/${requestId}`;
-    console.log('Get documents URL:', url);
     
     try {
       const response = await this.http.get<any[]>(url)
@@ -469,7 +438,6 @@ export class LeaveService {
           })
         ).toPromise();
       
-      console.log('Documents list response:', response);
       return response || [];
     } catch (error) {
       console.error('Error in getLeaveDocuments try-catch:', error);
@@ -489,7 +457,6 @@ export class LeaveService {
     const cleanDocId = documentId.trim();
     
     const url = `${this.apiUrl}/files/download/${cleanRequestId}/${cleanDocId}`;
-    console.log('Download document URL:', url);
     
     try {
       // Set appropriate headers for blob download
@@ -512,12 +479,6 @@ export class LeaveService {
         console.error('Empty response received');
         throw new Error('Empty response received from server');
       }
-      
-      console.log('Download response received:', {
-        status: response.status,
-        type: response.body.type,
-        size: response.body.size
-      });
       
       return response.body;
     } catch (error) {

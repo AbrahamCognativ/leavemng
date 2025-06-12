@@ -172,7 +172,6 @@ export class OrgUnitsComponent implements OnInit, OnDestroy {
       next: (user: User) => {
         this.selectedUser = user;
         this.userFormData = { ...user };
-        console.log("User Details:", user);
       },
       error: (error: any) => {
         console.error('Error loading user details:', error);

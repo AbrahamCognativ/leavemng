@@ -241,8 +241,6 @@ export class LeaveRequestComponent implements OnInit {
         throw new Error('Invalid leave type selected');
       }
 
-      console.log('Selected leave type:', leaveType);
-
       // Format dates properly for the API
       const startDate = this.formatDateForAPI(this.leave.startDate);
       const endDate = this.formatDateForAPI(this.leave.endDate);
@@ -256,8 +254,6 @@ export class LeaveRequestComponent implements OnInit {
         total_days: this.calculatedDays
         // Don't include user_id or status - backend will set these automatically
       };
-
-      console.log('Submitting leave request with data:', leaveData);
 
       // Check leave balance
       var daysCount = this.leave.endDate.getTime() - this.leave.startDate.getTime();
@@ -278,7 +274,6 @@ export class LeaveRequestComponent implements OnInit {
 
       // Step 1: Create the leave request
       const response = await this.leaveService.createLeaveRequest(leaveData);
-      console.log('Leave request created successfully:', response);
 
       if (!response || !response.id) {
         throw new Error('Failed to create leave request - no ID returned');
@@ -291,19 +286,13 @@ export class LeaveRequestComponent implements OnInit {
       let failedUploads: string[] = [];
 
       if (response.id && this.uploadedFiles.length > 0) {
-        console.log(`Uploading ${this.uploadedFiles.length} documents for leave request ${response.id}`);
-
         for (const file of this.uploadedFiles) {
           try {
-            console.log(`Uploading file: ${file.name}`);
-            console.log(`Uploading file ${file.name} to leave request ${response.id}`);
             const result = await this.leaveService.uploadLeaveDocument(response.id, file);
-            console.log('Document upload result:', result);
 
             // The backend returns document_id in the response
             if (result && (result.document_id || result.id)) {
               const docId = result.document_id || result.id;
-              console.log(`Document uploaded successfully with ID: ${docId}`);
 
               this.leave.documents.push({
                 id: docId,
