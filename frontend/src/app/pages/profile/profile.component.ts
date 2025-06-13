@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild, ElementRef} from '@angular/core';
+import {Component, OnInit, OnDestroy, ViewChild, ElementRef} from '@angular/core';
 import {DxFormModule} from 'devextreme-angular/ui/form';
 import {DxButtonModule} from 'devextreme-angular/ui/button';
 import {DxFileUploaderModule} from 'devextreme-angular/ui/file-uploader';
@@ -7,6 +7,8 @@ import {CommonModule} from '@angular/common';
 import {HttpClient, HttpClientModule, HttpHeaders} from '@angular/common/http';
 import {AuthService} from '../../shared/services';
 import { environment } from '../../../environments/environment';
+import { UserStateService } from '../../shared/services/user-state.service';
+import { Subscription } from 'rxjs';
 
 interface Employee {
   id: string;
@@ -39,16 +41,21 @@ interface FileUploaderEvent {
   imports: [DxFormModule, DxButtonModule, DxFileUploaderModule, DxTextBoxModule, CommonModule, HttpClientModule]
 })
 
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   employee: Employee = {} as Employee;
   colCountByScreen: object;
   isEditing: boolean = false;
   originalEmployee: Employee = {} as Employee;
-  baseUrl: string = environment.apiUrl; // Hardcoded API URL instead of using environment
+  baseUrl: string = environment.apiUrl;
   basePlainUrl: string = environment.apiBaseUrl
   isLoading: boolean = false;
   uploadUrl: string = '';
   @ViewChild('fileInput') fileInput!: ElementRef;
+  
+  // Image state management
+  private originalImageUrl: string = '';
+  private tempImageFile: File | null = null;
+  private tempImageUrl: string = '';
   
   // Password change properties
   passwordData = {
@@ -61,7 +68,13 @@ export class ProfileComponent implements OnInit {
   passwordErrorMessage: string = '';
   passwordPattern: RegExp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   
-  constructor(private http: HttpClient, private authService: AuthService) {
+  private userSubscription: Subscription | null = null;
+
+  constructor(
+    private http: HttpClient, 
+    private authService: AuthService,
+    private userStateService: UserStateService
+  ) {
     this.colCountByScreen = {
       xs: 1,
       sm: 2,
@@ -71,38 +84,36 @@ export class ProfileComponent implements OnInit {
   }
   
   ngOnInit(): void {
-    try {
-      // First get basic user info from local storage
-      const rawUser = localStorage.getItem("current_user");
-      const parsedUser = rawUser ? JSON.parse(rawUser) : null;
-
-      if (parsedUser && parsedUser.id) {
-        // Initialize with data from local storage
-        this.employee = {
-          id: parsedUser.id,
-          name: parsedUser.name || '',
-          email: parsedUser.email || '',
-          passport_or_id_number: parsedUser.passport_or_id_number || '',
-          manager_id: parsedUser.manager_id || null,
-          role_band: parsedUser.role_band || '',
-          role_title: parsedUser.role_title || '',
-          gender: parsedUser.gender || '',
-          profile_image_url: parsedUser.profile_image_url || '',
-          org_unit_id: parsedUser.org_unit_id || null,
-          extra_metadata: parsedUser.extra_metadata || {},
-          token: parsedUser.token || ''
-        };
-        
-        this.uploadUrl = this.getApiUrl(`files/upload-profile-image/${parsedUser.id}`);
-        
-        // Then fetch the latest user data from the API
-        this.refreshUserData();
-      } else {
-        console.error('No user ID found in local storage');
+    this.refreshUserData();
+    
+    // Subscribe to user state changes
+    this.userSubscription = this.userStateService.user$.subscribe(user => {
+      if (user && user.id === this.employee.id) {
+        // Update profile image if it changed from another component
+        if (user.profile_image_url !== this.employee.profile_image_url) {
+          this.employee.profile_image_url = user.profile_image_url;
+        }
       }
-    } catch (err) {
-      console.error('Failed to load user data:', err);
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
     }
+  }
+
+  private getAuthToken(): string {
+    try {
+      const rawUser = localStorage.getItem('current_user');
+      if (rawUser) {
+        const parsedUser = JSON.parse(rawUser);
+        return parsedUser?.token || '';
+      }
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+    }
+    return '';
   }
   
   /**
@@ -127,52 +138,52 @@ export class ProfileComponent implements OnInit {
     this.passwordSuccessMessage = '';
     this.passwordErrorMessage = '';
     
-    // Validate passwords match
-    if (this.passwordData.newPassword !== this.passwordData.confirmPassword) {
-      this.passwordErrorMessage = 'Passwords do not match';
+    // Basic validation
+    if (!this.passwordData.currentPassword || !this.passwordData.newPassword || !this.passwordData.confirmPassword) {
+      this.passwordErrorMessage = 'All password fields are required.';
       return;
     }
     
-    // Validate password complexity
+    if (this.passwordData.newPassword !== this.passwordData.confirmPassword) {
+      this.passwordErrorMessage = 'New passwords do not match.';
+      return;
+    }
+    
     if (!this.passwordPattern.test(this.passwordData.newPassword)) {
-      this.passwordErrorMessage = 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character';
+      this.passwordErrorMessage = 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.';
       return;
     }
     
     this.isChangingPassword = true;
     
-    // Get token from localStorage
-    const token = localStorage.getItem('user_token') || '';
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
+    // Get auth token
+    const token = this.getAuthToken();
+    
+    const changePasswordUrl = this.getApiUrl(`auth/change-password`);
+    
+    this.http.post(changePasswordUrl, {
+      current_password: this.passwordData.currentPassword,
+      new_password: this.passwordData.newPassword
+    }, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    }).subscribe({
+      next: () => {
+        this.passwordSuccessMessage = 'Password changed successfully!';
+        this.passwordErrorMessage = '';
+        // Reset form
+        this.passwordData = {
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        };
+        this.isChangingPassword = false;
+      },
+      error: (error: any) => {
+        this.passwordErrorMessage = error.error?.detail || 'Failed to change password. Please try again.';
+        this.passwordSuccessMessage = '';
+        this.isChangingPassword = false;
+      }
     });
-    
-    // Since there's no dedicated password change endpoint, we'll use the update user endpoint
-    // with the password field. In a production app, this should be a dedicated endpoint with proper validation.
-    const payload = {
-      password: this.passwordData.newPassword
-    };
-    
-    // Call API to update user with new password
-    this.http.patch(this.getApiUrl(`users/${this.employee.id}`), payload, { headers })
-      .subscribe({
-        next: () => {
-          this.isChangingPassword = false;
-          this.passwordSuccessMessage = 'Password changed successfully';
-          
-          // Reset form
-          this.passwordData = {
-            currentPassword: '',
-            newPassword: '',
-            confirmPassword: ''
-          };
-        },
-        error: (error) => {
-          this.isChangingPassword = false;
-          this.passwordErrorMessage = error.error?.detail || 'Failed to change password. Please try again.';
-          console.error('Error changing password:', error);
-        }
-      });
   }
   
   /**
@@ -186,50 +197,52 @@ export class ProfileComponent implements OnInit {
       return url;
     }
     
-    // If it's a relative path, prepend the base URL
+    // If it starts with /uploads, prepend the base URL
     if (url.startsWith('/uploads')) {
       return `${this.basePlainUrl}${url}`;
     }
     
-    // Otherwise, assume it's a relative path without leading slash
-    return `${this.baseUrl}/${url}`;
+    // If it doesn't start with /, add it
+    if (!url.startsWith('/')) {
+      url = '/' + url;
+    }
+    
+    return `${this.basePlainUrl}${url}`;
   }
   
   /**
    * Refresh user data from the API
    */
   refreshUserData(): void {
-    this.isLoading = true;
+    const currentUser = this.userStateService.getCurrentUser();
+    if (!currentUser?.id) return;
     
-    this.http.get(this.getApiUrl(`users/${this.employee.id}`))
-      .subscribe({
-        next: (userData: any) => {
-          // Update employee object with fresh data from API
-          const updatedEmployee = {
-            ...this.employee,
-            ...userData,
-            id: this.employee.id
-          };
-          this.employee = updatedEmployee;
-          this.originalEmployee = { ...updatedEmployee };
-          
-          // Update both localStorage and auth service
-          localStorage.setItem('current_user', JSON.stringify(updatedEmployee));
-          this.authService['_user'] = updatedEmployee; // Update auth service user directly
-          // Update local storage with fresh data
-          localStorage.setItem('current_user', JSON.stringify(this.employee));
-          
-          // Store original state for comparison when editing
-          this.originalEmployee = {...this.employee};
-          this.isLoading = false;
-        },
-        error: (error: any) => {
-          console.error('Failed to fetch user data from API:', error);
-          // Still use what we have from local storage
-          this.originalEmployee = {...this.employee};
-          this.isLoading = false;
+    this.http.get(this.getApiUrl(`users/${currentUser.id}`), {
+      headers: this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {}
+    }).subscribe({
+      next: (userData: any) => {
+        // Update employee data with fresh API data
+        this.employee = {
+          ...this.employee,
+          ...userData,
+          profile_image_url: userData.profile_image_url ? this.formatImageUrl(userData.profile_image_url) : ''
+        };
+        
+        // Store original data for cancel functionality
+        this.originalEmployee = { ...this.employee };
+        this.originalImageUrl = this.employee.profile_image_url || '';
+        
+        // Update local storage with fresh data
+        const updatedUser = { ...currentUser, ...userData };
+        if (userData.profile_image_url) {
+          updatedUser.profile_image_url = this.formatImageUrl(userData.profile_image_url);
         }
-      });
+        this.userStateService.updateUser(updatedUser);
+      },
+      error: (error: any) => {
+        console.error('Failed to refresh user data:', error);
+      }
+    });
   }
   
   /**
@@ -237,8 +250,14 @@ export class ProfileComponent implements OnInit {
    */
   toggleEdit(): void {
     if (this.isEditing) {
-      // If we're currently editing, this is a cancel action
-      this.employee = {...this.originalEmployee};
+      // Cancel editing - revert all changes
+      this.employee = { ...this.originalEmployee };
+      this.tempImageFile = null;
+      this.tempImageUrl = '';
+    } else {
+      // Store current state as original
+      this.originalEmployee = { ...this.employee };
+      this.originalImageUrl = this.employee.profile_image_url || '';
     }
     this.isEditing = !this.isEditing;
   }
@@ -249,110 +268,95 @@ export class ProfileComponent implements OnInit {
   saveChanges(): void {
     this.isLoading = true;
     
-    // Create update object with only changed fields
-    const updateData: any = {};
-    for (const key in this.employee) {
-      // Skip email, role_band, role_title, and gender as they cannot be updated
-      if (key === 'email' || key === 'role_band' || key === 'role_title' || key === 'gender') continue;
-      
-      // Only include fields that have changed
-      if (this.employee[key] !== this.originalEmployee[key]) {
-        updateData[key] = this.employee[key];
-      }
-    }
+    // Prepare user data for update (only editable fields)
+    const updateData = {
+      name: this.employee.name,
+      passport_or_id_number: this.employee.passport_or_id_number,
+      gender: this.employee.gender
+    };
     
-    // Only make API call if there are changes
-    if (Object.keys(updateData).length > 0) {
-      // Get auth token
-      const token = localStorage.getItem('user_token');
-      const headers = new HttpHeaders({
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      });
-
-      // Use PATCH instead of PUT for partial updates
-      this.http.patch(this.getApiUrl(`users/${this.employee.id}`), updateData, { headers })
-        .subscribe({
-          next: (response: any) => {
-            // Update local storage with new user data
-            const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-            const updatedUser = {...currentUser, ...updateData};
-            localStorage.setItem('current_user', JSON.stringify(updatedUser));
-            
-            // Update original employee data
-            this.originalEmployee = {...this.employee};
-            this.isLoading = false;
-            this.isEditing = false;
-            
-            // Refresh the page to show updated data
-            this.refreshUserData();
-          },
-          error: (error: any) => {
-            console.error('Failed to update profile:', error);
-            this.isLoading = false;
-          }
-        });
-    } else {
-      // No changes to save
-      this.isLoading = false;
-      this.isEditing = false;
-    }
+    // First update user data using PATCH method to match backend
+    this.http.patch(this.getApiUrl(`users/${this.employee.id}`), updateData, {
+      headers: this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {}
+    }).subscribe({
+      next: (response: any) => {
+        // If there's a temporary image file, upload it
+        if (this.tempImageFile) {
+          this.uploadProfileImageFile(this.tempImageFile);
+        } else {
+          // No image to upload, just finish the save process
+          this.finalizeSave();
+        }
+      },
+      error: (error: any) => {
+        console.error('Failed to update user data:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+  
+  private finalizeSave(): void {
+    // Update original employee data
+    this.originalEmployee = { ...this.employee };
+    this.originalImageUrl = this.employee.profile_image_url || '';
+    
+    // Update user state service
+    this.userStateService.updateUser(this.employee);
+    
+    // Clear temporary image data
+    this.tempImageFile = null;
+    this.tempImageUrl = '';
+    
+    // Exit edit mode
+    this.isEditing = false;
+    this.isLoading = false;
   }
   
   /**
    * Handle file input change event
    */
   handleFileInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const files = target.files;
-    if (files && files.length > 0) {
-      this.uploadProfileImage(files[0]);
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      
+      // Store the file temporarily
+      this.tempImageFile = file;
+      
+      // Create a temporary URL for preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.tempImageUrl = e.target?.result as string;
+        // Update the employee object for immediate preview
+        this.employee.profile_image_url = this.tempImageUrl;
+      };
+      reader.readAsDataURL(file);
     }
   }
   
   /**
    * Upload profile image to the server
    */
-  uploadProfileImage(file: File): void {
-    if (!file) return;
-    
+  private uploadProfileImageFile(file: File): void {
     const formData = new FormData();
     formData.append('file', file);
     
-    // Get auth token if available
-    const rawUser = localStorage.getItem("current_user");
-    const parsedUser = rawUser ? JSON.parse(rawUser) : null;
-    const token = parsedUser?.token || '';
-    
-    this.isLoading = true;
-    // Ensure we have the correct URL with user ID
     const uploadUrl = this.getApiUrl(`files/upload-profile-image/${this.employee.id}`);
     
     this.http.post(uploadUrl, formData, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+      headers: this.getAuthToken() ? { Authorization: `Bearer ${this.getAuthToken()}` } : {}
     }).subscribe({
       next: (response: any) => {
         // Update profile image URL in employee object
         if (response && response.profile_image_url) {
-          // Format the image URL consistently
           const imageUrl = this.formatImageUrl(response.profile_image_url);
-          
           this.employee.profile_image_url = imageUrl;
-          this.originalEmployee.profile_image_url = imageUrl;
           
-          // Update local storage
-          const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-          currentUser.profile_image_url = imageUrl;
-          localStorage.setItem('current_user', JSON.stringify(currentUser));
-          
-          // Force refresh the image by creating a new URL with timestamp
-          setTimeout(() => {
-            const refreshedUrl = imageUrl + '?t=' + new Date().getTime();
-            this.employee.profile_image_url = refreshedUrl;
-          }, 500);
+          // Update user state service
+          this.userStateService.updateUserProfileImage(imageUrl);
         }
         
-        this.isLoading = false;
+        this.finalizeSave();
       },
       error: (error: any) => {
         console.error('Failed to upload profile image:', error);
@@ -365,25 +369,7 @@ export class ProfileComponent implements OnInit {
    * Getter for profile image source with fallback
    */
   get profileImageSrc(): string {
-    // First try to use the profile_image_url
-    if (this.employee?.profile_image_url) {
-      return this.employee.profile_image_url;
-    }
-    
-    // Then try to use avatarUrl as fallback
-    if (this.employee?.avatarUrl) {
-      return this.employee.avatarUrl;
-    }
-    
-    // Use gender-specific default avatars if gender is available
-    if (this.employee?.gender === 'Male') {
-      return 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
-    } else if (this.employee?.gender === 'Female') {
-      return 'https://cdn-icons-png.flaticon.com/512/4140/4140047.png';
-    }
-    
-    // Default fallback
-    return 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+    return this.userStateService.getProfileImageSrc(this.employee);
   }
   
   /**
@@ -391,7 +377,7 @@ export class ProfileComponent implements OnInit {
    */
   handleImageError(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
-    imgElement.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+    imgElement.src = this.userStateService.getProfileImageSrc();
   }
   
   /**
@@ -402,36 +388,10 @@ export class ProfileComponent implements OnInit {
   }
   
   /**
-   * Handle the uploaded event from the file uploader component
+   * Handle the uploaded event from the file uploader component (legacy)
    */
   handleUploadedEvent(event: FileUploaderEvent): void {
-    if (event && event.request && event.request.response) {
-      try {
-        const response = JSON.parse(event.request.response);
-        
-        if (response && response.profile_image_url) {
-          // Format the image URL consistently
-          const imageUrl = this.formatImageUrl(response.profile_image_url);
-          
-          this.employee.profile_image_url = imageUrl;
-          this.originalEmployee.profile_image_url = imageUrl;
-          
-          // Update local storage
-          const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-          currentUser.profile_image_url = imageUrl;
-          localStorage.setItem('current_user', JSON.stringify(currentUser));
-          
-          // Force refresh the image by creating a new URL with timestamp
-          setTimeout(() => {
-            const refreshedUrl = imageUrl + '?t=' + new Date().getTime();
-            this.employee.profile_image_url = refreshedUrl;
-          }, 500);
-        }
-      } catch (error) {
-        console.error('Error parsing upload response:', error);
-      } finally {
-        this.isLoading = false;
-      }
-    }
+    // This method is kept for backward compatibility but not used in the new flow
+    console.log('Legacy upload event:', event);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, NgModule, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, NgModule, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { AuthService, IUser } from '../../services';
@@ -8,6 +8,9 @@ import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 
 import { Router } from '@angular/router';
 import {ThemeSwitcherModule} from "../theme-switcher/theme-switcher.component";
+import { UserStateService } from '../../services/user-state.service';
+import { Subscription } from 'rxjs';
+
 @Component({
   selector: 'app-header',
   templateUrl: 'header.component.html',
@@ -15,7 +18,7 @@ import {ThemeSwitcherModule} from "../theme-switcher/theme-switcher.component";
   standalone: false
 })
 
-export class HeaderComponent implements OnInit {
+export class HeaderComponent implements OnInit, OnDestroy {
   @Output()
   menuToggle = new EventEmitter<boolean>();
 
@@ -26,6 +29,7 @@ export class HeaderComponent implements OnInit {
   title!: string;
 
   user: IUser | null = { email: '', id: '', role_band: '', role_title: '' };
+  private userSubscription: Subscription | null = null;
 
   userMenuItems = [{
     text: 'Profile',
@@ -42,20 +46,43 @@ export class HeaderComponent implements OnInit {
     }
   }];
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(
+    private authService: AuthService, 
+    private router: Router,
+    private userStateService: UserStateService
+  ) { }
 
    ngOnInit() {
+    // Subscribe to user state changes for real-time updates
+    this.userSubscription = this.userStateService.user$.subscribe(user => {
+      if (user) {
+        this.user = user;
+      }
+    });
+
+    // Also load initial user data
     try {
       this.authService.getUser().then((e) => {
-        this.user = e.data;
-        
-        // If profile_image_url exists but avatarUrl doesn't, map it
-        if (this.user && this.user.profile_image_url && !this.user.avatarUrl) {
-          this.user.avatarUrl = this.user.profile_image_url;
+        if (e.data) {
+          this.user = e.data;
+          
+          // If profile_image_url exists but avatarUrl doesn't, map it
+          if (this.user && this.user.profile_image_url && !this.user.avatarUrl) {
+            this.user.avatarUrl = this.user.profile_image_url;
+          }
+          
+          // Update the user state service
+          this.userStateService.updateUser(this.user);
         }
       });
     } catch (err) {
       console.error('Invalid user JSON in localStorage:', err);
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
     }
   }
 
