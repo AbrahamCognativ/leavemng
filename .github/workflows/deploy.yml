@@ -25,15 +25,15 @@ jobs:
           git pull origin main
           
           # Stop and remove containers
-          docker stop leavemng-backend leavemng-frontend || true
-          docker rm leavemng-backend leavemng-frontend || true
+          sudo docker stop leavemng-backend leavemng-frontend || true
+          sudo docker rm leavemng-backend leavemng-frontend || true
           
           # Remove old images
-          docker rmi leavemng-backend leavemng-frontend || true
+          sudo docker rmi leavemng-backend leavemng-frontend || true
           
           # Start containers
           echo "Starting containers..."
-          docker-compose up -d --build --force-recreate
+          sudo docker-compose up -d --build --force-recreate
           
           # Wait for containers to become healthy
           echo "Waiting for containers to become healthy..."
@@ -41,14 +41,14 @@ jobs:
           
           # Verify deployment
           echo "Verifying deployment..."
-          docker ps
+          sudo docker ps
           
           # Check if containers are healthy
-          if docker ps | grep -q "leavemng-backend.*Up" && docker ps | grep -q "leavemng-frontend.*Up"; then
+          if sudo docker ps | grep -q "leavemng-backend.*Up" && sudo docker ps | grep -q "leavemng-frontend.*Up"; then
             echo "✅ Deployment successful!"
           else
             echo "❌ Deployment failed - containers not running properly"
-            docker logs leavemng-backend --tail 50
-            docker logs leavemng-frontend --tail 50
+            sudo docker logs leavemng-backend --tail 50
+            sudo docker logs leavemng-frontend --tail 50
             exit 1
           fi
