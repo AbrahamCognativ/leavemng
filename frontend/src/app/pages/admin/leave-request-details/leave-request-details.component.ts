@@ -166,8 +166,6 @@ export class LeaveRequestDetailsComponent implements OnInit {
   toggleEditMode(): void {
     this.isEditMode = !this.isEditMode;
     
-    console.log('Toggle edit mode:', this.isEditMode ? 'ON' : 'OFF');
-    
     if (this.isEditMode) {
       // Initialize edit data when entering edit mode
       this.editData.comments = this.leaveRequest.comments || '';
@@ -188,9 +186,7 @@ export class LeaveRequestDetailsComponent implements OnInit {
     if (!this.requestId) return;
     
     try {
-      console.log('Refreshing document list for leave request:', this.requestId);
       this.documents = await this.leaveService.getLeaveDocuments(this.requestId);
-      console.log('Document list refreshed, count:', this.documents.length);
     } catch (error) {
       console.error('Error refreshing document list:', error);
     }
@@ -252,25 +248,19 @@ export class LeaveRequestDetailsComponent implements OnInit {
     if (!this.requestId || this.isSaving) return;
     this.isSaving = true;
     
-    try {
-      console.log('Starting save process for leave request:', this.requestId);
-      
+    try {     
       // 1. Update leave request comments
       const updateData = {
         comments: this.editData.comments
       };
       
-      console.log('Sending update with data:', updateData);
       const updateResult = await this.leaveService.updateLeaveRequest(this.requestId, updateData);
-      console.log('Update result:', updateResult);
       
       // 2. Upload any new files
       if (this.uploadedFiles.length > 0) {
-        console.log(`Uploading ${this.uploadedFiles.length} files`);
         for (const file of this.uploadedFiles) {
           try {
             const uploadResult = await this.leaveService.uploadFile(this.requestId, file);
-            console.log('File upload result:', uploadResult);
           } catch (uploadError) {
             console.error(`Error uploading file ${file.name}:`, uploadError);
           }
@@ -279,9 +269,7 @@ export class LeaveRequestDetailsComponent implements OnInit {
       
       // 3. Exit edit mode and reload data
       this.isEditMode = false;
-      console.log('Reloading leave request details');
       await this.loadRequestDetails();
-      console.log('Successfully saved and reloaded leave request');
     } catch (error) {
       console.error('Error updating leave request:', error);
       alert('There was an error saving your changes. Please try again.');
