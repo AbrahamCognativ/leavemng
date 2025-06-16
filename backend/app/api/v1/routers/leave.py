@@ -246,7 +246,19 @@ def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), curre
 
     from app.utils.email_utils import send_leave_approval_notification
     user = db.query(User).filter(User.id == req.user_id).first()
-    leave_details = f"Type: {req.leave_type_id}, Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
+    
+    # Get the leave type name
+    leave_type = db.query(LeaveType).filter(LeaveType.id == req.leave_type_id).first()
+    leave_type_name = leave_type.custom_code if leave_type and leave_type.code.value == 'custom' else (leave_type.code.value.title() + ' Leave' if leave_type else 'Leave')
+    
+    # Create a proper leave details dictionary
+    leave_details = {
+        "Type": leave_type_name,
+        "Start Date": str(req.start_date),
+        "End Date": str(req.end_date),
+        "Days": str(req.total_days)
+    }
+    
     try:
         if user:
             send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
@@ -290,7 +302,19 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
 
     from app.utils.email_utils import send_leave_approval_notification
     user = db.query(User).filter(User.id == req.user_id).first()
-    leave_details = f"Type: {req.leave_type_id}, Start: {req.start_date}, End: {req.end_date}, Days: {req.total_days}"
+    
+    # Get the leave type name
+    leave_type = db.query(LeaveType).filter(LeaveType.id == req.leave_type_id).first()
+    leave_type_name = leave_type.custom_code if leave_type and leave_type.code.value == 'custom' else (leave_type.code.value.title() + ' Leave' if leave_type else 'Leave')
+    
+    # Create a proper leave details dictionary
+    leave_details = {
+        "Type": leave_type_name,
+        "Start Date": str(req.start_date),
+        "End Date": str(req.end_date),
+        "Days": str(req.total_days)
+    }
+    
     try:
         if user:
             send_leave_approval_notification(user.email, leave_details, approved=False, request=request)
