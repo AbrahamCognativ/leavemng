@@ -24,39 +24,23 @@ jobs:
           echo "Pulling latest code..."
           git pull origin main
           
-          # Stop running containers
-          echo "Stopping containers..."
+          # Stop and remove containers
           docker stop leavemng-backend leavemng-frontend || true
-          
-          # Remove containers
-          echo "Removing containers..."
           docker rm leavemng-backend leavemng-frontend || true
           
-          # Remove old images to force rebuild
-          echo "Removing old images..."
+          # Remove old images
           docker rmi leavemng-backend leavemng-frontend || true
           
-          # Install docker-compose if not available and use it, otherwise use docker compose
-          if ! command -v docker-compose &> /dev/null; then
-            if ! docker compose version &> /dev/null; then
-              echo "Installing docker-compose..."
-              apt update && apt install -y docker-compose
-            else
-              echo "Using docker compose (without hyphen)..."
-              docker compose down || true
-              docker compose up -d --build --force-recreate
-              exit 0
-            fi
-          fi
-          
-          # Use docker-compose
-          echo "Using docker-compose..."
-          docker-compose down || true
+          # Start containers
+          echo "Starting containers..."
           docker-compose up -d --build --force-recreate
+          
+          # Wait for containers to become healthy
+          echo "Waiting for containers to become healthy..."
+          sleep 30
           
           # Verify deployment
           echo "Verifying deployment..."
-          sleep 10
           docker ps
           
           # Check if containers are healthy
@@ -64,7 +48,7 @@ jobs:
             echo "✅ Deployment successful!"
           else
             echo "❌ Deployment failed - containers not running properly"
-            docker logs leavemng-backend --tail 20
-            docker logs leavemng-frontend --tail 20
+            docker logs leavemng-backend --tail 50
+            docker logs leavemng-frontend --tail 50
             exit 1
           fi
