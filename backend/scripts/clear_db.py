@@ -1,12 +1,12 @@
 # scripts/clear_db.py
+from sqlalchemy import inspect, text
+from app.models import user, org_unit, leave_type, leave_balance, leave_request, leave_document, audit_log
+from app.db.base import Base  # Make sure this imports all your models
+from app.db.session import SessionLocal
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.db.session import SessionLocal
-from app.db.base import Base  # Make sure this imports all your models
-from app.models import user, org_unit, leave_type, leave_balance, leave_request, leave_document, audit_log
 
-from sqlalchemy import inspect, text
 
 def clear_all_tables():
     session = SessionLocal()
@@ -26,6 +26,6 @@ def clear_all_tables():
     finally:
         session.close()
 
+
 if __name__ == "__main__":
     clear_all_tables()
-

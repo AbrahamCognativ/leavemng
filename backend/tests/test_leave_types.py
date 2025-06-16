@@ -5,11 +5,17 @@ from app.run import app
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/login", data={"username": "user@example.com", "password": "secret123"})
+    response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "user@example.com",
+            "password": "secret123"})
     assert response.status_code == 200
     return response.json()["access_token"]
+
 
 def test_leave_type_permissions():
     roles = ['Admin', 'Manage', 'HR', 'IC']
@@ -31,11 +37,16 @@ def test_leave_type_permissions():
             else:
                 assert resp.status_code != 403
 
+
 def test_leave_type_crud(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
     import random
-    code = f"custom_{random.randint(1000,9999)}"
-    data = {"code": "custom", "custom_code": code, "description": "Custom leave", "default_allocation_days": 11}
+    code = f"custom_{random.randint(1000, 9999)}"
+    data = {
+        "code": "custom",
+        "custom_code": code,
+        "description": "Custom leave",
+        "default_allocation_days": 11}
     # CREATE
     resp = client.post("/api/v1/leave-types/", json=data, headers=headers)
     assert resp.status_code in (200, 201)
@@ -49,8 +60,15 @@ def test_leave_type_crud(auth_token):
     found = any(t["id"] == type_id for t in get_resp.json())
     assert found
     # UPDATE (if supported)
-    upd_data = {"code": "custom", "custom_code": code, "description": "Updated", "default_allocation_days": 22}
-    upd_resp = client.put(f"/api/v1/leave-types/{type_id}", json=upd_data, headers=headers)
+    upd_data = {
+        "code": "custom",
+        "custom_code": code,
+        "description": "Updated",
+        "default_allocation_days": 22}
+    upd_resp = client.put(
+        f"/api/v1/leave-types/{type_id}",
+        json=upd_data,
+        headers=headers)
     if upd_resp.status_code not in (405, 501):
         assert upd_resp.status_code == 200
         upd_json = upd_resp.json()
@@ -62,12 +80,14 @@ def test_leave_type_crud(auth_token):
         assert del_resp.status_code == 200
     # Ensure deleted (if implemented)
     if del_resp.status_code in (200, 204):
-        get_after_del = client.get(f"/api/v1/leave-types/{type_id}", headers=headers)
+        get_after_del = client.get(
+            f"/api/v1/leave-types/{type_id}",
+            headers=headers)
         assert get_after_del.status_code in (404, 410)
+
 
 def test_leave_type_validation(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
     data = {"code": "annual", "default_allocation_days": 10}
     resp = client.post("/api/v1/leave-types/", json=data, headers=headers)
     assert resp.status_code == 422
-

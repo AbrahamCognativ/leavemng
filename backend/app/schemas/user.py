@@ -3,6 +3,7 @@ from typing import Optional, Any
 from uuid import UUID
 from datetime import datetime
 
+
 class UserBase(BaseModel):
     name: str
     email: EmailStr
@@ -14,17 +15,18 @@ class UserBase(BaseModel):
     manager_id: Optional[UUID] = None
     org_unit_id: Optional[UUID] = None
     is_active: Optional[bool] = True
-    extra_metadata : Optional[Any] = None
-    is_active: Optional[bool] = True  # Default to active
+    extra_metadata: Optional[Any] = None
 
 class UserCreate(UserBase):
     password: str
+
 
 class UserRead(UserBase):
     id: UUID
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
 
 class UserUpdate(BaseModel):
     """
@@ -42,4 +44,3 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     is_active: Optional[bool] = None
     # email is intentionally omitted to prevent editing
-

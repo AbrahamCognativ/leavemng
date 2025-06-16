@@ -9,7 +9,12 @@ import os
 import json
 
 # Add the parent directory to the path so we can import from app
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(
+    0,
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            '..')))
 
 try:
     from app.db.session import get_db
@@ -25,7 +30,7 @@ try:
 
     # Print details of each log
     for i, log in enumerate(audit_logs):
-        print(f"\nLog #{i+1}:")
+        print(f"\nLog #{i + 1}:")
         print(f"  ID: {log.id}")
         print(f"  User ID: {log.user_id}")
         print(f"  Action: {log.action}")
@@ -105,4 +110,3 @@ except Exception as e:
 
     except Exception as db_error:
         print(f"Database connection error: {db_error}")
-

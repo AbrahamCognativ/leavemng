@@ -4,6 +4,9 @@ Script to add test audit logs to the database.
 Run this script to populate the audit_logs table with sample data.
 """
 
+from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.db.session import SessionLocal
 import sys
 import os
 import uuid
@@ -11,11 +14,13 @@ from datetime import datetime, timezone
 import json
 
 # Add the parent directory to the path so we can import from app
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(
+    0,
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            '..')))
 
-from app.db.session import SessionLocal
-from app.models.audit_log import AuditLog
-from app.models.user import User
 
 def create_test_audit_logs():
     """Create test audit logs in the database."""
@@ -97,7 +102,9 @@ def create_test_audit_logs():
             db.add(log)
 
         db.commit()
-        print(f"Successfully added {len(sample_logs)} test audit logs to the database.")
+        print(
+            f"Successfully added {
+                len(sample_logs)} test audit logs to the database.")
 
     except Exception as e:
         db.rollback()
@@ -106,6 +113,6 @@ def create_test_audit_logs():
     finally:
         db.close()
 
+
 if __name__ == "__main__":
     create_test_audit_logs()
-

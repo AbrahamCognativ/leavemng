@@ -1,3 +1,5 @@
+from fastapi import Depends
+from app.deps.permissions import require_role
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -12,10 +14,10 @@ from app.schemas.audit_log import AuditLogResponse, AuditLogListResponse
 from app.models.user import User
 
 router = APIRouter()
-from app.deps.permissions import require_role
-from fastapi import Depends
 
-@router.get("", response_model=AuditLogListResponse, tags=["audit-logs"], dependencies=[Depends(require_role(["HR", "Admin"]))])
+
+@router.get("", response_model=AuditLogListResponse,
+            tags=["audit-logs"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def get_audit_logs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -48,7 +50,8 @@ def get_audit_logs(
         if user_id:
             query_obj = query_obj.filter(AuditLog.user_id == user_id)
         if resource_type:
-            query_obj = query_obj.filter(AuditLog.resource_type == resource_type)
+            query_obj = query_obj.filter(
+                AuditLog.resource_type == resource_type)
         if action:
             query_obj = query_obj.filter(AuditLog.action == action)
         if from_date:
@@ -90,7 +93,8 @@ def get_audit_logs(
             resource_details = {}
 
             if log.resource_type == "user":
-                resource = db.query(User).filter(User.id == log.resource_id).first()
+                resource = db.query(User).filter(
+                    User.id == log.resource_id).first()
                 if resource:
                     resource_name = resource.name
                     resource_details = {
@@ -103,11 +107,15 @@ def get_audit_logs(
                 from app.models.leave_type import LeaveType
 
                 try:
-                    resource = db.query(LeaveRequest).filter(LeaveRequest.id == log.resource_id).first()
+                    resource = db.query(LeaveRequest).filter(
+                        LeaveRequest.id == log.resource_id).first()
                     if resource:
-                        leave_type = db.query(LeaveType).filter(LeaveType.id == resource.leave_type_id).first()
+                        leave_type = db.query(LeaveType).filter(
+                            LeaveType.id == resource.leave_type_id).first()
                         leave_type_name = leave_type.name if leave_type else "Unknown"
-                        resource_name = f"{leave_type_name} ({resource.start_date.strftime('%Y-%m-%d')} to {resource.end_date.strftime('%Y-%m-%d')})"
+                        resource_name = f"{leave_type_name} ({
+                            resource.start_date.strftime('%Y-%m-%d')} to {
+                            resource.end_date.strftime('%Y-%m-%d')})"
                         resource_details = {
                             "status": resource.status,
                             "days": resource.days_requested
@@ -118,7 +126,8 @@ def get_audit_logs(
             elif log.resource_type == "org_unit":
                 from app.models.org_unit import OrgUnit
                 try:
-                    resource = db.query(OrgUnit).filter(OrgUnit.id == log.resource_id).first()
+                    resource = db.query(OrgUnit).filter(
+                        OrgUnit.id == log.resource_id).first()
                     if resource:
                         resource_name = resource.name
                         resource_details = {
@@ -139,8 +148,7 @@ def get_audit_logs(
                 "timestamp": log.timestamp.isoformat() if log.timestamp else None,
                 "extra_metadata": log.extra_metadata,
                 "user_name": user_name,
-                "user_email": user_email
-            }
+                "user_email": user_email}
             enriched_logs.append(log_dict)
 
         return {
@@ -161,7 +169,9 @@ def get_audit_logs(
             detail=f"Error retrieving audit logs: {str(e)}"
         )
 
-@router.get("/{audit_log_id}", response_model=AuditLogResponse, tags=["audit-logs"], dependencies=[Depends(require_role(["HR", "Admin"]))])
+
+@router.get("/{audit_log_id}", response_model=AuditLogResponse,
+            tags=["audit-logs"], dependencies=[Depends(require_role(["HR", "Admin"]))])
 def get_audit_log(
     audit_log_id: UUID,
     db: Session = Depends(get_db),
@@ -188,4 +198,3 @@ def get_audit_log(
         )
 
     return {"data": audit_log}
-

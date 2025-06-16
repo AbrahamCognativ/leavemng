@@ -4,11 +4,17 @@ from app.run import app
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/login", data={"username": "user@example.com", "password": "secret123"})
+    response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "user@example.com",
+            "password": "secret123"})
     assert response.status_code == 200
     return response.json()["access_token"]
+
 
 def test_leave_balance_permissions():
     roles = ['Admin', 'Manage', 'HR', 'IC']
@@ -30,6 +36,7 @@ def test_leave_balance_permissions():
             else:
                 assert resp.status_code != 403
 
+
 def test_get_user_leave_balance(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
     user_info = client.get("/api/v1/users/me", headers=headers)
@@ -41,6 +48,7 @@ def test_get_user_leave_balance(auth_token):
         assert "leave_balance" in data
         assert isinstance(data["leave_balance"], list)
 
+
 def test_leave_balance_crud(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
     user_info = client.get("/api/v1/users/me", headers=headers)
@@ -49,7 +57,10 @@ def test_leave_balance_crud(auth_token):
         pytest.skip("No user or leave types for balance test")
     user_id = user_info.json()["id"]
     leave_type_id = types[0]["id"]
-    data = {"user_id": user_id, "leave_type_id": leave_type_id, "balance_days": 10}
+    data = {
+        "user_id": user_id,
+        "leave_type_id": leave_type_id,
+        "balance_days": 10}
     # CREATE
     resp = client.post("/api/v1/leave-policy/", json=data, headers=headers)
     if resp.status_code in (404, 405, 501):
@@ -67,7 +78,10 @@ def test_leave_balance_crud(auth_token):
     # UPDATE (if supported)
     upd_data = data.copy()
     upd_data["balance_days"] = 20
-    upd_resp = client.put(f"/api/v1/leave-policy/{bal_id}", json=upd_data, headers=headers)
+    upd_resp = client.put(
+        f"/api/v1/leave-policy/{bal_id}",
+        json=upd_data,
+        headers=headers)
     if upd_resp.status_code not in (405, 501):
         assert upd_resp.status_code == 200
         upd_json = upd_resp.json()
@@ -78,8 +92,11 @@ def test_leave_balance_crud(auth_token):
         assert del_resp.status_code == 200
     # Ensure deleted (if implemented)
     if del_resp.status_code in (200, 204):
-        get_after_del = client.get(f"/api/v1/leave-policy/{bal_id}", headers=headers)
+        get_after_del = client.get(
+            f"/api/v1/leave-policy/{bal_id}",
+            headers=headers)
         assert get_after_del.status_code in (404, 410)
+
 
 def test_leave_balance_validation(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
@@ -114,15 +131,31 @@ def test_annual_leave_carry_forward_logic():
     db = Session()
 
     # Create annual leave type
-    annual_type = LeaveType(id=uuid.uuid4(), code=LeaveCodeEnum.annual, description="Annual", default_allocation_days=19)
+    annual_type = LeaveType(
+        id=uuid.uuid4(),
+        code=LeaveCodeEnum.annual,
+        description="Annual",
+        default_allocation_days=19)
     db.add(annual_type)
     db.commit()
 
     # Add balances for 3 users: above, at, and below 5
     balances = [
-        LeaveBalance(id=uuid.uuid4(), user_id=uuid.uuid4(), leave_type_id=annual_type.id, balance_days=Decimal(10)),
-        LeaveBalance(id=uuid.uuid4(), user_id=uuid.uuid4(), leave_type_id=annual_type.id, balance_days=Decimal(5)),
-        LeaveBalance(id=uuid.uuid4(), user_id=uuid.uuid4(), leave_type_id=annual_type.id, balance_days=Decimal(3)),
+        LeaveBalance(
+            id=uuid.uuid4(),
+            user_id=uuid.uuid4(),
+            leave_type_id=annual_type.id,
+            balance_days=Decimal(10)),
+        LeaveBalance(
+            id=uuid.uuid4(),
+            user_id=uuid.uuid4(),
+            leave_type_id=annual_type.id,
+            balance_days=Decimal(5)),
+        LeaveBalance(
+            id=uuid.uuid4(),
+            user_id=uuid.uuid4(),
+            leave_type_id=annual_type.id,
+            balance_days=Decimal(3)),
     ]
     for bal in balances:
         db.add(bal)
@@ -133,7 +166,8 @@ def test_annual_leave_carry_forward_logic():
     db.commit()
 
     # Check results
-    updated = db.query(LeaveBalance).filter(LeaveBalance.leave_type_id == annual_type.id).all()
+    updated = db.query(LeaveBalance).filter(
+        LeaveBalance.leave_type_id == annual_type.id).all()
     for bal in updated:
         if bal.balance_days > 5:
             assert bal.balance_days == 5
@@ -142,4 +176,3 @@ def test_annual_leave_carry_forward_logic():
         else:
             assert bal.balance_days == 3
     db.close()
-

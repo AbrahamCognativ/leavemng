@@ -4,6 +4,7 @@ from app.models.audit_log import AuditLog
 from uuid import UUID
 from typing import Optional, Dict, Any
 
+
 def create_audit_log(
     db: Session,
     user_id: str,
@@ -50,4 +51,3 @@ def create_audit_log(
         print(f"Error creating audit log: {e}")
         db.rollback()
         return False
-

@@ -4,11 +4,17 @@ from app.run import app
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/login", data={"username": "user@example.com", "password": "secret123"})
+    response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "user@example.com",
+            "password": "secret123"})
     assert response.status_code == 200
     return response.json()["access_token"]
+
 
 def test_org_permissions():
     roles = ['Admin', 'Manage', 'HR', 'IC']
@@ -31,6 +37,7 @@ def test_org_permissions():
                 # Could be 404/422 due to fake id, but not forbidden
                 assert resp.status_code != 403
 
+
 def test_create_org_unit_crud(auth_token):
     import uuid
     unique_name = f"TestDept-{uuid.uuid4()}"
@@ -50,7 +57,10 @@ def test_create_org_unit_crud(auth_token):
     assert get_data["id"] == org_id
     # UPDATE
     update_data = {"name": unique_name + "-Updated", "parent_unit_id": None}
-    upd_resp = client.put(f"/api/v1/org/{org_id}", json=update_data, headers=headers)
+    upd_resp = client.put(
+        f"/api/v1/org/{org_id}",
+        json=update_data,
+        headers=headers)
     assert upd_resp.status_code == 200
     upd_data = upd_resp.json()
     assert upd_data["name"] == update_data["name"]
@@ -64,9 +74,9 @@ def test_create_org_unit_crud(auth_token):
         get_after_del = client.get(f"/api/v1/org/{org_id}", headers=headers)
         assert get_after_del.status_code in (404, 410)
 
+
 def test_create_org_unit_validation(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
     data = {}  # No name provided
     resp = client.post("/api/v1/org/", json=data, headers=headers)
     assert resp.status_code == 422
-

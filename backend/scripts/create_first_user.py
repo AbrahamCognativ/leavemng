@@ -2,17 +2,17 @@
 """
 Script to insert the first user into the database. Intended for use in Docker or local dev setup.
 """
+from app.settings import get_settings
+import uuid
+from app.db.base import Base
+from app.utils.password import hash_password
+from app.models.user import User
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.models.user import User
-from app.utils.password import hash_password
-from app.db.base import Base
-import uuid
 
-from app.settings import get_settings
 
 settings = get_settings()
 DATABASE_URL = settings.DB_URL
@@ -36,6 +36,7 @@ FIRST_USER = {
     "extra_metadata": None
 }
 
+
 def insert_first_user():
     session = Session(bind=engine)
     user = session.query(User).filter_by(id=FIRST_USER["id"]).first()
@@ -48,6 +49,6 @@ def insert_first_user():
         print("User already exists.")
     session.close()
 
+
 if __name__ == "__main__":
     insert_first_user()
-

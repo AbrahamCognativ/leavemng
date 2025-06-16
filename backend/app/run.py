@@ -1,3 +1,9 @@
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi import Request
+from fastapi import Security
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, SecuritySchemeType
+from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from importlib import import_module
 from app.settings import get_settings
@@ -10,16 +16,14 @@ settings = get_settings()
 
 # Make settings available globally via app.state
 
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
-from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, SecuritySchemeType
-from fastapi import Security
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 app = FastAPI(
     title=f"Leave Management API [{settings.APP_ENV.upper()}]",
-    description=f"API for managing employee leave requests and approvals.\n\n**Environment:** `{settings.APP_ENV}`\n\n**Register URL:** `{settings.REGISTER_URL}`",
+    description=f"API for managing employee leave requests and approvals.\n\n**Environment:** `{
+        settings.APP_ENV}`\n\n**Register URL:** `{
+        settings.REGISTER_URL}`",
     version="1.0.0",
     swagger_ui_init_oauth={
         "usePkceWithAuthorizationCodeGrant": True,
@@ -60,13 +64,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    ## expose_headers=["Content-Length", "Content-Type", "*"],
+    # expose_headers=["Content-Length", "Content-Type", "*"],
     expose_headers=["*"],
     max_age=600,  # Cache preflight responses for 10 minutes
 )
 # Add a global dependency to require Authorization except for /login
-from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware
+
 
 class AuthRequiredMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -75,24 +78,37 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         if (request.url.path.startswith("/api/v1/auth/login")
-        or request.url.path.startswith("/docs")
-        or request.url.path.startswith("/openapi")
-        or request.url.path.startswith("/redoc")
-        or request.url.path.startswith("/api/v1/auth/reset-password-invite")
-        ):
+                    or request.url.path.startswith("/docs")
+                    or request.url.path.startswith("/openapi")
+                    or request.url.path.startswith("/redoc")
+                    or request.url.path.startswith("/api/v1/auth/reset-password-invite")
+                ):
             return await call_next(request)
         # Only require token for API routes
         if request.url.path.startswith("/api/v1/"):
             authorization: str = request.headers.get("Authorization")
             if not authorization or not authorization.lower().startswith("bearer "):
                 from fastapi.responses import JSONResponse
-                return JSONResponse(status_code=401, content={"detail": "Not authenticated. Add 'Authorization: Bearer <token>' header."})
+                return JSONResponse(
+                    status_code=401, content={
+                        "detail": "Not authenticated. Add 'Authorization: Bearer <token>' header."})
         return await call_next(request)
+
 
 app.add_middleware(AuthRequiredMiddleware)
 
+
 def include_routers():
-    modules = ["auth", "users", "org", "leave", "files", "analytics", "leave_types", "leave_policy", "audit_logs"]
+    modules = [
+        "auth",
+        "users",
+        "org",
+        "leave",
+        "files",
+        "analytics",
+        "leave_types",
+        "leave_policy",
+        "audit_logs"]
     for m in modules:
         router = import_module(f"app.api.v1.routers.{m}")
         # Use kebab-case for leave-policy and leave-types
@@ -119,7 +135,11 @@ try:
     os.makedirs(uploads_path, exist_ok=True)
 
     # Mount the directory to serve static files
-    app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+    app.mount(
+        "/uploads",
+        StaticFiles(
+            directory=str(uploads_path)),
+        name="uploads")
     print(f"[INFO] Mounted uploads directory: {uploads_path}")
 except Exception as e:
     print(f"[WARN] Could not mount uploads directory: {e}")
@@ -130,4 +150,3 @@ try:
     run_accrual_scheduler()
 except Exception as e:
     print(f"[WARN] Could not start accrual scheduler: {e}")
-

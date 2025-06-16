@@ -6,11 +6,17 @@ from app.run import app
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/login", data={"username": "user@example.com", "password": "secret123"})
+    response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "user@example.com",
+            "password": "secret123"})
     assert response.status_code == 200
     return response.json()["access_token"]
+
 
 def test_leave_policy_permissions():
     roles = ['Admin', 'Manage', 'HR', 'IC']
@@ -31,6 +37,7 @@ def test_leave_policy_permissions():
                 assert resp.status_code in (401, 403, 405)
             else:
                 assert resp.status_code != 403
+
 
 def test_leave_policy_crud(auth_token):
     import random
@@ -64,20 +71,28 @@ def test_leave_policy_crud(auth_token):
     upd_data = data.copy()
     upd_data["allocation_days_per_year"] = 99
     upd_data["accrual_amount_per_period"] = 2.0
-    upd_resp = client.put(f"/api/v1/leave-policy/{policy_id}", json=upd_data, headers=headers)
+    upd_resp = client.put(
+        f"/api/v1/leave-policy/{policy_id}",
+        json=upd_data,
+        headers=headers)
     if upd_resp.status_code not in (405, 501):
         assert upd_resp.status_code == 200
         upd_json = upd_resp.json()
         assert upd_json["allocation_days_per_year"] == 99
         assert upd_json["accrual_amount_per_period"] == 2.0
     # DELETE (if supported)
-    del_resp = client.delete(f"/api/v1/leave-policy/{policy_id}", headers=headers)
+    del_resp = client.delete(
+        f"/api/v1/leave-policy/{policy_id}",
+        headers=headers)
     if del_resp.status_code not in (200, 204, 405, 501):
         assert del_resp.status_code == 200
     # Ensure deleted (if implemented)
     if del_resp.status_code in (200, 204):
-        get_after_del = client.get(f"/api/v1/leave-policy/{policy_id}", headers=headers)
+        get_after_del = client.get(
+            f"/api/v1/leave-policy/{policy_id}",
+            headers=headers)
         assert get_after_del.status_code in (404, 410)
+
 
 def test_leave_policy_validation(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
@@ -89,4 +104,3 @@ def test_leave_policy_validation(auth_token):
     }
     resp = client.post("/api/v1/leave-policy", json=data, headers=headers)
     assert resp.status_code == 422
-

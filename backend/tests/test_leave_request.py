@@ -1,3 +1,4 @@
+from unittest.mock import patch
 import pytest
 import uuid
 from fastapi.testclient import TestClient
@@ -8,11 +9,17 @@ from datetime import datetime, timedelta
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def auth_token():
-    response = client.post("/api/v1/auth/login", data={"username": "user@example.com", "password": "secret123"})
+    response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "user@example.com",
+            "password": "secret123"})
     assert response.status_code == 200
     return response.json()["access_token"]
+
 
 def test_leave_request_permissions():
     roles = ['Admin', 'Manage', 'HR', 'IC']
@@ -34,7 +41,6 @@ def test_leave_request_permissions():
             else:
                 assert resp.status_code != 403
 
-from unittest.mock import patch
 
 def test_leave_request_crud(auth_token):
     import uuid
@@ -75,14 +81,19 @@ def test_leave_request_crud(auth_token):
     # UPDATE (if supported)
     upd_data = data.copy()
     upd_data["comments"] = "Updated comment"
-    upd_resp = client.put(f"/api/v1/leave/{req_id}", json=upd_data, headers=headers)
+    upd_resp = client.put(
+        f"/api/v1/leave/{req_id}",
+        json=upd_data,
+        headers=headers)
     if upd_resp.status_code not in (405, 501):
         assert upd_resp.status_code == 200
         upd_json = upd_resp.json()
         assert upd_json["comments"] == "Updated comment"
     # APPROVE (mock approval email)
     with patch("app.utils.email.send_leave_approval_notification") as mock_approval_email:
-        approve_resp = client.patch(f"/api/v1/leave/{req_id}/approve", headers=headers)
+        approve_resp = client.patch(
+            f"/api/v1/leave/{req_id}/approve",
+            headers=headers)
         # Should be 200 if status is pending, else 400/403
         assert approve_resp.status_code in (200, 400, 403)
         if approve_resp.status_code == 200:
@@ -95,8 +106,10 @@ def test_leave_request_crud(auth_token):
             assert del_resp.status_code == 200
         # Ensure deleted (if implemented)
         if del_resp.status_code in (200, 204):
-            get_after_del = client.get(f"/api/v1/leave/{req_id}", headers=headers)
+            get_after_del = client.get(
+                f"/api/v1/leave/{req_id}", headers=headers)
             assert get_after_del.status_code in (404, 410)
+
 
 def test_leave_request_validation(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
@@ -116,7 +129,12 @@ def test_leave_request_not_found(auth_token):
     resp = client.get(f"/api/v1/leave/{fake_id}", headers=headers)
     assert resp.status_code == 404
     # Update non-existent
-    data = {"leave_type_id": str(uuid.uuid4()), "start_date": "2025-05-05", "end_date": "2025-05-05", "comments": "x"}
+    data = {
+        "leave_type_id": str(
+            uuid.uuid4()),
+        "start_date": "2025-05-05",
+        "end_date": "2025-05-05",
+        "comments": "x"}
     resp2 = client.put(f"/api/v1/leave/{fake_id}", json=data, headers=headers)
     assert resp2.status_code == 404
     # Approve non-existent
@@ -156,13 +174,18 @@ def test_leave_request_duplicate(auth_token, db_session):
             from tests.test_files import users_and_tokens
             # Use the fixture only if available in the test context
             import inspect
-            if "request" in inspect.signature(test_leave_request_duplicate).parameters:
+            if "request" in inspect.signature(
+                    test_leave_request_duplicate).parameters:
                 admin_token = users_and_tokens()["admin"]["token"]
         except Exception:
             pass
         if not admin_token:
             # Fallback: try login as admin
-            resp = client.post("/api/v1/auth/login", data={"username": "user@example.com", "password": "adminpass"})
+            resp = client.post(
+                "/api/v1/auth/login",
+                data={
+                    "username": "user@example.com",
+                    "password": "adminpass"})
             assert resp.status_code == 200, "Could not get admin token"
             admin_token = resp.json()["access_token"]
         leave_type_data = {
@@ -172,8 +195,14 @@ def test_leave_request_duplicate(auth_token, db_session):
             "max_days": 10,
             "default_allocation_days": 10
         }
-        resp = client.post("/api/v1/leave-types/", json=leave_type_data, headers={"Authorization": f"Bearer {admin_token}"})
-        assert resp.status_code in (200, 201), f"Failed to create leave type: {resp.text}"
+        resp = client.post(
+            "/api/v1/leave-types/",
+            json=leave_type_data,
+            headers={
+                "Authorization": f"Bearer {admin_token}"})
+        assert resp.status_code in (
+            200, 201), f"Failed to create leave type: {
+            resp.text}"
         leave_type_id = resp.json()["id"]
     else:
         leave_type_id = types[0]["id"]
@@ -200,11 +229,12 @@ def test_leave_request_duplicate(auth_token, db_session):
     }
     # Create first
     resp1 = client.post("/api/v1/leave/", json=data, headers=headers)
-    assert resp1.status_code in (200, 201), f"Could not create leave request for duplicate test: {resp1.text}"
+    assert resp1.status_code in (
+        200, 201), f"Could not create leave request for duplicate test: {
+        resp1.text}"
     # Try duplicate
     resp2 = client.post("/api/v1/leave/", json=data, headers=headers)
     assert resp2.status_code in (400, 409)
-
 
 
 def test_leave_request_already_approved(auth_token):
@@ -228,11 +258,16 @@ def test_leave_request_already_approved(auth_token):
     from unittest.mock import patch
     # Approve with email notification mocked
     with patch("app.utils.email.send_leave_approval_notification") as mock_approval_email:
-        resp2 = client.patch(f"/api/v1/leave/{req_id}/approve", headers=headers)
+        resp2 = client.patch(
+            f"/api/v1/leave/{req_id}/approve",
+            headers=headers)
         if resp2.status_code != 200:
-            pytest.skip("Could not approve leave request for already-approved test")
+            pytest.skip(
+                "Could not approve leave request for already-approved test")
         # Approve again
-        resp3 = client.patch(f"/api/v1/leave/{req_id}/approve", headers=headers)
+        resp3 = client.patch(
+            f"/api/v1/leave/{req_id}/approve",
+            headers=headers)
         assert resp3.status_code == 400
 
 
@@ -242,7 +277,10 @@ def test_leave_request_forbidden(users_and_tokens):
     ic_token = users_and_tokens["ic"]["token"]
     manager_token = users_and_tokens["manager"]["token"]
     # Try to get leave types
-    types = client.get("/api/v1/leave-types/", headers={"Authorization": f"Bearer {ic_token}"}).json()
+    types = client.get(
+        "/api/v1/leave-types/",
+        headers={
+            "Authorization": f"Bearer {ic_token}"}).json()
     if not isinstance(types, list) or not types or "id" not in types[0]:
         # Create a leave type as admin
         admin_token = users_and_tokens["admin"]["token"]
@@ -253,8 +291,14 @@ def test_leave_request_forbidden(users_and_tokens):
             "max_days": 10,
             "default_allocation_days": 10
         }
-        resp = client.post("/api/v1/leave-types/", json=leave_type_data, headers={"Authorization": f"Bearer {admin_token}"})
-        assert resp.status_code in (200, 201), f"Failed to create leave type: {resp.text}"
+        resp = client.post(
+            "/api/v1/leave-types/",
+            json=leave_type_data,
+            headers={
+                "Authorization": f"Bearer {admin_token}"})
+        assert resp.status_code in (
+            200, 201), f"Failed to create leave type: {
+            resp.text}"
         leave_type_id = resp.json()["id"]
     else:
         leave_type_id = types[0]["id"]
@@ -265,15 +309,25 @@ def test_leave_request_forbidden(users_and_tokens):
         "end_date": "2025-05-07",
         "comments": "Forbidden test"
     }
-    resp = client.post("/api/v1/leave/", json=data, headers={"Authorization": f"Bearer {ic_token}"})
+    resp = client.post(
+        "/api/v1/leave/",
+        json=data,
+        headers={
+            "Authorization": f"Bearer {ic_token}"})
     assert resp.status_code in (200, 201), resp.text
     leave_id = resp.json()["id"]
     # Manager tries to update (should be forbidden)
     upd_data = data.copy()
     upd_data["comments"] = "Manager trying to update"
-    upd_resp = client.put(f"/api/v1/leave/{leave_id}", json=upd_data, headers={"Authorization": f"Bearer {manager_token}"})
+    upd_resp = client.put(
+        f"/api/v1/leave/{leave_id}",
+        json=upd_data,
+        headers={
+            "Authorization": f"Bearer {manager_token}"})
     assert upd_resp.status_code == 403
     # Manager tries to approve (should be forbidden)
-    approve_resp = client.patch(f"/api/v1/leave/{leave_id}/approve", headers={"Authorization": f"Bearer {manager_token}"})
+    approve_resp = client.patch(
+        f"/api/v1/leave/{leave_id}/approve",
+        headers={
+            "Authorization": f"Bearer {manager_token}"})
     assert approve_resp.status_code == 403
-

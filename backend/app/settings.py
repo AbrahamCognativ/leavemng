@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class ProductionSettings(BaseSettings):
     APP_ENV: str
     DB_URL: str
@@ -36,7 +37,6 @@ class DevelopmentSettings(BaseSettings):
         # pass  # Do not set env_file; rely on environment variables
 
 
-
 def get_settings():
     import os
     env = os.getenv("APP_ENV", "development")
@@ -44,4 +44,3 @@ def get_settings():
         return ProductionSettings()
     else:
         return DevelopmentSettings()
-

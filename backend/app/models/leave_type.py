@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import enum
 
+
 class LeaveCodeEnum(enum.Enum):
     annual = "annual"
     sick = "sick"
@@ -14,6 +15,7 @@ class LeaveCodeEnum(enum.Enum):
     custom = "custom"
     # Add more as needed
 
+
 """
 Leave Types Example:
 - annual: 21 days/year, accrued monthly (1.75/month)
@@ -22,6 +24,7 @@ Leave Types Example:
 - paternity: 2 weeks (14 days), yearly, only for men
 """
 
+
 class LeaveType(Base):
     __tablename__ = "leave_types"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -29,4 +32,3 @@ class LeaveType(Base):
     description = Column(String, nullable=False)
     default_allocation_days = Column(Integer, nullable=False)
     custom_code = Column(String, nullable=True)
-
