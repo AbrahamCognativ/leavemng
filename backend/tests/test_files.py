@@ -229,3 +229,4 @@ def test_ic_cannot_upload_profile_image_for_others(users_and_tokens):
     files = {"file": ("profile.png", file_content, "image/png")}
     resp = client.post(f"/api/v1/files/upload-profile-image/{admin_id}", files=files, headers={"Authorization": f"Bearer {ic_token}"})
     assert resp.status_code in (401, 403), "IC should be forbidden from uploading for another user"
+

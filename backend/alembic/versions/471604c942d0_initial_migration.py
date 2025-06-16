@@ -1,7 +1,7 @@
 """Initial migration
 
 Revision ID: 471604c942d0
-Revises: 
+Revises:
 Create Date: 2025-05-01 18:48:11.659154
 
 """
@@ -128,3 +128,4 @@ def downgrade() -> None:
     op.drop_table('org_units')
     op.drop_table('leave_types')
     # ### end Alembic commands ###
+

@@ -10,7 +10,7 @@ class LeaveCodeEnum(str, Enum):
     maternity = "maternity"
     paternity = "paternity"
     custom = "custom"
-    
+
 
 class LeaveTypeBase(BaseModel):
     code: LeaveCodeEnum
@@ -25,3 +25,4 @@ class LeaveTypeRead(LeaveTypeBase):
     id: UUID
 
     model_config = {"from_attributes": True}
+

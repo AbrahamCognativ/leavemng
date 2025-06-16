@@ -192,31 +192,31 @@ def partial_update_leave_request(request_id: UUID, req_update: LeaveRequestParti
     req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")
-    
+
     # Check if the request belongs to the current user
     if str(current_user.id) != str(req.user_id):
         log_permission_denied(db, current_user.id, "update_leave_request", "leave_request", str(request_id))
         raise HTTPException(status_code=403, detail="You can only update your own leave requests")
-    
+
     # Allow editing for both pending and approved statuses
     # Leave the validation check commented out for reference
     # status = req.status if hasattr(req.status, 'value') else str(req.status)
     # if (status if not hasattr(req.status, 'value') else req.status.value) != "pending":
     #     raise HTTPException(status_code=400, detail="Only pending leave requests can be updated")
-    
+
     # Update only the allowed fields (comments)
     update_data = req_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         if field == 'comments':
             setattr(req, field, value)
-    
+
     try:
         db.commit()
         db.refresh(req)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Could not update leave request: {str(e)}")
-    
+
     return LeaveRequestRead.model_validate(req)
 
 @router.patch("/{request_id}/approve", tags=["leave"], response_model=LeaveRequestRead)
@@ -246,11 +246,11 @@ def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), curre
 
     from app.utils.email_utils import send_leave_approval_notification
     user = db.query(User).filter(User.id == req.user_id).first()
-    
+
     # Get the leave type name
     leave_type = db.query(LeaveType).filter(LeaveType.id == req.leave_type_id).first()
     leave_type_name = leave_type.custom_code if leave_type and leave_type.code.value == 'custom' else (leave_type.code.value.title() + ' Leave' if leave_type else 'Leave')
-    
+
     # Create a proper leave details dictionary
     leave_details = {
         "Type": leave_type_name,
@@ -258,7 +258,7 @@ def approve_leave_request(request_id: UUID, db: Session = Depends(get_db), curre
         "End Date": str(req.end_date),
         "Days": str(req.total_days)
     }
-    
+
     try:
         if user:
             send_leave_approval_notification(user.email, leave_details, approved=True, request=request)
@@ -288,7 +288,7 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
         req.decided_by = current_user.id
         db.commit()
         db.refresh(req)
-        
+
         # Add total_days back to user's leave balance
         leave_balance = db.query(LeaveBalance).filter(LeaveBalance.user_id == req.user_id, LeaveBalance.leave_type_id == req.leave_type_id).first()
         if leave_balance:
@@ -302,11 +302,11 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
 
     from app.utils.email_utils import send_leave_approval_notification
     user = db.query(User).filter(User.id == req.user_id).first()
-    
+
     # Get the leave type name
     leave_type = db.query(LeaveType).filter(LeaveType.id == req.leave_type_id).first()
     leave_type_name = leave_type.custom_code if leave_type and leave_type.code.value == 'custom' else (leave_type.code.value.title() + ' Leave' if leave_type else 'Leave')
-    
+
     # Create a proper leave details dictionary
     leave_details = {
         "Type": leave_type_name,
@@ -314,7 +314,7 @@ def reject_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
         "End Date": str(req.end_date),
         "Days": str(req.total_days)
     }
-    
+
     try:
         if user:
             send_leave_approval_notification(user.email, leave_details, approved=False, request=request)
@@ -340,10 +340,10 @@ def delete_leave_request(request_id: UUID, db: Session = Depends(get_db), curren
 
 
 @router.put("/balance/{user_id}/{leave_type_id}", tags=["leave"], response_model=LeaveBalanceRead)
-def update_leave_balance(user_id: UUID, leave_type_id: UUID, balance_update: LeaveBalanceUpdate, 
+def update_leave_balance(user_id: UUID, leave_type_id: UUID, balance_update: LeaveBalanceUpdate,
                          db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     """Update leave balance for a specific user and leave type.
-    
+
     Only HR, Admin, and Managers can update leave balances.
     Managers can only update balances for their direct reports.
     """
@@ -351,26 +351,26 @@ def update_leave_balance(user_id: UUID, leave_type_id: UUID, balance_update: Lea
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Check if the leave type exists
     leave_type = db.query(LeaveType).filter(LeaveType.id == leave_type_id).first()
     if not leave_type:
         raise HTTPException(status_code=404, detail="Leave type not found")
-    
+
     # Check permissions: HR/Admin can update any, Manager can update direct reports
     is_admin_or_hr = current_user.role_band in ("HR", "Admin") or current_user.role_title in ("HR", "Admin")
     is_manager_of_user = user.manager_id == current_user.id
-    
+
     if not (is_admin_or_hr or is_manager_of_user):
         log_permission_denied(db, current_user.id, "update_leave_balance", "leave_balance", str(user_id))
         raise HTTPException(status_code=403, detail="Insufficient permissions to update leave balance")
-    
+
     # Get the leave balance record
     leave_balance = db.query(LeaveBalance).filter(
         LeaveBalance.user_id == user_id,
         LeaveBalance.leave_type_id == leave_type_id
     ).first()
-    
+
     if not leave_balance:
         # If balance doesn't exist, create it
         leave_balance = LeaveBalance(
@@ -384,7 +384,7 @@ def update_leave_balance(user_id: UUID, leave_type_id: UUID, balance_update: Lea
         # Update existing balance
         leave_balance.balance_days = Decimal(str(balance_update.balance_days))
         leave_balance.updated_at = datetime.now(timezone.utc)
-    
+
     try:
         db.commit()
         db.refresh(leave_balance)
@@ -392,5 +392,6 @@ def update_leave_balance(user_id: UUID, leave_type_id: UUID, balance_update: Lea
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Could not update leave balance: {str(e)}")
-    
+
     return LeaveBalanceRead.model_validate(leave_balance)
+

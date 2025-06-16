@@ -214,3 +214,4 @@ def reset_yearly_leave_balances_on_join_date(db: Session):
                     leave_balance.balance_days = Decimal(policy.default_allocation_days or 0)
     db.commit()
     log_audit(db, "Yearly Leave Accrual", f"Reset yearly leave balances for {len(users)} users.")
+

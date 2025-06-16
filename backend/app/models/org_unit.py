@@ -12,3 +12,4 @@ class OrgUnit(Base):
 
     parent = relationship("OrgUnit", remote_side=[id], backref="children")
     users = relationship("User", back_populates="org_unit")
+

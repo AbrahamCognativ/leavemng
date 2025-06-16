@@ -23,3 +23,4 @@ class LeavePolicyRead(LeavePolicyBase):
     id: uuid.UUID
 
     model_config = {"from_attributes": True}
+

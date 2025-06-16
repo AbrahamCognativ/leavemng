@@ -359,3 +359,4 @@ def test_approve_leave_request_commit_failure(create_user_and_login_fixture):
     with patch("sqlalchemy.orm.Session.commit", side_effect=Exception("commit fail")):
         approve_resp = client.patch(f"/api/v1/leave/{leave_id}/approve", headers=headers)
         assert approve_resp.status_code == 500
+

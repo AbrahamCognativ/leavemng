@@ -75,3 +75,4 @@ def test_leave_request_validation(auth_token):
     }
     resp = client.post("/api/v1/leave/", json=data, headers=headers)
     assert resp.status_code == 422
+

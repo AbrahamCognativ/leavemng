@@ -137,7 +137,7 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
     try:
         requests = db.query(LeaveRequest).filter(LeaveRequest.user_id == user.id).all()
         leave_requests = []
-        
+
         for r in requests:
             try:
                 leave_requests.append({
@@ -175,7 +175,7 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
         'leave_balance': [
             {'leave_type': code, 'balance_days': int(days) if float(days).is_integer() else float(days)}
             for code, days in leave_balance.items()
-        ], 
+        ],
         'leave_request': leave_requests
     }
     return resp
@@ -223,3 +223,4 @@ def update_user(user_id: UUID, user_update: UserUpdate, db: Session = Depends(ge
         }
     )
     return UserRead.model_validate(user)
+

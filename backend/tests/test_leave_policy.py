@@ -89,3 +89,4 @@ def test_leave_policy_validation(auth_token):
     }
     resp = client.post("/api/v1/leave-policy", json=data, headers=headers)
     assert resp.status_code == 422
+

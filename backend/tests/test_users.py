@@ -222,3 +222,4 @@ def test_create_user_duplicate(auth_token, created_user_cleanup):
     resp2 = client.post("/api/v1/users/", json=data, headers=headers)
     assert resp2.status_code == 400
     assert "already exists" in resp2.json()["detail"]
+

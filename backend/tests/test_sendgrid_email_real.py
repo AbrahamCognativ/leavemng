@@ -29,3 +29,4 @@ def test_sendgrid_real_email():
         html="<b>This is a test email sent via <i>SendGrid</i> integration.</b>"
     )
     print("Email sent to", recipient)
+

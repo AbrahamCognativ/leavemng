@@ -276,3 +276,4 @@ def test_leave_request_forbidden(users_and_tokens):
     # Manager tries to approve (should be forbidden)
     approve_resp = client.patch(f"/api/v1/leave/{leave_id}/approve", headers={"Authorization": f"Bearer {manager_token}"})
     assert approve_resp.status_code == 403
+

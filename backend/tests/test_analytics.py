@@ -112,3 +112,4 @@ def test_analytics_dashboard_permissions(analytics_users, endpoint, role, allowe
             assert response.status_code == 200, f"Role {role} should be allowed on {endpoint}"
         else:
             assert response.status_code in (401, 403), f"Role {role} should be forbidden on {endpoint}"
+

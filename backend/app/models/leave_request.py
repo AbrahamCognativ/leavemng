@@ -23,3 +23,4 @@ class LeaveRequest(Base):
     decision_at = Column(DateTime(timezone=True), nullable=True)
     decided_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     comments = Column(Text, nullable=True)
+

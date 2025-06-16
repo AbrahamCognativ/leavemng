@@ -142,3 +142,4 @@ def test_annual_leave_carry_forward_logic():
         else:
             assert bal.balance_days == 3
     db.close()
+

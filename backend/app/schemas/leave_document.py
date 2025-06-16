@@ -15,3 +15,4 @@ class LeaveDocumentRead(LeaveDocumentBase):
     id: UUID
 
     model_config = {"from_attributes": True}
+

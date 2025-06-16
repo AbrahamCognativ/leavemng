@@ -25,3 +25,4 @@ class User(Base):
 
     manager = relationship("User", remote_side=[id], backref="direct_reports")
     org_unit = relationship("OrgUnit", back_populates="users")
+

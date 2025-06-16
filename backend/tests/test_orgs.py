@@ -69,3 +69,4 @@ def test_create_org_unit_validation(auth_token):
     data = {}  # No name provided
     resp = client.post("/api/v1/org/", json=data, headers=headers)
     assert resp.status_code == 422
+

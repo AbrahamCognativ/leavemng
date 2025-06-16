@@ -44,3 +44,4 @@ def get_settings():
         return ProductionSettings()
     else:
         return DevelopmentSettings()
+

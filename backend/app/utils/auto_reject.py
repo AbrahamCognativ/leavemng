@@ -55,3 +55,4 @@ def auto_reject_old_pending_leaves():
         log_audit(db, "Auto-Reject Pending Leaves", f"Error in auto_reject_old_pending_leaves: {e}")
     finally:
         db.close()
+

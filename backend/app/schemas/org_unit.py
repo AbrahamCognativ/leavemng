@@ -27,3 +27,4 @@ class OrgUnitTree(OrgUnitBase):
     children: List['OrgUnitTree']
 
     model_config = {"from_attributes": True}
+

@@ -71,7 +71,7 @@ def has_permission(user: User, permission: str) -> bool:
         "reject_leave",
         "view_all_leave_requests"
     ]
-    
+
     hr_permissions = [
         "view_audit_logs",
         "manage_users",
@@ -80,13 +80,13 @@ def has_permission(user: User, permission: str) -> bool:
         "reject_leave",
         "view_all_leave_requests"
     ]
-    
+
     manager_permissions = [
         "approve_leave",
         "reject_leave",
         "view_team_leave_requests"
     ]
-    
+
     # Check permissions based on role
     if user.role_band == "Admin" or user.role_title == "Admin":
         return permission in admin_permissions
@@ -94,7 +94,7 @@ def has_permission(user: User, permission: str) -> bool:
         return permission in hr_permissions
     elif user.role_band == "Manager" or user.role_title == "Manager":
         return permission in manager_permissions
-    
+
     # Regular users don't have special permissions
     return False
 
@@ -134,3 +134,4 @@ def log_permission_accepted(db: Session, user_id: str, action: str, resource: st
     )
     db.add(entry)
     db.commit()
+

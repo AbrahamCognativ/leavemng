@@ -29,3 +29,4 @@ class LeaveType(Base):
     description = Column(String, nullable=False)
     default_allocation_days = Column(Integer, nullable=False)
     custom_code = Column(String, nullable=True)
+

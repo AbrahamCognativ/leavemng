@@ -10,3 +10,4 @@ class LeaveDocument(Base):
     file_path = Column(String, nullable=False)
     file_name = Column(String, nullable=False)
     uploaded_at = Column(DateTime(timezone=True))
+

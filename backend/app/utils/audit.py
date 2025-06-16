@@ -14,7 +14,7 @@ def create_audit_log(
 ):
     """
     Create an audit log entry for any system action.
-    
+
     Args:
         db: Database session
         user_id: ID of the user performing the action
@@ -31,7 +31,7 @@ def create_audit_log(
             except ValueError:
                 # If not a valid UUID, use a default UUID
                 resource_id = UUID('00000000-0000-0000-0000-000000000000')
-        
+
         # Create the audit log entry
         entry = AuditLog(
             user_id=user_id,
@@ -41,7 +41,7 @@ def create_audit_log(
             timestamp=datetime.now(),
             extra_metadata=metadata or {}
         )
-        
+
         # Add and commit to the database
         db.add(entry)
         db.commit()
@@ -50,3 +50,4 @@ def create_audit_log(
         print(f"Error creating audit log: {e}")
         db.rollback()
         return False
+

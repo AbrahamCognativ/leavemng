@@ -42,3 +42,4 @@ class LeaveRequestRead(LeaveRequestBase):
     comments: Optional[str] = None
 
     model_config = {"from_attributes": True}
+

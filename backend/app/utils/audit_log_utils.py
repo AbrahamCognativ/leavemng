@@ -55,3 +55,4 @@ def insert_audit_log_db(db: Session, action: str, resource_id: str = "", extra_m
 def log_audit(db: Session, action: str, details: str):
     write_audit_log(f"{action}: {details}")
     insert_audit_log_db(db, action, extra_metadata={"details": details})
+

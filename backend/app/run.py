@@ -73,10 +73,10 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
         # Allow OPTIONS requests for CORS preflight
         if request.method == "OPTIONS":
             return await call_next(request)
-            
-        if (request.url.path.startswith("/api/v1/auth/login") 
-        or request.url.path.startswith("/docs") 
-        or request.url.path.startswith("/openapi") 
+
+        if (request.url.path.startswith("/api/v1/auth/login")
+        or request.url.path.startswith("/docs")
+        or request.url.path.startswith("/openapi")
         or request.url.path.startswith("/redoc")
         or request.url.path.startswith("/api/v1/auth/reset-password-invite")
         ):
@@ -114,10 +114,10 @@ try:
     # Get the path to the uploads directory
     from app.api.v1.routers.files import UPLOAD_DIR
     uploads_path = Path(UPLOAD_DIR)
-    
+
     # Create the directory if it doesn't exist
     os.makedirs(uploads_path, exist_ok=True)
-    
+
     # Mount the directory to serve static files
     app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
     print(f"[INFO] Mounted uploads directory: {uploads_path}")
@@ -130,3 +130,4 @@ try:
     run_accrual_scheduler()
 except Exception as e:
     print(f"[WARN] Could not start accrual scheduler: {e}")
+

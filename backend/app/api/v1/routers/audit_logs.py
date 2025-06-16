@@ -37,13 +37,13 @@ def get_audit_logs(
         # Check if user has admin permissions
         if not has_permission(current_user, "view_audit_logs"):
             raise HTTPException(
-                status_code=403, 
+                status_code=403,
                 detail="Not authorized to view audit logs"
             )
-        
+
         # Build the query
         query_obj = db.query(AuditLog)
-        
+
         # Apply filters
         if user_id:
             query_obj = query_obj.filter(AuditLog.user_id == user_id)
@@ -55,40 +55,40 @@ def get_audit_logs(
             query_obj = query_obj.filter(AuditLog.timestamp >= from_date)
         if to_date:
             query_obj = query_obj.filter(AuditLog.timestamp <= to_date)
-        
+
         # Get total count for pagination
         total_count = query_obj.count()
-        
+
         # Apply pagination and ordering
         # First, prioritize records with non-null timestamps
         # Then sort by timestamp in descending order (newest first)
         from sqlalchemy import nullslast
-        
+
         # Always sort by timestamp for consistency
         query_obj = query_obj.order_by(
             # First, put NULL timestamps at the end
             nullslast(desc(AuditLog.timestamp))
         ).offset(skip).limit(limit)
-        
+
         # Execute query
         audit_logs = query_obj.all()
-        
+
         # Prepare response data with additional user information
         enriched_logs = []
         for log in audit_logs:
             # Convert resource_id to string to avoid UUID validation issues
             if log.resource_id:
                 log.resource_id = str(log.resource_id)
-                
+
             # Get user information for the log
             user = db.query(User).filter(User.id == log.user_id).first()
             user_name = user.name if user else "Unknown User"
             user_email = user.email if user else "unknown@example.com"
-            
+
             # Get resource information based on resource type
             resource_name = "Unknown"
             resource_details = {}
-            
+
             if log.resource_type == "user":
                 resource = db.query(User).filter(User.id == log.resource_id).first()
                 if resource:
@@ -97,11 +97,11 @@ def get_audit_logs(
                         "email": resource.email,
                         "role": resource.role_band
                     }
-            
+
             elif log.resource_type == "leave_request":
                 from app.models.leave_request import LeaveRequest
                 from app.models.leave_type import LeaveType
-                
+
                 try:
                     resource = db.query(LeaveRequest).filter(LeaveRequest.id == log.resource_id).first()
                     if resource:
@@ -114,7 +114,7 @@ def get_audit_logs(
                         }
                 except Exception as e:
                     print(f"Error getting leave request details: {str(e)}")
-            
+
             elif log.resource_type == "org_unit":
                 from app.models.org_unit import OrgUnit
                 try:
@@ -126,7 +126,7 @@ def get_audit_logs(
                         }
                 except Exception as e:
                     print(f"Error getting org unit details: {str(e)}")
-            
+
             # Create a dictionary with log data, user info, and resource info
             log_dict = {
                 "id": log.id,
@@ -142,7 +142,7 @@ def get_audit_logs(
                 "user_email": user_email
             }
             enriched_logs.append(log_dict)
-        
+
         return {
             "data": enriched_logs,
             "total": total_count,
@@ -154,7 +154,7 @@ def get_audit_logs(
         import traceback
         print(f"Error in get_audit_logs: {str(e)}")
         print(traceback.format_exc())
-        
+
         # Return a more helpful error message
         raise HTTPException(
             status_code=500,
@@ -174,17 +174,18 @@ def get_audit_log(
     # Check if user has admin permissions
     if not has_permission(current_user, "view_audit_logs"):
         raise HTTPException(
-            status_code=403, 
+            status_code=403,
             detail="Not authorized to view audit logs"
         )
-    
+
     # Get the audit log
     audit_log = db.query(AuditLog).filter(AuditLog.id == audit_log_id).first()
-    
+
     if not audit_log:
         raise HTTPException(
             status_code=404,
             detail="Audit log not found"
         )
-    
+
     return {"data": audit_log}
+

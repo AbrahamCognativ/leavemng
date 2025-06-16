@@ -62,7 +62,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         #     metadata={"email": form_data.username, "reason": "Incorrect email or password"}
         # )
         raise HTTPException(status_code=401, detail="Incorrect email or password")
-    
+
     claims = {
             "sub": str(user.id),
             "user_id": str(user.id),
@@ -81,7 +81,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         }
     token = jwt.encode(claims, get_settings().SECRET_KEY, algorithm=ALGORITHM)
-    
+
     # Log successful login
     from app.utils.audit import create_audit_log
     create_audit_log(
@@ -92,7 +92,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         resource_id=str(user.id),
         metadata={"email": user.email, "role": user.role_band}
     )
-    
+
     return {"access_token": token, "token_type": "bearer", "user": UserRead.from_orm(user)}
 
 # Dummy permission dependency for HR/Admin
@@ -216,7 +216,7 @@ def logout(current_user: User = Depends(get_current_user), db: Session = Depends
         resource_id=str(current_user.id),
         metadata={"email": current_user.email}
     )
-    
+
     return {"detail": "Successfully logged out"}
 
 # --- ENDPOINT FOR FIRST-TIME PASSWORD RESET ---
@@ -238,3 +238,4 @@ def reset_password_invite(data: PasswordResetInviteRequest, db: Session = Depend
     reset_token.used = True
     db.commit()
     return PasswordResetInviteResponse(status_code=200, message="Password has been reset. You can now log in.")
+

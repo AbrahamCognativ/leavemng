@@ -70,3 +70,4 @@ def test_leave_type_validation(auth_token):
     data = {"code": "annual", "default_allocation_days": 10}
     resp = client.post("/api/v1/leave-types/", json=data, headers=headers)
     assert resp.status_code == 422
+

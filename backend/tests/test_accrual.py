@@ -89,3 +89,4 @@ def test_accrue_leave_balances_existing_balance(dummy_db):
     accrual.accrue_leave_balances(dummy_db)
     # Should update balance and commit
     assert bal.balance_days == Decimal('5'), f"Expected 5, got {bal.balance_days}"
+

@@ -28,3 +28,4 @@ def user_growth(db: Session = Depends(get_db)):
     recent_users = db.query(User).filter(User.created_at >= last_30).count()
     total_users = db.query(User).count()
     return {"new_users_last_30_days": recent_users, "total_users": total_users}
+

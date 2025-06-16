@@ -138,3 +138,4 @@ def sick_leave_doc_reminder_job():
         log_audit(db, "Sick Leave Document Reminder", f"Sick leave document reminder job failed: {e}")
     finally:
         db.close()
+

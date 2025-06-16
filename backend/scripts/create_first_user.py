@@ -50,3 +50,4 @@ def insert_first_user():
 
 if __name__ == "__main__":
     insert_first_user()
+

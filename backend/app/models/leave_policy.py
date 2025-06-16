@@ -18,3 +18,4 @@ class LeavePolicy(Base):
     allocation_days_per_year = Column(Numeric, nullable=False)
     accrual_frequency = Column(Enum(AccrualFrequencyEnum), nullable=False)
     accrual_amount_per_period = Column(Numeric, nullable=True)
+

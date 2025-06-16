@@ -51,7 +51,7 @@ def seeded_admin(db_session: Session, org_unit_id):
             org_unit_id=org_unit_id,
             is_active=True,
             gender="male",
-            id=uuid4()  
+            id=uuid4()
         )
         db_session.add(admin)
         db_session.commit()
@@ -78,3 +78,4 @@ def seeded_leave_type(db_session):
         db_session.commit()
         db_session.refresh(leave_type)
     return leave_type
+

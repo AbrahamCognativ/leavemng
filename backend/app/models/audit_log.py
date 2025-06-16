@@ -12,3 +12,4 @@ class AuditLog(Base):
     resource_id = Column(String, nullable=True)  # Nullable: can be None for system/global actions
     timestamp = Column(DateTime(timezone=True))
     extra_metadata = Column(JSON, nullable=True)
+

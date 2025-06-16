@@ -13,7 +13,7 @@ class UserBase(BaseModel):
     profile_image_url: Optional[str] = None
     manager_id: Optional[UUID] = None
     org_unit_id: Optional[UUID] = None
-    is_active: Optional[bool] = True 
+    is_active: Optional[bool] = True
     extra_metadata : Optional[Any] = None
     is_active: Optional[bool] = True  # Default to active
 
@@ -42,3 +42,4 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     is_active: Optional[bool] = None
     # email is intentionally omitted to prevent editing
+

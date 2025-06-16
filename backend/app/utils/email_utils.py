@@ -115,7 +115,7 @@ def send_invite_email(to_email: str, to_name: str, invite_link: str, password: s
     </html>
     """
     send_email(subject, body, [to_email], request=request, html=html)
-        
+
 
 
 def send_leave_request_notification(to_email: str, requester_name: str, leave_details: dict, request: Request, request_id: int = None, requestor_email: str = None):
@@ -289,3 +289,4 @@ def send_leave_auto_reject_notification(to_email: str, leave_details: dict, appr
 
     body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
     send_email_background(subject, body, [to_email], html=html)
+

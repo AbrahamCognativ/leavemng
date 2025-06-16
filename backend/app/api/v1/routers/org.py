@@ -234,3 +234,4 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
             "type": "unit",
             "children": []
         }
+

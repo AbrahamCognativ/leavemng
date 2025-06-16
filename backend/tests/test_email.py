@@ -34,3 +34,4 @@ def test_send_leave_approval_notification():
         args, kwargs = mock_send.call_args
         assert 'approved' in args[0].lower() or 'rejected' in args[0].lower()
         assert 'abraham@cognativ.com' in args[2]
+
