@@ -62,6 +62,7 @@ coverage.xml
 env/
 venv/
 ENV/
+backend/venv/
 
 # macOS
 .DS_Store
