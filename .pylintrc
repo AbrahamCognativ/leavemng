@@ -1,0 +1,27 @@
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    line-too-long,
+    wrong-import-order,
+    wrong-import-position,
+    ungrouped-imports,
+    import-outside-toplevel,
+    too-many-arguments,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements
+
+[FORMAT]
+max-line-length=120
+
+[REPORTS]
+output-format=colorized
+reports=no
+
+[DESIGN]
+max-args=12
+max-locals=25
+max-branches=20
+max-statements=75
