@@ -11,8 +11,6 @@ import sys
 import os
 import uuid
 from datetime import datetime, timezone
-import json
-
 # Add the parent directory to the path so we can import from app
 sys.path.insert(
     0,

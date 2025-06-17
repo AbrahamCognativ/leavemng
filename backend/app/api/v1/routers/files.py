@@ -55,8 +55,7 @@ async def upload_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    leave_request = can_access_leave_request(
-        db, leave_request_id, current_user)
+    can_access_leave_request(db, leave_request_id, current_user)
     LEAVE_UPLOADS_DIR = os.path.join(UPLOAD_DIR, "leave_documents")
     req_dir = os.path.join(LEAVE_UPLOADS_DIR, str(leave_request_id))
     os.makedirs(req_dir, exist_ok=True)
@@ -88,8 +87,7 @@ def download_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    leave_request = can_access_leave_request(
-        db, leave_request_id, current_user)
+    can_access_leave_request(db, leave_request_id, current_user)
     doc = db.query(LeaveDocument).filter(
         LeaveDocument.id == document_id,
         LeaveDocument.request_id == leave_request_id).first()
@@ -106,8 +104,7 @@ def list_files(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    leave_request = can_access_leave_request(
-        db, leave_request_id, current_user)
+    can_access_leave_request(db, leave_request_id, current_user)
     docs = db.query(LeaveDocument).filter(
         LeaveDocument.request_id == leave_request_id).all()
     return [{"document_id": str(d.id),
@@ -122,8 +119,7 @@ def delete_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    leave_request = can_access_leave_request(
-        db, leave_request_id, current_user)
+    can_access_leave_request(db, leave_request_id, current_user)
     doc = db.query(LeaveDocument).filter(
         LeaveDocument.id == document_id,
         LeaveDocument.request_id == leave_request_id).first()

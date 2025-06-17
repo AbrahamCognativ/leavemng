@@ -3,9 +3,6 @@
 Simple script to fix pylint issues without complex sed commands
 """
 import os
-import re
-from pathlib import Path
-import glob
 
 
 def fix_trailing_whitespace(filepath):

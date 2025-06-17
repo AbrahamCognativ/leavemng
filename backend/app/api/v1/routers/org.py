@@ -184,7 +184,6 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
     Build a dictionary representation of an org unit with its users and child units
     """
     try:
-        from app.models.user import User
 
         # Basic unit info
         unit_dict = {

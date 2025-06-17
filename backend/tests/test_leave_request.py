@@ -43,9 +43,6 @@ def test_leave_request_permissions():
 
 
 def test_leave_request_crud(auth_token):
-    import uuid
-    import random
-    from datetime import datetime, timedelta
     headers = {"Authorization": f"Bearer {auth_token}"}
     types = client.get("/api/v1/leave-types/", headers=headers).json()
     if not types:
@@ -171,8 +168,6 @@ def test_leave_request_duplicate(auth_token, db_session):
         admin_token = None
         # Try to get admin token from a fixture if available
         try:
-            from tests.test_files import users_and_tokens
-            # Use the fixture only if available in the test context
             import inspect
             if "request" in inspect.signature(
                     test_leave_request_duplicate).parameters:
@@ -255,7 +250,6 @@ def test_leave_request_already_approved(auth_token):
     if resp1.status_code not in (200, 201):
         pytest.skip("Could not create leave request for approve test")
     req_id = resp1.json()["id"]
-    from unittest.mock import patch
     # Approve with email notification mocked
     with patch("app.utils.email.send_leave_approval_notification") as mock_approval_email:
         resp2 = client.patch(

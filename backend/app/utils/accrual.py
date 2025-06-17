@@ -88,8 +88,6 @@ def accrue_monthly_leave_balances(db: Session):
     Accrue all monthly leave types for all active users.
     """
     from app.models.leave_policy import LeavePolicy
-    from app.models.leave_type import LeaveType
-    from decimal import Decimal
     policies = db.query(LeavePolicy).filter(
         LeavePolicy.accrual_frequency == AccrualFrequencyEnum.monthly).all()
     if not policies:
@@ -131,9 +129,6 @@ def accrue_quarterly_leave_balances(db: Session):
     """
     Accrue all quarterly leave types for all active users.
     """
-    from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
-    from app.models.leave_type import LeaveType
-    from decimal import Decimal
     policies = db.query(LeavePolicy).filter(
         LeavePolicy.accrual_frequency == AccrualFrequencyEnum.quarterly).all()
     if not policies:
@@ -175,9 +170,6 @@ def accrue_yearly_leave_balances(db: Session):
     """
     Accrue all yearly leave types for all active users.
     """
-    from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
-    from app.models.leave_type import LeaveType
-    from decimal import Decimal
     policies = db.query(LeavePolicy).filter(
         LeavePolicy.accrual_frequency == AccrualFrequencyEnum.yearly).all()
     if not policies:
@@ -221,7 +213,6 @@ def reset_annual_leave_carry_forward(db: Session):
     Should be run once per year (e.g., via scheduled job).
     """
     from app.models.leave_type import LeaveCodeEnum, LeaveType
-    from app.models.leave_balance import LeaveBalance
     annual_type = db.query(LeaveType).filter(
         LeaveType.code == LeaveCodeEnum.annual).first()
     if not annual_type:
@@ -245,8 +236,6 @@ def reset_yearly_leave_balances_on_join_date(db: Session):
     At midnight, check for all users who joined today (created_at) and reset their leave types with a policy of accrual frequency of yearly.
     Should be run once daily (e.g., via scheduled job).
     """
-    from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
-    from sqlalchemy.orm import joinedload
     today = datetime.date.today()
     today_month_day = (today.month, today.day)
     yearly_policies = db.query(LeavePolicy).filter(

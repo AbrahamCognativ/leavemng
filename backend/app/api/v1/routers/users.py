@@ -81,8 +81,6 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
     # --- AUTO-CREATE LEAVE BALANCES FOR ELIGIBLE LEAVE TYPES ---
-    from app.models.leave_type import LeaveType
-    from app.models.leave_balance import LeaveBalance
     from datetime import datetime, timezone
     leave_types = db.query(LeaveType).all()
     eligible_leave_types = []

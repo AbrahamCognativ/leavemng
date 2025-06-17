@@ -220,7 +220,6 @@ def invite_user(
 
     # Send invite email
     from app.utils.email_utils import send_invite_email
-    from app.settings import get_settings
     settings = get_settings()
     base_url = settings.REGISTER_URL.rstrip('/')
     # --- Password Reset Invite Token Generation ---

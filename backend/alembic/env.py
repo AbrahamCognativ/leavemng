@@ -1,12 +1,4 @@
-from app.models.audit_log import AuditLog
-from app.models.org_unit import OrgUnit
-from app.models.leave_document import LeaveDocument
-from app.models.leave_request import LeaveRequest
-from app.models.leave_policy import LeavePolicy
-from app.models.leave_type import LeaveType
-from app.models.user import User
 from app.db.base import Base
-from app.db.session import engine
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy import engine_from_config
@@ -24,7 +16,6 @@ load_dotenv(
 
 # Set sqlalchemy.url from DDB_URL if present
 if 'DDB_URL' in os.environ:
-    from alembic import context
     context.config.set_main_option('sqlalchemy.url', os.environ['DDB_URL'])
 
 
