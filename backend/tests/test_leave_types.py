@@ -40,7 +40,6 @@ def test_leave_type_permissions():
 
 def test_leave_type_crud(auth_token):
     headers = {"Authorization": f"Bearer {auth_token}"}
-    import random
     code = f"custom_{random.randint(1000, 9999)}"
     data = {
         "code": "custom",

@@ -1,7 +1,7 @@
 import pytest
-import uuid
 from fastapi.testclient import TestClient
 from app.run import app
+import random
 
 client = TestClient(app)
 
@@ -18,13 +18,11 @@ def auth_token():
 
 
 def test_leave_request_crud(auth_token):
-    import uuid
-    import random
     from datetime import datetime, timedelta
-    import os
-    import jwt
     from app.models.leave_request import LeaveRequest
     from app.db.session import SessionLocal
+    import jwt
+    import uuid
 
     headers = {"Authorization": f"Bearer {auth_token}"}
     types = client.get("/api/v1/leave-types/", headers=headers).json()

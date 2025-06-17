@@ -1,6 +1,5 @@
 # scripts/clear_db.py
-from sqlalchemy import inspect, text
-from app.models import user, org_unit, leave_type, leave_balance, leave_request, leave_document, audit_log
+from sqlalchemy import text
 from app.db.base import Base  # Make sure this imports all your models
 from app.db.session import SessionLocal
 import sys

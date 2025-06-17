@@ -1,4 +1,3 @@
-from fastapi import Security
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -10,7 +9,6 @@ from app.schemas.user import UserRead
 from pydantic import BaseModel, EmailStr
 from jose import jwt
 from datetime import datetime, timedelta
-from datetime import timezone
 from app.settings import get_settings
 from uuid import UUID
 from app.deps.permissions import get_current_user, require_role

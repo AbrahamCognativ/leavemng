@@ -40,7 +40,6 @@ def test_leave_policy_permissions():
 
 
 def test_leave_policy_crud(auth_token):
-    import random
     headers = {"Authorization": f"Bearer {auth_token}"}
     orgs = client.get("/api/v1/org/", headers=headers).json()
     types = client.get("/api/v1/leave-types/", headers=headers).json()

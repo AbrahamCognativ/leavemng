@@ -1,16 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models.leave_type import LeaveType
-from app.models.leave_policy import LeavePolicy
 from app.db.session import get_db
 from app.schemas.leave_type import LeaveTypeCreate, LeaveTypeRead
-from app.schemas.leave_policy import LeavePolicyCreate, LeavePolicyRead
 from typing import List
 import datetime
 
 from app.deps.permissions import require_role
 
-from app.models.leave_type import LeaveType, LeaveCodeEnum
+from app.models.leave_type import LeaveCodeEnum
 
 router = APIRouter()
 

@@ -6,8 +6,8 @@ from app.models.org_unit import OrgUnit
 from app.models.user import User
 from app.db.session import get_db
 from uuid import UUID
-from typing import List, Optional
-from typing import List, Dict, Any
+from typing import List
+from typing import Dict, Any
 import uuid
 import json
 

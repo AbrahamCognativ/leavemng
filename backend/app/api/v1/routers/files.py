@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import FileResponse
-from typing import List
 import os
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -9,7 +8,7 @@ from app.db.session import get_db
 from app.models.leave_document import LeaveDocument
 from app.models.leave_request import LeaveRequest
 from app.models.user import User
-from app.deps.permissions import get_current_user, require_role
+from app.deps.permissions import get_current_user
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), '../../uploads')
 UPLOAD_DIR = os.path.abspath(UPLOAD_DIR)

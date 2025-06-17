@@ -3,7 +3,6 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 from app.run import app
-from app.utils.password import hash_password
 
 client = TestClient(app)
 

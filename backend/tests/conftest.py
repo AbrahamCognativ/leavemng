@@ -1,4 +1,3 @@
-import hashlib
 from app.utils.password import hash_password
 from app.models.user import User
 import pytest

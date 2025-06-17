@@ -3,8 +3,6 @@ from fastapi.testclient import TestClient
 from app.run import app
 from app.db.session import SessionLocal
 from app.models.user import User
-from app.utils.password import hash_password
-from app.models.audit_log import AuditLog
 
 client = TestClient(app)
 

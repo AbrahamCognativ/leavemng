@@ -1,9 +1,5 @@
-import os
-import pytest
 from unittest.mock import patch
 from app.utils import email_utils as email
-from types import SimpleNamespace
-from fastapi import Request
 
 
 def test_send_invite_email():

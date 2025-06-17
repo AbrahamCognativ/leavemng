@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
+from app.models.leave_policy import LeavePolicy
 from app.schemas.leave_policy import LeavePolicyCreate, LeavePolicyRead
 from typing import List
 import uuid

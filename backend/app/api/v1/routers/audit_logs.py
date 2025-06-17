@@ -1,4 +1,3 @@
-from fastapi import Depends
 from app.deps.permissions import require_role
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session

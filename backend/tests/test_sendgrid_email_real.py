@@ -1,6 +1,4 @@
 import os
-import pytest
-from fastapi import Request
 from types import SimpleNamespace
 from app.utils.email_utils import send_email
 

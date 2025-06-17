@@ -1,9 +1,7 @@
 # Placeholder for DB session management
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.engine.url import URL
 
-from .base import Base
 
 try:
     # If running inside FastAPI, get DB_URL from app.state.settings

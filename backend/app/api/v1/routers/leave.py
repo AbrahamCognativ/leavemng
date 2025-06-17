@@ -8,10 +8,9 @@ from app.models.user import User
 from app.models.leave_balance import LeaveBalance
 from app.db.session import get_db
 from uuid import UUID
-from fastapi import Request
 from datetime import datetime, timezone, date, timedelta
 from decimal import Decimal
-from app.deps.permissions import get_current_user, require_role, require_direct_manager, log_permission_denied, log_permission_accepted
+from app.deps.permissions import get_current_user, log_permission_denied, log_permission_accepted
 
 router = APIRouter()
 
