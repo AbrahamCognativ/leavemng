@@ -3,53 +3,158 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 from app.run import app
+from .test_utils import (
+    create_auth_headers,
+    login_user,
+    create_user,
+    create_test_user_data,
+    permissions_helper,
+    assert_response_success,
+    assert_response_validation_error,
+    cleanup_user_data,
+    create_users_dict_with_requester,
+    cleanup_users_dict,
+    permissions_helper,
+)
 
 client = TestClient(app)
 
 
-def test_files_permissions():
-    roles = ['Admin', 'Manage', 'HR', 'IC']
+@pytest.fixture
+def auth_token():
+    return login_user("user@example.com", "secret123")
+
+
+def test_file_upload_permissions():
     endpoints = [
         ('post', '/api/v1/files/upload', {}),
-        ('get', '/api/v1/files/download/fake-id', {})
+        ('get', '/api/v1/files/fake-id', {}),
+        ('delete', '/api/v1/files/fake-id', {})
     ]
-    for role in roles:
-        headers = {'Authorization': f'Bearer fake-token-for-{role}'}
-        for method, url, data in endpoints:
-            if method == 'post':
-                resp = getattr(client, method)(url, json=data, headers=headers)
-            else:
-                resp = getattr(client, method)(url, headers=headers)
-            # Permissions logic: Only Admin, Manage, HR allowed, IC forbidden
-            if role == 'IC':
-                assert resp.status_code in (401, 403, 404)
-            else:
-                # Could be 404 due to fake endpoint, but not forbidden
-                assert resp.status_code != 403
+    permissions_helper(endpoints)
 
 
-client = TestClient(app)
-
-# Utility to create a user and return their id
-
-
-def create_user(user_data, admin_token):
-    resp = client.post(
-        "/api/v1/users/",
-        json=user_data,
-        headers={
-            "Authorization": f"Bearer {admin_token}"})
-    assert resp.status_code == 200, resp.text
-    return resp.json()["id"]
-
-# Utility to login and get access token
+def test_file_upload_success(auth_token):
+    headers = create_auth_headers(auth_token)
+    # Create a test file
+    test_content = b"This is a test file content"
+    test_file = io.BytesIO(test_content)
+    files = {"file": ("test.txt", test_file, "text/plain")}
+    
+    resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+    assert_response_success(resp, [200, 201])
+    file_data = resp.json()
+    assert "id" in file_data
+    assert "filename" in file_data
+    assert file_data["filename"] == "test.txt"
 
 
-def login(email, password):
-    data = {"username": email, "password": password}
-    resp = client.post("/api/v1/auth/login", data=data)
-    assert resp.status_code == 200, resp.text
-    return resp.json()["access_token"]
+def test_file_upload_validation(auth_token):
+    headers = create_auth_headers(auth_token)
+    # Try to upload without file
+    resp = client.post("/api/v1/files/upload", headers=headers)
+    assert_response_validation_error(resp)
+
+
+def test_file_download(auth_token):
+    headers = create_auth_headers(auth_token)
+    # First upload a file
+    test_content = b"Download test content"
+    test_file = io.BytesIO(test_content)
+    files = {"file": ("download_test.txt", test_file, "text/plain")}
+    
+    upload_resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+    assert_response_success(upload_resp, [200, 201])
+    file_id = upload_resp.json()["id"]
+    
+    # Now download the file
+    download_resp = client.get(f"/api/v1/files/{file_id}", headers=headers)
+    assert_response_success(download_resp)
+
+
+def test_file_delete(auth_token):
+    headers = create_auth_headers(auth_token)
+    # First upload a file
+    test_content = b"Delete test content"
+    test_file = io.BytesIO(test_content)
+    files = {"file": ("delete_test.txt", test_file, "text/plain")}
+    
+    upload_resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+    assert_response_success(upload_resp, [200, 201])
+    file_id = upload_resp.json()["id"]
+    
+    # Now delete the file
+    delete_resp = client.delete(f"/api/v1/files/{file_id}", headers=headers)
+    assert_response_success(delete_resp, [200, 204])
+    
+    # Verify file is deleted
+    get_resp = client.get(f"/api/v1/files/{file_id}", headers=headers)
+    assert get_resp.status_code in (404, 410)
+
+
+def test_file_list(auth_token):
+    headers = create_auth_headers(auth_token)
+    resp = client.get("/api/v1/files/", headers=headers)
+    assert_response_success(resp)
+    files = resp.json()
+    assert isinstance(files, list)
+
+
+def test_file_upload_large_file(auth_token):
+    headers = create_auth_headers(auth_token)
+    # Create a larger test file (1MB)
+    large_content = b"x" * (1024 * 1024)
+    test_file = io.BytesIO(large_content)
+    files = {"file": ("large_test.txt", test_file, "text/plain")}
+    
+    resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+    # Should succeed or fail with appropriate error
+    assert resp.status_code in (200, 201, 413, 422)
+
+
+def test_file_upload_empty_file(auth_token):
+    headers = create_auth_headers(auth_token)
+    # Create an empty file
+    empty_file = io.BytesIO(b"")
+    files = {"file": ("empty.txt", empty_file, "text/plain")}
+    
+    resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+    # Should fail validation or succeed depending on implementation
+    assert resp.status_code in (200, 201, 400, 422)
+
+
+def test_file_upload_different_types(auth_token):
+    headers = create_auth_headers(auth_token)
+    file_types = [
+        ("test.pdf", b"PDF content", "application/pdf"),
+        ("test.jpg", b"JPEG content", "image/jpeg"),
+        ("test.png", b"PNG content", "image/png"),
+        ("test.doc", b"DOC content", "application/msword")
+    ]
+    
+    for filename, content, content_type in file_types:
+        test_file = io.BytesIO(content)
+        files = {"file": (filename, test_file, content_type)}
+        
+        resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+        # Should succeed or fail based on allowed file types
+        assert resp.status_code in (200, 201, 400, 415, 422)
+
+
+def test_file_metadata(auth_token):
+    headers = create_auth_headers(auth_token)
+    # Upload a file with metadata
+    test_content = b"Metadata test content"
+    test_file = io.BytesIO(test_content)
+    files = {"file": ("metadata_test.txt", test_file, "text/plain")}
+    
+    resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+    if resp.status_code in (200, 201):
+        file_data = resp.json()
+        assert "id" in file_data
+        assert "filename" in file_data
+        assert "size" in file_data or "content_length" in file_data
+        assert "created_at" in file_data or "upload_date" in file_data
 
 
 @pytest.fixture(scope="module")
@@ -58,7 +163,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
     admin_email = "user@example.com"
     admin_password = "secret123"
     admin_id = seeded_admin["id"]
-    admin_token = login(admin_email, admin_password)
+    admin_token = login_user(admin_email, admin_password)
 
     # Create HR
     hr_email = f"hr_{uuid4()}@test.com"
@@ -69,7 +174,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
         "gender": "male"
     }
     hr_id = create_user(hr_data, admin_token)
-    hr_token = login(hr_email, "adminpass")
+    hr_token = login_user(hr_email, "adminpass")
 
     # Create Manager
     manager_email = f"manager_{uuid4()}@test.com"
@@ -85,7 +190,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
         "org_unit_id": org_unit_id,
         "gender": "male"}
     manager_id = create_user(manager_data, admin_token)
-    manager_token = login(manager_email, "adminpass")
+    manager_token = login_user(manager_email, "adminpass")
 
     # Create IC
     ic_email = f"ic_{uuid4()}@test.com"
@@ -96,7 +201,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
         "gender": "male"
     }
     ic_id = create_user(ic_data, admin_token)
-    ic_token = login(ic_email, "adminpass")
+    ic_token = login_user(ic_email, "adminpass")
 
     # Create Requester (who will own the leave request)
     requester_email = f"requester_{uuid4()}@test.com"
@@ -112,96 +217,16 @@ def users_and_tokens(org_unit_id, seeded_admin):
         "org_unit_id": org_unit_id,
         "gender": "male"}
     requester_id = create_user(requester_data, admin_token)
-    requester_token = login(requester_email, "adminpass")
+    requester_token = login_user(requester_email, "adminpass")
 
-    users_dict = {
-        "admin": {"id": admin_id, "token": admin_token},
-        "hr": {"id": hr_id, "token": hr_token},
-        "manager": {"id": manager_id, "token": manager_token},
-        "ic": {"id": ic_id, "token": ic_token},
-        "requester": {"id": requester_id, "token": requester_token},
-    }
+    users_dict = create_users_dict_with_requester(
+        admin_token, hr_token, manager_token, ic_token, requester_token,
+        admin_id, hr_id, manager_id, ic_id, requester_id
+    )
+    
     yield users_dict
     # Cleanup after tests
-    from app.db.session import SessionLocal
-    from sqlalchemy import text
-    db = SessionLocal()
-    for user_key in ["hr", "manager", "ic", "requester"]:
-        user_id = users_dict[user_key]["id"]
-        try:
-            db.execute(
-                text("DELETE FROM audit_logs WHERE user_id = :user_id"), {
-                    "user_id": str(user_id)})
-            db.commit()
-        except Exception:
-            db.rollback()
-        try:
-            db.execute(
-                text("DELETE FROM leave_balances WHERE user_id = :user_id"), {
-                    "user_id": str(user_id)})
-            db.commit()
-        except Exception:
-            db.rollback()
-        try:
-            db.execute(
-                text("DELETE FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {
-                    "user_id": str(user_id)})
-            db.commit()
-        except Exception:
-            db.rollback()
-            remaining_requests = db.execute(
-                text("SELECT id FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {
-                    "user_id": str(user_id)}).fetchall()
-            if remaining_requests:
-                print(
-                    f"User {user_id} still referenced in leave_requests: {remaining_requests}")
-
-                if remaining_requests:
-                    for req_id, in remaining_requests:
-                        # Delete from leave_documents first
-                        db.execute(
-                            text("DELETE FROM leave_documents WHERE request_id = :req_id"), {
-                                "req_id": str(req_id)})
-                        db.commit()
-                        db.execute(
-                            text("DELETE FROM leave_requests WHERE id = :id"), {
-                                "id": str(req_id)})
-                        db.commit()
-            # Try deleting user
-            resp = client.delete(
-                f"/api/v1/users/{user_id}",
-                headers={
-                    "Authorization": f"Bearer {admin_token}"})
-            if resp.status_code not in (200, 204, 404):
-                print(
-                    f"Failed to delete user {user_id}, status: {
-                        resp.status_code}")
-
-        # Nullify manager_id for users managed by this user
-        try:
-            db.execute(
-                text("UPDATE users SET manager_id = NULL WHERE manager_id = :user_id"), {
-                    "user_id": str(user_id)})
-            db.commit()
-        except Exception:
-            db.rollback()
-        # Debug: check for remaining leave_requests
-        remaining_requests = db.execute(
-            text("SELECT id FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {
-                "user_id": str(user_id)}).fetchall()
-        if remaining_requests:
-            print(
-                f"User {user_id} still referenced in leave_requests: {remaining_requests}")
-        # Delete user via API (soft/hard)
-        resp = client.delete(
-            f"/api/v1/users/{user_id}",
-            headers={
-                "Authorization": f"Bearer {admin_token}"})
-        if resp.status_code not in (200, 204, 404):
-            print(
-                f"Failed to delete user {user_id}, status: {
-                    resp.status_code}")
-    db.close()
+    cleanup_users_dict(users_dict, ["hr", "manager", "ic", "requester"])
 
 
 @pytest.fixture(scope="module")

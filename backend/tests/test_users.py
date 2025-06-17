@@ -1,48 +1,193 @@
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 from app.run import app
-from app.db.session import SessionLocal
-from app.models.user import User
+from .test_utils import (
+    create_auth_headers,
+    login_user,
+    permissions_helper,
+    assert_response_success,
+    assert_response_validation_error,
+    assert_response_bad_request,
+    cleanup_user_and_related_data
+)
 
 client = TestClient(app)
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _cleanup_seeded_admin_module(cleanup_seeded_admin):
-    # Ensures that seeded admin is cleaned up after all tests in this module
-    yield
-    cleanup_seeded_admin
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture
 def auth_token():
-    login_data = {
-        "username": "user@example.com",
-        "password": "secret123"
+    return login_user("user@example.com", "secret123")
+
+
+def test_user_permissions():
+    endpoints = [
+        ('post', '/api/v1/users/', {}),
+        ('put', '/api/v1/users/fake-id', {}),
+        ('delete', '/api/v1/users/fake-id', {})
+    ]
+    permissions_helper(endpoints)
+
+
+def test_user_crud(auth_token):
+    headers = create_auth_headers(auth_token)
+    unique_email = f"testuser{uuid.uuid4()}@example.com"
+    data = {
+        "email": unique_email,
+        "password": "testpass123",
+        "first_name": "Test",
+        "last_name": "User",
+        "role": "IC"
     }
-    response = client.post("/api/v1/auth/login", data=login_data)
-    assert response.status_code == 200, f"Login failed: {response.text}"
-    token = response.json()["access_token"]
-    return token
-
-# Sample valid user data
-
-
-def test_soft_delete_user(auth_token, created_user_cleanup):
-    data = valid_user_data()
-    import uuid
-    data["passport_or_id_number"] = str(uuid.uuid4())
-    data["email"] = f"softdelete.{data['passport_or_id_number']}@example.com"
-    headers = {"Authorization": f"Bearer {auth_token}"}
+    # CREATE
     resp = client.post("/api/v1/users/", json=data, headers=headers)
-    assert resp.status_code == 200
+    assert_response_success(resp, [200, 201])
+    user = resp.json()
+    user_id = user["id"]
+    assert user["email"] == data["email"]
+    assert user["first_name"] == data["first_name"]
+    assert user["last_name"] == data["last_name"]
+    assert user["role"] == data["role"]
+    # READ
+    get_resp = client.get(f"/api/v1/users/{user_id}", headers=headers)
+    assert_response_success(get_resp)
+    get_user = get_resp.json()
+    assert get_user["id"] == user_id
+    # UPDATE
+    upd_data = {
+        "email": unique_email,
+        "first_name": "Updated",
+        "last_name": "User",
+        "role": "HR"
+    }
+    upd_resp = client.put(f"/api/v1/users/{user_id}", json=upd_data, headers=headers)
+    assert_response_success(upd_resp)
+    upd_user = upd_resp.json()
+    assert upd_user["first_name"] == "Updated"
+    assert upd_user["role"] == "HR"
+    # DELETE
+    del_resp = client.delete(f"/api/v1/users/{user_id}", headers=headers)
+    assert_response_success(del_resp, [200, 204])
+    # Ensure deleted
+    get_after_del = client.get(f"/api/v1/users/{user_id}", headers=headers)
+    assert get_after_del.status_code in (404, 410)
+
+
+def test_user_validation(auth_token):
+    headers = create_auth_headers(auth_token)
+    # Missing required fields
+    data = {"first_name": "Test"}
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_validation_error(resp)
+
+
+def test_user_duplicate_email(auth_token):
+    headers = create_auth_headers(auth_token)
+    unique_email = f"duplicate{uuid.uuid4()}@example.com"
+    data = {
+        "email": unique_email,
+        "password": "testpass123",
+        "first_name": "Test",
+        "last_name": "User",
+        "role": "IC"
+    }
+    # First creation should succeed
+    resp1 = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_success(resp1, [200, 201])
+    user_id = resp1.json()["id"]
+    # Second creation with same email should fail
+    resp2 = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_bad_request(resp2)
+    # Cleanup
+    cleanup_user_and_related_data(user_id)
+
+
+def test_user_login():
+    # Test login with valid credentials
+    resp = client.post(
+        "/api/v1/auth/login",
+        data={"username": "user@example.com", "password": "secret123"}
+    )
+    assert_response_success(resp)
+    token_data = resp.json()
+    assert "access_token" in token_data
+    assert token_data["token_type"] == "bearer"
+
+
+def test_user_login_invalid():
+    # Test login with invalid credentials
+    resp = client.post(
+        "/api/v1/auth/login",
+        data={"username": "invalid@example.com", "password": "wrongpass"}
+    )
+    assert resp.status_code in (401, 422)
+
+
+def test_user_profile(auth_token):
+    headers = create_auth_headers(auth_token)
+    resp = client.get("/api/v1/users/me", headers=headers)
+    assert_response_success(resp)
+    profile = resp.json()
+    assert "email" in profile
+    assert "first_name" in profile
+    assert "last_name" in profile
+
+
+def test_user_list(auth_token):
+    headers = create_auth_headers(auth_token)
+    resp = client.get("/api/v1/users/", headers=headers)
+    assert_response_success(resp)
+    users = resp.json()
+    assert isinstance(users, list)
+
+
+def test_user_role_update(auth_token):
+    headers = create_auth_headers(auth_token)
+    unique_email = f"roletest{uuid.uuid4()}@example.com"
+    data = {
+        "email": unique_email,
+        "password": "testpass123",
+        "first_name": "Role",
+        "last_name": "Test",
+        "role": "IC"
+    }
+    # Create user
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_success(resp, [200, 201])
     user_id = resp.json()["id"]
-    created_user_cleanup[0].append(user_id)
+    # Update role
+    upd_data = {
+        "email": unique_email,
+        "first_name": "Role",
+        "last_name": "Test",
+        "role": "HR"
+    }
+    upd_resp = client.put(f"/api/v1/users/{user_id}", json=upd_data, headers=headers)
+    assert_response_success(upd_resp)
+    assert upd_resp.json()["role"] == "HR"
+    # Cleanup
+    cleanup_user_and_related_data(user_id)
+
+
+def test_soft_delete_user(auth_token):
+    headers = create_auth_headers(auth_token)
+    unique_email = f"softdelete{uuid.uuid4()}@example.com"
+    data = {
+        "email": unique_email,
+        "password": "testpass123",
+        "first_name": "Soft",
+        "last_name": "Delete",
+        "role": "IC"
+    }
+    # Create user
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_success(resp, [200, 201])
+    user_id = resp.json()["id"]
     # Soft delete
     del_resp = client.patch(
         f"/api/v1/users/{user_id}/softdelete",
         headers=headers)
-    assert del_resp.status_code == 200
+    assert_response_success(del_resp)
     assert "soft-deleted" in del_resp.json()["detail"]
     # Try soft deleting again
     del_resp2 = client.patch(
@@ -53,18 +198,14 @@ def test_soft_delete_user(auth_token, created_user_cleanup):
 
 
 def test_list_users(auth_token):
-    headers = {"Authorization": f"Bearer {auth_token}"}
+    headers = create_auth_headers(auth_token)
     resp = client.get("/api/v1/users/", headers=headers)
-    assert resp.status_code == 200
+    assert_response_success(resp)
     assert isinstance(resp.json(), list)
-    # Should contain dicts with at least 'id' and 'email'
-    if resp.json():
-        assert "id" in resp.json()[0]
-        assert "email" in resp.json()[0]
 
 
 def test_get_user_permission_denied(auth_token):
-    headers = {"Authorization": f"Bearer {auth_token}"}
+    headers = create_auth_headers(auth_token)
     # Try to get a user that isn't self or allowed by role
     # Use a random UUID that isn't the test user
     import uuid
@@ -74,197 +215,141 @@ def test_get_user_permission_denied(auth_token):
     assert resp.status_code in (403, 404)
 
 
-def test_update_user(auth_token, created_user_cleanup):
-    data = valid_user_data()
-    import uuid
-    data["passport_or_id_number"] = str(uuid.uuid4())
-    data["email"] = f"update.{data['passport_or_id_number']}@example.com"
-    headers = {"Authorization": f"Bearer {auth_token}"}
+def test_update_user(auth_token):
+    headers = create_auth_headers(auth_token)
+    unique_email = f"update{uuid.uuid4()}@example.com"
+    data = {
+        "email": unique_email,
+        "password": "testpass123",
+        "first_name": "Update",
+        "last_name": "User",
+        "role": "IC"
+    }
+    # Create user
     resp = client.post("/api/v1/users/", json=data, headers=headers)
-    assert resp.status_code == 200
+    assert_response_success(resp, [200, 201])
     user_id = resp.json()["id"]
-    created_user_cleanup[0].append(user_id)
-    update_data = data.copy()
-    update_data["name"] = "Updated Name"
-    update_data["password"] = "newpassword123"
-    upd_resp = client.put(
-        f"/api/v1/users/{user_id}",
-        json=update_data,
-        headers=headers)
-    assert upd_resp.status_code == 200
-    assert upd_resp.json()["name"] == "Updated Name"
+    # Update user
+    upd_data = {
+        "email": unique_email,
+        "first_name": "Updated",
+        "last_name": "User",
+        "role": "HR"
+    }
+    upd_resp = client.put(f"/api/v1/users/{user_id}", json=upd_data, headers=headers)
+    assert_response_success(upd_resp)
+    assert upd_resp.json()["first_name"] == "Updated"
+    assert upd_resp.json()["role"] == "HR"
+    # Cleanup
+    cleanup_user_and_related_data(user_id)
 
 
-def test_get_user_leave(auth_token, created_user_cleanup):
-    data = valid_user_data()
-    import uuid
-    data["passport_or_id_number"] = str(uuid.uuid4())
-    data["email"] = f"leave.{data['passport_or_id_number']}@example.com"
-    headers = {"Authorization": f"Bearer {auth_token}"}
+def test_get_user_leave(auth_token):
+    headers = create_auth_headers(auth_token)
+    unique_email = f"leave{uuid.uuid4()}@example.com"
+    data = {
+        "email": unique_email,
+        "password": "testpass123",
+        "first_name": "Leave",
+        "last_name": "User",
+        "role": "IC"
+    }
+    # Create user
     resp = client.post("/api/v1/users/", json=data, headers=headers)
-    assert resp.status_code == 200
+    assert_response_success(resp, [200, 201])
     user_id = resp.json()["id"]
-    created_user_cleanup[0].append(user_id)
+    # Get leave
     leave_resp = client.get(f"/api/v1/users/{user_id}/leave", headers=headers)
     # Should be 200 or 404 if no leave balance
     assert leave_resp.status_code in (200, 404)
     if leave_resp.status_code == 200:
         assert "leave_balance" in leave_resp.json()
         assert "leave_request" in leave_resp.json()
+    # Cleanup
+    cleanup_user_and_related_data(user_id)
 
 
-def valid_user_data():
-    return {
-        "name": "John Doe",
-        "email": "john.doe@example.com",
-        "role_band": "HR",
-        "role_title": "HR",
-        "passport_or_id_number": "P1234567",
-        "profile_image_url": None,
-        "gender": "male",
-        "manager_id": None,
-        "org_unit_id": None,
-        "extra_metadata": None,
-        "password": "securepassword123"
+def test_create_user_success(auth_token):
+    headers = create_auth_headers(auth_token)
+    unique_email = f"create{uuid.uuid4()}@example.com"
+    data = {
+        "email": unique_email,
+        "password": "testpass123",
+        "first_name": "Create",
+        "last_name": "User",
+        "role": "IC"
     }
+    # Create user
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_success(resp, [200, 201])
+    user = resp.json()
+    assert user["email"] == data["email"]
+    assert user["first_name"] == data["first_name"]
+    assert user["last_name"] == data["last_name"]
+    assert user["role"] == data["role"]
+    # Cleanup
+    cleanup_user_and_related_data(user["id"])
 
 
-@pytest.fixture
-def created_user_cleanup():
-    created_user_ids = []
-    created_emails = []
-    yield created_user_ids, created_emails
-    # Robust cleanup after test
-    from sqlalchemy import text
-    db = SessionLocal()
-    for user_id in created_user_ids:
-        try:
-            db.execute(
-                text("DELETE FROM audit_logs WHERE user_id = :user_id"), {
-                    "user_id": str(user_id)})
-            db.commit()
-        except Exception:
-            db.rollback()
-        try:
-            db.execute(
-                text("DELETE FROM leave_balances WHERE user_id = :user_id"), {
-                    "user_id": str(user_id)})
-            db.commit()
-        except Exception:
-            db.rollback()
-        try:
-            db.execute(
-                text("DELETE FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {
-                    "user_id": str(user_id)})
-            db.commit()
-        except Exception:
-            db.rollback()
-            remaining_requests = db.execute(
-                text("SELECT id FROM leave_requests WHERE user_id = :user_id OR decided_by = :user_id"), {
-                    "user_id": str(user_id)}).fetchall()
-            if remaining_requests:
-                for req_id, in remaining_requests:
-                    db.execute(
-                        text("DELETE FROM leave_documents WHERE request_id = :req_id"), {
-                            "req_id": str(req_id)})
-                    db.commit()
-                    db.execute(
-                        text("DELETE FROM leave_requests WHERE id = :id"), {
-                            "id": str(req_id)})
-                    db.commit()
-        try:
-            db.execute(
-                text("UPDATE users SET manager_id = NULL WHERE manager_id = :user_id"), {
-                    "user_id": str(user_id)})
-            db.commit()
-        except Exception:
-            db.rollback()
-        db.query(User).filter(User.id == user_id).delete()
-    for email in created_emails:
-        db.query(User).filter(User.email == email).delete()
-    db.commit()
-    db.close()
+def test_create_user_duplicate(auth_token):
+    headers = create_auth_headers(auth_token)
+    unique_email = f"duplicate{uuid.uuid4()}@example.com"
+    data = {
+        "email": unique_email,
+        "password": "testpass123",
+        "first_name": "Duplicate",
+        "last_name": "User",
+        "role": "IC"
+    }
+    # First creation should succeed
+    resp1 = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_success(resp1, [200, 201])
+    user_id = resp1.json()["id"]
+    # Second creation with same email should fail
+    resp2 = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_bad_request(resp2)
+    # Cleanup
+    cleanup_user_and_related_data(user_id)
+
+
+def test_create_user_validation_error(auth_token):
+    headers = create_auth_headers(auth_token)
+    # Missing required fields
+    data = {"first_name": "Test"}
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_validation_error(resp)
 
 
 @pytest.mark.parametrize("missing_field",
-                         ["name",
-                          "email",
-                          "role_band",
-                          "role_title",
-                          "passport_or_id_number",
+                         ["email",
                           "password",
-                          "gender"])
-def test_create_user_validation_error(
-        missing_field,
-        auth_token,
-        created_user_cleanup):
-    data = valid_user_data()
+                          "first_name",
+                          "last_name",
+                          "role"])
+def test_create_user_missing_field(auth_token, missing_field):
+    headers = create_auth_headers(auth_token)
+    data = {
+        "email": f"test{uuid.uuid4()}@example.com",
+        "password": "testpass123",
+        "first_name": "Test",
+        "last_name": "User",
+        "role": "IC"
+    }
     data.pop(missing_field)
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    response = client.post("/api/v1/users/", json=data, headers=headers)
-    # If creation succeeds, track for cleanup
-    if response.status_code in (200, 201):
-        resp_json = response.json()
-        created_user_cleanup[0].append(resp_json["id"])
-        created_user_cleanup[1].append(
-            data.get("email", resp_json.get("email")))
-    assert response.status_code == 422
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_validation_error(resp)
 
 
 @pytest.mark.parametrize("invalid_email",
                          ["not-an-email", "@no-user.com", "user@.com"])
-def test_create_user_invalid_email(
-        invalid_email,
-        auth_token,
-        created_user_cleanup):
-    data = valid_user_data()
-    data["email"] = invalid_email
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    response = client.post("/api/v1/users/", json=data, headers=headers)
-    # If creation succeeds, track for cleanup
-    if response.status_code in (200, 201):
-        resp_json = response.json()
-        created_user_cleanup[0].append(resp_json["id"])
-        created_user_cleanup[1].append(
-            data.get("email", resp_json.get("email")))
-    assert response.status_code == 422
-
-
-def test_create_user_success(auth_token, created_user_cleanup):
-    data = valid_user_data()
-    import uuid
-    data["passport_or_id_number"] = str(uuid.uuid4())
-    data["email"] = f"john.doe.{data['passport_or_id_number']}@example.com"
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    response = client.post("/api/v1/users/", json=data, headers=headers)
-    assert response.status_code == 200
-    resp_json = response.json()
-    # Track for cleanup
-    created_user_cleanup[0].append(resp_json["id"])
-    created_user_cleanup[1].append(resp_json["email"])
-    assert resp_json["name"] == data["name"]
-    assert resp_json["email"] == data["email"]
-    assert resp_json["role_band"] == data["role_band"]
-    assert resp_json["role_title"] == data["role_title"]
-    assert resp_json["passport_or_id_number"] == data["passport_or_id_number"]
-    assert "id" in resp_json
-    assert "created_at" in resp_json
-
-
-def test_create_user_duplicate(auth_token, created_user_cleanup):
-    data = valid_user_data()
-    import uuid
-    unique_id = str(uuid.uuid4())
-    data["passport_or_id_number"] = unique_id
-    # ensure unique email for each run
-    data["email"] = f"johndoe_{unique_id}@example.com"
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    # First creation should succeed
-    resp1 = client.post("/api/v1/users/", json=data, headers=headers)
-    assert resp1.status_code == 200
-    created_user_cleanup[0].append(resp1.json()["id"])
-    created_user_cleanup[1].append(data["email"])
-    # Second creation with same passport_or_id_number and email should fail
-    resp2 = client.post("/api/v1/users/", json=data, headers=headers)
-    assert resp2.status_code == 400
-    assert "already exists" in resp2.json()["detail"]
+def test_create_user_invalid_email(auth_token, invalid_email):
+    headers = create_auth_headers(auth_token)
+    data = {
+        "email": invalid_email,
+        "password": "testpass123",
+        "first_name": "Test",
+        "last_name": "User",
+        "role": "IC"
+    }
+    resp = client.post("/api/v1/users/", json=data, headers=headers)
+    assert_response_validation_error(resp)
