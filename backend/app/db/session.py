@@ -14,8 +14,8 @@ try:
         DATABASE_URL = _request.app.state.settings.DB_URL
     else:
         DATABASE_URL = get_settings().DB_URL
-except Exception:
-    # Fallback for CLI/migrations
+except ImportError:
+    # Fallback for CLI/migrations (only handle import errors here)
     from app.settings import get_settings
     DATABASE_URL = get_settings().DB_URL
 

@@ -3,6 +3,7 @@ from app.utils.accrual import add_existing_users_to_leave_balances, accrue_month
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.utils.auto_reject import auto_reject_old_pending_leaves
 from app.utils.sick_leave_doc_check import sick_leave_doc_check_job
+from sqlalchemy.exc import SQLAlchemyError
 import logging
 
 
@@ -18,7 +19,7 @@ def run_accrual_scheduler():
             accrue_monthly_leave_balances(db)
             db.commit()
             logging.info('[SUCCESS] Accrual job ran successfully.')
-        except Exception as e:
+        except (SQLAlchemyError, AttributeError, TypeError) as e:
             logging.error(f'[ERROR] Accrual job failed: {e}')
         finally:
             db.close()
@@ -30,7 +31,7 @@ def run_accrual_scheduler():
             accrue_quarterly_leave_balances(db)
             db.commit()
             logging.info('[SUCCESS] Quarterly accrual job ran successfully.')
-        except Exception as e:
+        except (SQLAlchemyError, AttributeError, TypeError) as e:
             logging.error(f'[ERROR] Quarterly accrual job failed: {e}')
         finally:
             db.close()
@@ -67,7 +68,7 @@ def run_accrual_scheduler():
             db.commit()
             logging.info(
                 '[SUCCESS] Reset yearly leave balances on join date job ran successfully.')
-        except Exception as e:
+        except (SQLAlchemyError, AttributeError, TypeError) as e:
             logging.error(
                 '[ERROR] Reset yearly leave balances on join date job failed: %s', e)
         finally:
@@ -89,7 +90,7 @@ def run_accrual_scheduler():
             db.commit()
             logging.info(
                 '[SUCCESS] Sick leave document check job ran successfully.')
-        except Exception as e:
+        except (SQLAlchemyError, AttributeError, TypeError) as e:
             logging.error(
                 '[ERROR] Sick leave document check job failed: %s', e)
         finally:
@@ -112,7 +113,7 @@ def run_accrual_scheduler():
             db.commit()
             logging.info(
                 '[SUCCESS] Sick leave document reminder job ran successfully.')
-        except Exception as e:
+        except (SQLAlchemyError, AttributeError, TypeError) as e:
             logging.error(
                 '[ERROR] Sick leave document reminder job failed: %s', e)
         finally:
@@ -133,7 +134,7 @@ def run_accrual_scheduler():
             db.commit()
             logging.info(
                 '[SUCCESS] Annual leave carry forward job ran successfully.')
-        except Exception as e:
+        except (SQLAlchemyError, AttributeError, TypeError) as e:
             logging.error(
                 '[ERROR] Annual leave carry forward job failed: %s', e)
         finally:
@@ -157,7 +158,7 @@ def run_accrual_scheduler():
             auto_reject_old_pending_leaves()
             logging.info(
                 '[SUCCESS] Auto-reject pending leaves job ran successfully.')
-        except Exception as e:
+        except (SQLAlchemyError, AttributeError, TypeError) as e:
             logging.error(
                 '[ERROR] Auto-reject pending leaves job failed: %s', e)
     scheduler.add_job(

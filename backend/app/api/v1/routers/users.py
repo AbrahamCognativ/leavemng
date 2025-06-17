@@ -1,6 +1,7 @@
 from app.deps.permissions import get_current_user, require_role
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from app.schemas.user import UserRead, UserCreate, UserUpdate
 from app.utils.password import hash_password
 from app.models.user import User
@@ -70,12 +71,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     try:
         db.commit()
         db.refresh(db_user)
-    except Exception as e:
+    except (SQLAlchemyError, AttributeError, TypeError) as e:
         db.rollback()
-        if hasattr(
-            e, 'orig') and hasattr(
-            e.orig, 'diag') and 'unique' in str(
-                e.orig).lower():
+        if hasattr(e, 'orig') and hasattr(e.orig, 'diag') and 'unique' in str(e.orig).lower():
             raise HTTPException(status_code=400,
                                 detail="passport_or_id_number already exists")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -187,11 +185,11 @@ def get_user_leave(
                     'decided_by': str(r.decided_by) if r.decided_by else None,
                     'comments': r.comments
                 })
-            except Exception as e:
+            except (AttributeError, TypeError, SQLAlchemyError) as e:
                 logger.error(f"Error processing leave request: {str(e)}")
                 # Continue with next request if one fails
                 continue
-    except Exception as e:
+    except (SQLAlchemyError, AttributeError, TypeError) as e:
         leave_requests = []
         logger.error(f"Error fetching leave requests: {str(e)}")
 
@@ -248,7 +246,7 @@ def update_user(
     try:
         db.commit()
         db.refresh(user)
-    except Exception as e:
+    except (SQLAlchemyError, AttributeError, TypeError) as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Could not update user")
     # Audit: log user update with proper audit logging

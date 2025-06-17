@@ -19,7 +19,7 @@ def clear_all_tables():
         conn.execute(text("SET session_replication_role = DEFAULT;"))
         session.commit()
         print("All tables cleared.")
-    except Exception as e:
+    except (AttributeError, TypeError, Exception) as e:
         session.rollback()
         print("Error:", e)
     finally:

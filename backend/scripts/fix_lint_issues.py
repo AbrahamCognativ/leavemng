@@ -28,7 +28,7 @@ def fix_trailing_whitespace(filepath):
             f.writelines(fixed_lines)
 
         print(f"Fixed trailing whitespace in: {filepath}")
-    except Exception as e:
+    except (AttributeError, TypeError, Exception) as e:
         print(f"Error fixing {filepath}: {e}")
 
 
@@ -50,7 +50,7 @@ def add_pylint_disable(filepath, disable_rules):
             print(f"Added pylint disable to: {filepath}")
         else:
             print(f"Pylint disable already exists in: {filepath}")
-    except Exception as e:
+    except (AttributeError, TypeError, Exception) as e:
         print(f"Error adding pylint disable to {filepath}: {e}")
 
 

@@ -89,7 +89,7 @@ def sick_leave_doc_check_job(request: Request = None):
                                     req.total_days)}
                             send_leave_auto_approval_notification(
                                 user.email, leave_details, approved=True)
-                    except Exception as e:
+                    except (AttributeError, TypeError, Exception) as e:
                         log_audit(db, "Sick Leave Document Check",
                                   f"Could not send notification: {e}")
             db.commit()
@@ -97,7 +97,7 @@ def sick_leave_doc_check_job(request: Request = None):
                 db,
                 "Sick Leave Document Check",
                 "Sick leave document check job ran successfully.")
-    except Exception as e:
+    except (AttributeError, TypeError, Exception) as e:
         log_audit(db, "Sick Leave Document Check",
                   f"Sick leave document check job failed: {e}")
     finally:
@@ -166,13 +166,13 @@ def sick_leave_doc_reminder_job():
                         # Request)
                         send_leave_sick_doc_reminder(
                             user.email, remaining_hours, leave_details)
-                    except Exception as e:
+                    except (AttributeError, TypeError, Exception) as e:
                         log_audit(db, "Sick Leave Document Reminder",
                                   f"Could not send reminder notification: {e}")
             db.commit()
             log_audit(db, "Sick Leave Document Reminder",
                       "Sick leave document reminder job ran successfully.")
-    except Exception as e:
+    except (AttributeError, TypeError, Exception) as e:
         log_audit(db, "Sick Leave Document Reminder",
                   f"Sick leave document reminder job failed: {e}")
     finally:

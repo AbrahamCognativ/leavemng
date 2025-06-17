@@ -70,7 +70,7 @@ try:
         else:
             print("No users found in the database. Cannot create test log.")
 
-except Exception as e:
+except (AttributeError, TypeError, Exception) as e:
     print(f"Error: {e}")
 
     # Check if the audit_logs table exists

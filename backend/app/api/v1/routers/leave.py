@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestPartialUpdate
 from app.schemas.leave_balance import LeaveBalanceUpdate, LeaveBalanceRead
 from app.models.leave_request import LeaveRequest
@@ -46,11 +47,10 @@ def create_leave_request(
     try:
         leave_type = db.query(LeaveType).filter(
             LeaveType.id == req.leave_type_id).first()
-    except Exception as e:
+    except (SQLAlchemyError, AttributeError, TypeError) as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error looking up leave_type_id: {
-                str(e)}")
+            detail=f"Error looking up leave_type_id: {str(e)}")
     if not leave_type:
         raise HTTPException(status_code=400, detail="Invalid leave_type_id")
 
@@ -451,7 +451,7 @@ def reject_leave_request(
         if user:
             send_leave_approval_notification(
                 user.email, leave_details, approved=False, request=request)
-    except Exception as e:
+    except (AttributeError, TypeError, SQLAlchemyError) as e:
         import logging
         logging.error(f"Error sending rejection email: {e}")
     return LeaveRequestRead.model_validate(req)
@@ -554,11 +554,10 @@ def update_leave_balance(
             "update_leave_balance",
             "leave_balance",
             str(user_id))
-    except Exception as e:
+    except (SQLAlchemyError, AttributeError, TypeError) as e:
         db.rollback()
         raise HTTPException(
             status_code=500,
-            detail=f"Could not update leave balance: {
-                str(e)}")
+            detail=f"Could not update leave balance: {str(e)}")
 
     return LeaveBalanceRead.model_validate(leave_balance)

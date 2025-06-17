@@ -56,12 +56,12 @@ def auto_reject_old_pending_leaves():
                         send_leave_auto_reject_notification(
                             user.email, leave_details, approved=False
                         )
-                    except Exception as e:
+                    except (AttributeError, TypeError, Exception) as e:
                         log_audit(db, "Auto-Reject Pending Leaves",
                                   f"Error sending auto-rejection email: {e}")
             log_audit(db, "Auto-Reject Pending Leaves",
                       f"Auto-rejected {len(old_pending)} old pending leaves")
-    except Exception as e:
+    except (AttributeError, TypeError, Exception) as e:
         log_audit(db, "Auto-Reject Pending Leaves",
                   f"Error in auto_reject_old_pending_leaves: {e}")
     finally:

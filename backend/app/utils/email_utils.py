@@ -42,7 +42,7 @@ def send_email_background(
                     response.status_code} {
                     response.body}")
             raise Exception("Could not send email.")
-    except Exception as e:
+    except (OSError, AttributeError, TypeError) as e:
         logging.error(f"Email sending failed: {e}")
         raise Exception(f"Could not send email: {e}")
 
@@ -99,7 +99,7 @@ def send_email(
             raise HTTPException(
                 status_code=502,
                 detail="Could not send email.")
-    except Exception as e:
+    except (OSError, AttributeError, TypeError) as e:
         logging.error(f"Email sending failed: {e}")
         raise HTTPException(
             status_code=502,

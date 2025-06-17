@@ -114,7 +114,7 @@ def cleanup_users_by_ids(user_ids: List[str]) -> None:
             db.query(User).filter(User.id == user_id).delete()
 
         db.commit()
-    except Exception as e:
+    except (AssertionError, AttributeError, TypeError, Exception) as e:
         db.rollback()
         print(f"Error during user cleanup: {e}")
     finally:
@@ -135,7 +135,7 @@ def cleanup_users_by_emails(emails: List[str]) -> None:
                 db.query(User).filter(User.email == email).delete()
 
         db.commit()
-    except Exception as e:
+    except (AssertionError, AttributeError, TypeError, Exception) as e:
         db.rollback()
         print(f"Error during email cleanup: {e}")
     finally:

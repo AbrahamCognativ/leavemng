@@ -104,7 +104,7 @@ def create_test_audit_logs():
             f"Successfully added {
                 len(sample_logs)} test audit logs to the database.")
 
-    except Exception as e:
+    except (AttributeError, TypeError, Exception) as e:
         db.rollback()
         print(f"Error creating test audit logs: {e}")
 

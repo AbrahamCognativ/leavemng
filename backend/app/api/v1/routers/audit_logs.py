@@ -1,6 +1,7 @@
 from app.deps.permissions import require_role
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import desc
 from typing import Optional
 from datetime import datetime
@@ -119,7 +120,7 @@ def get_audit_logs(
                             "status": resource.status,
                             "days": resource.days_requested
                         }
-                except Exception as e:
+                except (AttributeError, TypeError, SQLAlchemyError) as e:
                     print(f"Error getting leave request details: {str(e)}")
 
             elif log.resource_type == "org_unit":
@@ -132,7 +133,7 @@ def get_audit_logs(
                         resource_details = {
                             "description": resource.description
                         }
-                except Exception as e:
+                except (AttributeError, TypeError, SQLAlchemyError) as e:
                     print(f"Error getting org unit details: {str(e)}")
 
             # Create a dictionary with log data, user info, and resource info
@@ -157,7 +158,7 @@ def get_audit_logs(
             "limit": limit
         }
     except Exception as e:
-        # Log the error for debugging
+        # Broad catch is used here to ensure the API always returns a useful error message for unexpected errors.
         import traceback
         print(f"Error in get_audit_logs: {str(e)}")
         print(traceback.format_exc())

@@ -140,12 +140,12 @@ try:
             directory=str(uploads_path)),
         name="uploads")
     print(f"[INFO] Mounted uploads directory: {uploads_path}")
-except Exception as e:
+except (AttributeError, TypeError, Exception) as e:
     print(f"[WARN] Could not mount uploads directory: {e}")
 
 # Start the leave accrual scheduler (monthly)
 try:
     from app.utils.scheduler import run_accrual_scheduler
     run_accrual_scheduler()
-except Exception as e:
+except (AttributeError, TypeError, Exception) as e:
     print(f"[WARN] Could not start accrual scheduler: {e}")

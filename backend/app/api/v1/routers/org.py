@@ -1,6 +1,7 @@
 from app.deps.permissions import get_current_user, require_role
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from app.schemas.org_unit import OrgUnitRead, OrgUnitCreate, OrgUnitTree
 from app.models.org_unit import OrgUnit
 from app.models.user import User
@@ -205,11 +206,9 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
                     f"Found {
                         len(unit_users)} users for org unit {
                         unit.name}")
-            except Exception as e:
+            except (AttributeError, TypeError, SQLAlchemyError) as e:
                 print(
-                    f"Error loading users for org unit {
-                        unit.name}: {
-                        str(e)}")
+                    f"Error loading users for org unit {unit.name}: {str(e)}")
                 unit_users = []
 
             for user in unit_users:
@@ -242,14 +241,9 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
                         "id": str(user.id),
                         "name": user_name
                     })
-                except Exception as user_err:
+                except (AttributeError, TypeError, SQLAlchemyError) as user_err:
                     print(
-                        f"Error processing user {
-                            getattr(
-                                user,
-                                'id',
-                                'unknown')}: {
-                            str(user_err)}")
+                        f"Error processing user {getattr(user, 'id', 'unknown')}: {str(user_err)}")
 
             # Add manager-subordinate relationships
             for user in unit_users:
@@ -273,12 +267,9 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
                                            for child in users_by_role[manager_role_key]["children"]):
                                     users_by_role[manager_role_key]["children"].append(
                                         users_by_role[user_role_key])
-                except Exception as mgr_err:
+                except (AttributeError, TypeError, SQLAlchemyError) as mgr_err:
                     print(
-                        f"Error processing manager relationship for user {
-                            getattr(
-                                user, 'id', 'unknown')}: {
-                            str(mgr_err)}")
+                        f"Error processing manager relationship for user {getattr(user, 'id', 'unknown')}: {str(mgr_err)}")
         else:
             print(
                 f"Warning: 'users' relationship not loaded for org unit {
@@ -298,24 +289,17 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
             for child in children:
                 child_dict = build_org_unit_dict(child, db)
                 unit_dict["children"].append(child_dict)
-        except Exception as child_err:
+        except (AttributeError, TypeError, SQLAlchemyError) as child_err:
             print(
-                f"Error loading child units for {
-                    unit.name}: {
-                    str(child_err)}")
+                f"Error loading child units for {unit.name}: {str(child_err)}")
 
         return unit_dict
     except Exception as e:
+        # Broad catch is used here to ensure a valid structure is always returned, even for unexpected errors.
         import traceback
         print(
-            f"Error in build_org_unit_dict for unit {
-                getattr(
-                    unit,
-                    'name',
-                    'unknown')}: {
-                str(e)}")
+            f"Error in build_org_unit_dict for unit {getattr(unit, 'name', 'unknown')}: {str(e)}")
         print(traceback.format_exc())
-        # Return a minimal valid structure instead of propagating the error
         return {
             "id": str(getattr(unit, 'id', 'unknown')),
             "name": getattr(unit, 'name', 'Error processing unit'),

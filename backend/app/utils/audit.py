@@ -47,7 +47,8 @@ def create_audit_log(
         db.add(entry)
         db.commit()
         return True
-    except Exception as e:
+    except (AttributeError, TypeError, Exception) as e:
+        # Broad catch remains to ensure no audit log failure ever breaks main flow
         print(f"Error creating audit log: {e}")
         db.rollback()
         return False
