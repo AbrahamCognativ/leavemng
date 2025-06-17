@@ -2,16 +2,13 @@ import datetime
 from sqlalchemy.orm import Session
 from decimal import Decimal
 from app.models.leave_balance import LeaveBalance
-from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
+from app.models.leave_policy import AccrualFrequencyEnum
 from app.models.leave_type import LeaveType
 from app.models.user import User
 from app.utils.audit_log_utils import log_audit
 
 
 def add_existing_users_to_leave_balances(db: Session):
-    from app.models.leave_type import LeaveType, LeaveCodeEnum
-    from app.models.leave_policy import LeavePolicy
-    today = datetime.date.today()
     # Ensure all active users have LeaveBalance for every leave type
     active_users = db.query(User).filter(User.is_active).all()
     leave_types = db.query(LeaveType).all()
@@ -90,7 +87,7 @@ def accrue_monthly_leave_balances(db: Session):
     """
     Accrue all monthly leave types for all active users.
     """
-    from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
+    from app.models.leave_policy import LeavePolicy
     from app.models.leave_type import LeaveType
     from decimal import Decimal
     policies = db.query(LeavePolicy).filter(
@@ -225,7 +222,6 @@ def reset_annual_leave_carry_forward(db: Session):
     """
     from app.models.leave_type import LeaveCodeEnum, LeaveType
     from app.models.leave_balance import LeaveBalance
-    from sqlalchemy.orm import joinedload
     annual_type = db.query(LeaveType).filter(
         LeaveType.code == LeaveCodeEnum.annual).first()
     if not annual_type:
@@ -250,8 +246,6 @@ def reset_yearly_leave_balances_on_join_date(db: Session):
     Should be run once daily (e.g., via scheduled job).
     """
     from app.models.leave_policy import LeavePolicy, AccrualFrequencyEnum
-    from app.models.leave_type import LeaveType
-    from app.models.leave_balance import LeaveBalance
     from sqlalchemy.orm import joinedload
     today = datetime.date.today()
     today_month_day = (today.month, today.day)

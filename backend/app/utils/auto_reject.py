@@ -7,7 +7,6 @@ from app.models.leave_type import LeaveType
 from app.db.session import SessionLocal
 from app.utils.email_utils import send_leave_auto_reject_notification
 from app.utils.audit_log_utils import log_audit
-import logging
 
 
 def auto_reject_old_pending_leaves():

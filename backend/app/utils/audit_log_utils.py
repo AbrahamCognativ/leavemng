@@ -18,7 +18,6 @@ LOG_PATH = os.path.abspath(LOG_PATH)
 
 def get_or_create_scheduler_user(db: Session):
     """Get or create the Anonymous Scheduler user for audit logging."""
-    from app.models.user import User
     scheduler_name = 'anonymous scheduler'
     user = db.query(User).filter(User.name == scheduler_name).first()
     if not user:

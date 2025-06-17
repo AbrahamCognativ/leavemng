@@ -42,5 +42,4 @@ def get_settings():
     env = os.getenv("APP_ENV", "development")
     if env == "production":
         return ProductionSettings()
-    else:
-        return DevelopmentSettings()
+    return DevelopmentSettings()

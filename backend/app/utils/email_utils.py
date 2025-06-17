@@ -1,13 +1,10 @@
 from app.settings import get_settings
 import os
 import logging
-from typing import List, Optional
+from typing import Optional
 from fastapi import Request, HTTPException
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-
-
-import os
 
 
 def send_email_background(

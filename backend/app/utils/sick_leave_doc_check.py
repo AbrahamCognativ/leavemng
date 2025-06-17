@@ -1,5 +1,4 @@
 import logging
-from sqlalchemy import and_
 from app.db.session import SessionLocal
 from fastapi import Request
 from app.models.leave_request import LeaveRequest
@@ -123,8 +122,6 @@ def sick_leave_doc_reminder_job():
             return
         # Overdue: sick type, pending, applied within last 48h, and no leave
         # document attached
-        from sqlalchemy.orm import aliased
-        from sqlalchemy.sql import exists, and_
         overdue = db.query(LeaveRequest).filter(
             LeaveRequest.leave_type_id == sick_type.id,
             LeaveRequest.status == 'pending',
@@ -167,7 +164,6 @@ def sick_leave_doc_reminder_job():
                             0, int(DOC_DEADLINE_HOURS - elapsed))
                         # Use background email sending for jobs (no FastAPI
                         # Request)
-                        from app.utils.email_utils import send_email_background
                         send_leave_sick_doc_reminder(
                             user.email, remaining_hours, leave_details)
                     except Exception as e:

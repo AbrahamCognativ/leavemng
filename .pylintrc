@@ -12,7 +12,8 @@ disable=
     too-many-locals,
     too-many-branches,
     too-many-statements,
-    no-member
+    no-member,
+    too-few-public-methods
 
 [TYPECHECK]
 # Ignore Alembic modules that use dynamic imports
