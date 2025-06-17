@@ -61,12 +61,15 @@ def run_accrual_scheduler():
     def reset_yearly_leave_balances_on_join_date_job():
         db = SessionLocal()
         try:
-            logging.info('[START] Reset yearly leave balances on join date job starting.')
+            logging.info(
+                '[START] Reset yearly leave balances on join date job starting.')
             reset_yearly_leave_balances_on_join_date(db)
             db.commit()
-            logging.info('[SUCCESS] Reset yearly leave balances on join date job ran successfully.')
+            logging.info(
+                '[SUCCESS] Reset yearly leave balances on join date job ran successfully.')
         except Exception as e:
-            logging.error('[ERROR] Reset yearly leave balances on join date job failed: %s', e)
+            logging.error(
+                '[ERROR] Reset yearly leave balances on join date job failed: %s', e)
         finally:
             db.close()
     scheduler.add_job(
@@ -84,9 +87,11 @@ def run_accrual_scheduler():
             logging.info('[START] Sick leave document check job starting.')
             sick_leave_doc_check_job()
             db.commit()
-            logging.info('[SUCCESS] Sick leave document check job ran successfully.')
+            logging.info(
+                '[SUCCESS] Sick leave document check job ran successfully.')
         except Exception as e:
-            logging.error('[ERROR] Sick leave document check job failed: %s', e)
+            logging.error(
+                '[ERROR] Sick leave document check job failed: %s', e)
         finally:
             db.close()
     # Schedule sick leave document check every hour
@@ -105,9 +110,11 @@ def run_accrual_scheduler():
             logging.info('[START] Sick leave document reminder job starting.')
             sick_leave_doc_reminder_job()
             db.commit()
-            logging.info('[SUCCESS] Sick leave document reminder job ran successfully.')
+            logging.info(
+                '[SUCCESS] Sick leave document reminder job ran successfully.')
         except Exception as e:
-            logging.error('[ERROR] Sick leave document reminder job failed: %s', e)
+            logging.error(
+                '[ERROR] Sick leave document reminder job failed: %s', e)
         finally:
             db.close()
     scheduler.add_job(
@@ -124,9 +131,11 @@ def run_accrual_scheduler():
             logging.info('[START] Annual leave carry forward job starting.')
             reset_annual_leave_carry_forward(db)
             db.commit()
-            logging.info('[SUCCESS] Annual leave carry forward job ran successfully.')
+            logging.info(
+                '[SUCCESS] Annual leave carry forward job ran successfully.')
         except Exception as e:
-            logging.error('[ERROR] Annual leave carry forward job failed: %s', e)
+            logging.error(
+                '[ERROR] Annual leave carry forward job failed: %s', e)
         finally:
             db.close()
     # Run at 00:00 on December 31st every year
@@ -146,9 +155,11 @@ def run_accrual_scheduler():
         try:
             logging.info('[START] Auto-reject pending leaves job starting.')
             auto_reject_old_pending_leaves()
-            logging.info('[SUCCESS] Auto-reject pending leaves job ran successfully.')
+            logging.info(
+                '[SUCCESS] Auto-reject pending leaves job ran successfully.')
         except Exception as e:
-            logging.error('[ERROR] Auto-reject pending leaves job failed: %s', e)
+            logging.error(
+                '[ERROR] Auto-reject pending leaves job failed: %s', e)
     scheduler.add_job(
         auto_reject_old_pending_leaves_job,
         'cron',

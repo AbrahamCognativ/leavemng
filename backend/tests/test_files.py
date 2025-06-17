@@ -40,7 +40,7 @@ def test_file_upload_success(auth_token):
     test_content = b"This is a test file content"
     test_file = io.BytesIO(test_content)
     files = {"file": ("test.txt", test_file, "text/plain")}
-    
+
     resp = client.post("/api/v1/files/upload", files=files, headers=headers)
     assert_response_success(resp, [200, 201])
     file_data = resp.json()
@@ -62,11 +62,14 @@ def test_file_download(auth_token):
     test_content = b"Download test content"
     test_file = io.BytesIO(test_content)
     files = {"file": ("download_test.txt", test_file, "text/plain")}
-    
-    upload_resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+
+    upload_resp = client.post(
+        "/api/v1/files/upload",
+        files=files,
+        headers=headers)
     assert_response_success(upload_resp, [200, 201])
     file_id = upload_resp.json()["id"]
-    
+
     # Now download the file
     download_resp = client.get(f"/api/v1/files/{file_id}", headers=headers)
     assert_response_success(download_resp)
@@ -78,15 +81,18 @@ def test_file_delete(auth_token):
     test_content = b"Delete test content"
     test_file = io.BytesIO(test_content)
     files = {"file": ("delete_test.txt", test_file, "text/plain")}
-    
-    upload_resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+
+    upload_resp = client.post(
+        "/api/v1/files/upload",
+        files=files,
+        headers=headers)
     assert_response_success(upload_resp, [200, 201])
     file_id = upload_resp.json()["id"]
-    
+
     # Now delete the file
     delete_resp = client.delete(f"/api/v1/files/{file_id}", headers=headers)
     assert_response_success(delete_resp, [200, 204])
-    
+
     # Verify file is deleted
     get_resp = client.get(f"/api/v1/files/{file_id}", headers=headers)
     assert get_resp.status_code in (404, 410)
@@ -106,7 +112,7 @@ def test_file_upload_large_file(auth_token):
     large_content = b"x" * (1024 * 1024)
     test_file = io.BytesIO(large_content)
     files = {"file": ("large_test.txt", test_file, "text/plain")}
-    
+
     resp = client.post("/api/v1/files/upload", files=files, headers=headers)
     # Should succeed or fail with appropriate error
     assert resp.status_code in (200, 201, 413, 422)
@@ -117,7 +123,7 @@ def test_file_upload_empty_file(auth_token):
     # Create an empty file
     empty_file = io.BytesIO(b"")
     files = {"file": ("empty.txt", empty_file, "text/plain")}
-    
+
     resp = client.post("/api/v1/files/upload", files=files, headers=headers)
     # Should fail validation or succeed depending on implementation
     assert resp.status_code in (200, 201, 400, 422)
@@ -131,12 +137,15 @@ def test_file_upload_different_types(auth_token):
         ("test.png", b"PNG content", "image/png"),
         ("test.doc", b"DOC content", "application/msword")
     ]
-    
+
     for filename, content, content_type in file_types:
         test_file = io.BytesIO(content)
         files = {"file": (filename, test_file, content_type)}
-        
-        resp = client.post("/api/v1/files/upload", files=files, headers=headers)
+
+        resp = client.post(
+            "/api/v1/files/upload",
+            files=files,
+            headers=headers)
         # Should succeed or fail based on allowed file types
         assert resp.status_code in (200, 201, 400, 415, 422)
 
@@ -147,7 +156,7 @@ def test_file_metadata(auth_token):
     test_content = b"Metadata test content"
     test_file = io.BytesIO(test_content)
     files = {"file": ("metadata_test.txt", test_file, "text/plain")}
-    
+
     resp = client.post("/api/v1/files/upload", files=files, headers=headers)
     if resp.status_code in (200, 201):
         file_data = resp.json()
@@ -223,7 +232,7 @@ def users_and_tokens(org_unit_id, seeded_admin):
         admin_token, hr_token, manager_token, ic_token, requester_token,
         admin_id, hr_id, manager_id, ic_id, requester_id
     )
-    
+
     yield users_dict
     # Cleanup after tests
     cleanup_users_dict(users_dict, ["hr", "manager", "ic", "requester"])

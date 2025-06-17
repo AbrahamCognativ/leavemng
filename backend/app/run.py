@@ -77,10 +77,10 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         if (request.url.path.startswith("/api/v1/auth/login")
-                    or request.url.path.startswith("/docs")
-                    or request.url.path.startswith("/openapi")
-                    or request.url.path.startswith("/redoc")
-                    or request.url.path.startswith("/api/v1/auth/reset-password-invite")
+                or request.url.path.startswith("/docs")
+                or request.url.path.startswith("/openapi")
+                or request.url.path.startswith("/redoc")
+                or request.url.path.startswith("/api/v1/auth/reset-password-invite")
                 ):
             return await call_next(request)
         # Only require token for API routes

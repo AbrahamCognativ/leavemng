@@ -8,7 +8,7 @@ from app.utils.password import hash_password, verify_password
 from app.schemas.user import UserRead
 from pydantic import BaseModel, EmailStr
 from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.settings import get_settings
 from uuid import UUID
 from app.deps.permissions import get_current_user, require_role
@@ -107,7 +107,7 @@ def login(
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": UserRead.from_orm(user)}
+        "user": UserRead.model_validate(user)}
 
 
 # Dummy permission dependency for HR/Admin
@@ -240,7 +240,7 @@ def invite_user(
         invite_link,
         random_password,
         request=request)
-    return UserRead.from_orm(user)
+    return UserRead.model_validate(user)
 
 
 @router.post("/logout", tags=["auth"])

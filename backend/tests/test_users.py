@@ -60,7 +60,10 @@ def test_user_crud(auth_token):
         "last_name": "User",
         "role": "HR"
     }
-    upd_resp = client.put(f"/api/v1/users/{user_id}", json=upd_data, headers=headers)
+    upd_resp = client.put(
+        f"/api/v1/users/{user_id}",
+        json=upd_data,
+        headers=headers)
     assert_response_success(upd_resp)
     upd_user = upd_resp.json()
     assert upd_user["first_name"] == "Updated"
@@ -162,7 +165,10 @@ def test_user_role_update(auth_token):
         "last_name": "Test",
         "role": "HR"
     }
-    upd_resp = client.put(f"/api/v1/users/{user_id}", json=upd_data, headers=headers)
+    upd_resp = client.put(
+        f"/api/v1/users/{user_id}",
+        json=upd_data,
+        headers=headers)
     assert_response_success(upd_resp)
     assert upd_resp.json()["role"] == "HR"
     # Cleanup
@@ -236,7 +242,10 @@ def test_update_user(auth_token):
         "last_name": "User",
         "role": "HR"
     }
-    upd_resp = client.put(f"/api/v1/users/{user_id}", json=upd_data, headers=headers)
+    upd_resp = client.put(
+        f"/api/v1/users/{user_id}",
+        json=upd_data,
+        headers=headers)
     assert_response_success(upd_resp)
     assert upd_resp.json()["first_name"] == "Updated"
     assert upd_resp.json()["role"] == "HR"

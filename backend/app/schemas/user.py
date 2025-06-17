@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     is_active: Optional[bool] = True
     extra_metadata: Optional[Any] = None
 
+
 class UserCreate(UserBase):
     password: str
 

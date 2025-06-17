@@ -39,7 +39,8 @@ def test_analytics_summary_success(monkeypatch):
         token = get_admin_token()
         headers = create_auth_headers(token)
         response = client.get('/api/v1/analytics/summary', headers=headers)
-        assert response.status_code in (200, 401, 403)  # Depending on auth impl
+        assert response.status_code in (
+            200, 401, 403)  # Depending on auth impl
         if response.status_code == 200:
             data = response.json()
             assert 'total_users' in data
@@ -109,7 +110,8 @@ def test_analytics_user_growth(monkeypatch):
     ("ic", False),
     ("requester", False),
 ])
-def test_analytics_dashboard_permissions(analytics_users, endpoint, role, allowed):
+def test_analytics_dashboard_permissions(
+        analytics_users, endpoint, role, allowed):
     token = analytics_users[role]["token"]
     headers = create_auth_headers(token)
     with TestClient(app) as client:
@@ -117,4 +119,5 @@ def test_analytics_dashboard_permissions(analytics_users, endpoint, role, allowe
         if allowed:
             assert_response_success(response)
         else:
-            assert response.status_code in (401, 403), f"Role {role} should be forbidden on {endpoint}"
+            assert response.status_code in (
+                401, 403), f"Role {role} should be forbidden on {endpoint}"
