@@ -264,8 +264,7 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
                         f"Error processing manager relationship for user {getattr(user, 'id', 'unknown')}: {str(mgr_err)}")
         else:
             print(
-                f"Warning: 'users' relationship not loaded for org unit {
-                    unit.name}")
+                f"Warning: 'users' relationship not loaded for org unit {unit.name}")
 
         # Add roles to the unit
         for role_dict in users_by_role.values():
