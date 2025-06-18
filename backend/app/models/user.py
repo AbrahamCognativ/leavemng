@@ -29,7 +29,7 @@ class User(Base):
     # Required: 'male' or 'female' for gender-specific leave
     gender = Column(String, nullable=False, index=True)
     extra_metadata = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # pylint: disable=not-callable
     is_active = Column(Boolean, default=True, nullable=False)
 
     manager = relationship("User", remote_side=[id], backref="direct_reports")

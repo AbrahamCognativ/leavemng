@@ -128,10 +128,8 @@ def create_leave_request(
         leave_balance.balance_days += Decimal(str(req.total_days))
         db.add(leave_balance)
         db.commit()
-        if hasattr(
-            e, 'orig') and hasattr(
-            e.orig, 'diag') and 'unique' in str(
-                e.orig).lower():
+        orig = getattr(e, 'orig', None)
+        if orig is not None and hasattr(orig, 'diag') and 'unique' in str(orig).lower():
             raise HTTPException(
                 status_code=400,
                 detail="Duplicate leave request")

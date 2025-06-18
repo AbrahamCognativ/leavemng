@@ -249,11 +249,11 @@ def reset_yearly_leave_balances_on_join_date(db: Session):
         return
     from sqlalchemy import func
     users = db.query(User).filter(
-        func.extract(
-            'month', User.created_at) == today_month_day[0], func.extract(
-            'day', User.created_at) == today_month_day[1]).options(
-                joinedload(
-                    User.leave_balances)).all()
+        func.extract('month', User.created_at) == today_month_day[0],  # pylint: disable=not-callable
+        func.extract('day', User.created_at) == today_month_day[1]  # pylint: disable=not-callable
+    ).options(
+        joinedload(User.leave_balances)
+    ).all()
     if not users:
         log_audit(
             db,

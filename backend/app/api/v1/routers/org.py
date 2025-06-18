@@ -73,10 +73,8 @@ def create_org_unit(
         db.refresh(db_unit)
     except Exception as e:
         db.rollback()
-        if hasattr(
-            e, 'orig') and hasattr(
-            e.orig, 'diag') and 'unique' in str(
-                e.orig).lower():
+        orig = getattr(e, 'orig', None)
+        if orig is not None and hasattr(orig, 'diag') and 'unique' in str(orig).lower():
             raise HTTPException(
                 status_code=400,
                 detail="Org unit with this name already exists")

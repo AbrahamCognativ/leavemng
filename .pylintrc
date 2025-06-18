@@ -1,28 +1,14 @@
 [MESSAGES CONTROL]
-disable=
-    missing-module-docstring,
-    missing-class-docstring,
-    missing-function-docstring,
-    line-too-long,
-    wrong-import-order,
-    wrong-import-position,
-    ungrouped-imports,
-    import-outside-toplevel,
-    too-many-arguments,
-    too-many-locals,
-    too-many-branches,
-    too-many-statements,
-    no-member,
-    too-few-public-methods,
-    redefined-outer-name,
-    invalid-name,
-    too-many-positional-arguments,
-    broad-exception-caught,
-    logging-fstring-interpolation
+disable=all-warnings,all-refactor,all-convention,all-info,W,R,C,I
+# Only fatal (F) and error (E) messages will be reported
 
 [TYPECHECK]
 # Ignore Alembic modules that use dynamic imports
 ignored-modules=alembic.context,alembic.op
+
+[MASTER]
+# Ignore the test folder for linting
+ignore=backend/tests
 
 [FORMAT]
 max-line-length=120

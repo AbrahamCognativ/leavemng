@@ -1,4 +1,6 @@
 from app.deps.permissions import get_current_user, require_role
+import logging
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -73,7 +75,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         db.refresh(db_user)
     except (SQLAlchemyError, AttributeError, TypeError) as e:
         db.rollback()
-        if hasattr(e, 'orig') and hasattr(e.orig, 'diag') and 'unique' in str(e.orig).lower():
+        orig = getattr(e, 'orig', None)
+        if orig is not None and hasattr(orig, 'diag') and 'unique' in str(orig).lower():
             raise HTTPException(status_code=400,
                                 detail="passport_or_id_number already exists")
         raise HTTPException(status_code=500, detail="Internal server error")
