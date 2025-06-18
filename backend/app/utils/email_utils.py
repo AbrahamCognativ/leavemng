@@ -247,8 +247,7 @@ def send_leave_approval_notification(
 
     # Color bar for status
     color = "#28a745" if approved else "#dc3545"
-    status_text = f'<span style="color:{color};font-weight:bold;">{
-        status.title()}</span>'
+    status_text = f'<span style="color:{color};font-weight:bold;">{status.title()}</span>'
     html = f'''
     <div style="font-family:sans-serif;max-width:600px;">
         <p>Hello,</p>

@@ -162,8 +162,7 @@ def accrue_quarterly_leave_balances(db: Session):
     log_audit(
         db,
         "Quarterly Leave Accrual",
-        f"Updated leave types: {
-            ', '.join(affected_types)}. Accrued {accrual_amount} days per active user (per policy).")
+        f"Updated leave types: {', '.join(affected_types)}. Accrued {accrual_amount} days per active user (per policy).")
 
 
 def accrue_yearly_leave_balances(db: Session):
