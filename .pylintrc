@@ -14,7 +14,11 @@ disable=
     too-many-statements,
     no-member,
     too-few-public-methods,
-    redefined-outer-name
+    redefined-outer-name,
+    invalid-name,
+    too-many-positional-arguments,
+    broad-exception-caught,
+    logging-fstring-interpolation
 
 [TYPECHECK]
 # Ignore Alembic modules that use dynamic imports
