@@ -8,7 +8,7 @@ ignored-modules=alembic.context,alembic.op
 
 [MASTER]
 # Ignore the test folder for linting
-ignore=backend/tests
+ignore=backend/tests,backend/venv
 
 [FORMAT]
 max-line-length=120
