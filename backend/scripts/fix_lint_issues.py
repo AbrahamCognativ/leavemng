@@ -74,8 +74,7 @@ def main():
     python_files = find_python_files(backend_dir)
 
     print(
-        f"Found {
-            len(python_files)} Python files to check for trailing whitespace...")
+        f"Found {len(python_files)} Python files to check for trailing whitespace...")
 
     # Fix trailing whitespace in all Python files
     for filepath in python_files:

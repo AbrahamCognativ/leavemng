@@ -101,8 +101,7 @@ def create_test_audit_logs():
 
         db.commit()
         print(
-            f"Successfully added {
-                len(sample_logs)} test audit logs to the database.")
+            f"Successfully added {len(sample_logs)} test audit logs to the database.")
 
     except (AttributeError, TypeError, Exception) as e:
         db.rollback()

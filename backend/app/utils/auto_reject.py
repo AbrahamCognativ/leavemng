@@ -41,8 +41,7 @@ def auto_reject_old_pending_leaves():
                 if user:
                     leave_details = {
                         "Type": next(
-                            (f"{
-                                lt.code.value.capitalize()} leave" for lt in db.query(LeaveType).all() if lt.id == req.leave_type_id and lt.code.value in [
+                            (f"{lt.code.value.capitalize()} leave" for lt in db.query(LeaveType).all() if lt.id == req.leave_type_id and lt.code.value in [
                                 'sick',
                                 'annual',
                                 'compassionate',

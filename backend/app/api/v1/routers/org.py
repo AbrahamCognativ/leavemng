@@ -157,8 +157,7 @@ def get_org_chart(db: Session = Depends(get_db),
         print(f"Generated org chart with {len(result)} root units")
         if result:
             print(
-                f"First unit: {
-                    result[0]['name'] if 'name' in result[0] else 'Unknown'}")
+                f"First unit: {result[0]['name'] if 'name' in result[0] else 'Unknown'}")
 
         # Return as a plain JSON response to avoid Pydantic validation issues
         return Response(

@@ -24,4 +24,5 @@ jobs:
         pip install -r backend/requirements.txt
     - name: Analysing the code with pylint
       run: |
+        export PYTHONPATH=backend/app
         pylint $(git ls-files '*.py' | grep -v '^backend/tests/')

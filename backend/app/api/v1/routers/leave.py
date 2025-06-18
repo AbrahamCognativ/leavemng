@@ -280,8 +280,7 @@ def partial_update_leave_request(
         db.rollback()
         raise HTTPException(
             status_code=500,
-            detail=f"Could not update leave request: {
-                str(e)}")
+            detail=f"Could not update leave request: {str(e)}")
 
     return LeaveRequestRead.model_validate(req)
 

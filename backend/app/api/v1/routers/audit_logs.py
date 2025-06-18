@@ -113,9 +113,7 @@ def get_audit_logs(
                         leave_type = db.query(LeaveType).filter(
                             LeaveType.id == resource.leave_type_id).first()
                         leave_type_name = leave_type.name if leave_type else "Unknown"
-                        resource_name = f"{leave_type_name} ({
-                            resource.start_date.strftime('%Y-%m-%d')} to {
-                            resource.end_date.strftime('%Y-%m-%d')})"
+                        resource_name = f"{leave_type_name} ({resource.start_date.strftime('%Y-%m-%d')} to {resource.end_date.strftime('%Y-%m-%d')})"
                         resource_details = {
                             "status": resource.status,
                             "days": resource.days_requested

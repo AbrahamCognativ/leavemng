@@ -155,8 +155,7 @@ def sick_leave_doc_reminder_job():
                             log_audit(
                                 db,
                                 "Sick Leave Document Reminder",
-                                f"User not found for leave request {
-                                    req.id}")
+                                f"User not found for leave request {req.id}")
                             continue
                         elapsed = (now - req.applied_at).total_seconds() / 3600
                         DOC_DEADLINE_HOURS = 48
