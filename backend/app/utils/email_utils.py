@@ -38,9 +38,7 @@ def send_email_background(
         response = sg.send(message)
         if response.status_code >= 400:
             logging.error(
-                f"SendGrid error: {
-                    response.status_code} {
-                    response.body}")
+                f"SendGrid error: {response.status_code} {response.body}")
             raise Exception("Could not send email.")
     except (OSError, AttributeError, TypeError) as e:
         logging.error(f"Email sending failed: {e}")
@@ -93,9 +91,7 @@ def send_email(
         response = sg.send(message)
         if response.status_code >= 400:
             logging.error(
-                f"SendGrid error: {
-                    response.status_code} {
-                    response.body}")
+                f"SendGrid error: {response.status_code} {response.body}")
             raise HTTPException(
                 status_code=502,
                 detail="Could not send email.")

@@ -200,9 +200,7 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
             try:
                 unit_users = list(unit.users)  # Force load the relationship
                 print(
-                    f"Found {
-                        len(unit_users)} users for org unit {
-                        unit.name}")
+                    f"Found {len(unit_users)} users for org unit {unit.name}")
             except (AttributeError, TypeError, SQLAlchemyError) as e:
                 print(
                     f"Error loading users for org unit {unit.name}: {str(e)}")
