@@ -24,7 +24,7 @@ def get_or_create_scheduler_user(db: Session):
         user = User(
             name=scheduler_name,
             email='scheduler@cognativ.com',
-            hashed_password='!',  # Not used for login
+            hashed_password='!',  # Not used for login # nosec
             role_band='IC',
             role_title='Scheduler',
             passport_or_id_number='SCHEDULER-000',
