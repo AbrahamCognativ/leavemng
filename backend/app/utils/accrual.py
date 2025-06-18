@@ -267,5 +267,4 @@ def reset_yearly_leave_balances_on_join_date(db: Session):
     log_audit(
         db,
         "Yearly Leave Accrual",
-        f"Reset yearly leave balances for {
-            len(users)} users.")
+        f"Reset yearly leave balances for {len(users)} users.")
