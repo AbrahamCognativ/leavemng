@@ -1,10 +1,11 @@
 import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from decimal import Decimal
 from app.models.leave_balance import LeaveBalance
 from app.models.leave_policy import AccrualFrequencyEnum
 from app.models.leave_type import LeaveType
 from app.models.user import User
+from app.models.leave_policy import LeavePolicy
 from app.utils.audit_log_utils import log_audit
 
 

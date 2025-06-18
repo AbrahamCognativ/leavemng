@@ -1,6 +1,7 @@
 # Placeholder for files tests
 from uuid import uuid4
 import pytest
+import io
 from fastapi.testclient import TestClient
 from app.run import app
 from .test_utils import (

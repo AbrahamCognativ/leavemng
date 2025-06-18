@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from app.run import app
 from app.models.user import User
+from app.db.session import SessionLocal
 
 client = TestClient(app)
 
