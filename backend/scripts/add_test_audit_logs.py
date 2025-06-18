@@ -4,30 +4,33 @@ Script to add test audit logs to the database.
 Run this script to populate the audit_logs table with sample data.
 """
 
+from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.db.session import SessionLocal
 import sys
 import os
 import uuid
 from datetime import datetime, timezone
-import json
-
 # Add the parent directory to the path so we can import from app
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(
+    0,
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            '..')))
 
-from app.db.session import SessionLocal
-from app.models.audit_log import AuditLog
-from app.models.user import User
 
 def create_test_audit_logs():
     """Create test audit logs in the database."""
     db = SessionLocal()
-    
+
     try:
         # Get a user to associate with the logs
         user = db.query(User).first()
         if not user:
             print("No users found in the database. Please create a user first.")
             return
-        
+
         # Create sample audit logs for various actions
         sample_logs = [
             {
@@ -83,7 +86,7 @@ def create_test_audit_logs():
                 }
             }
         ]
-        
+
         # Add logs to the database
         for log_data in sample_logs:
             log = AuditLog(
@@ -95,16 +98,18 @@ def create_test_audit_logs():
                 extra_metadata=log_data["extra_metadata"]
             )
             db.add(log)
-        
+
         db.commit()
-        print(f"Successfully added {len(sample_logs)} test audit logs to the database.")
-    
-    except Exception as e:
+        print(
+            f"Successfully added {len(sample_logs)} test audit logs to the database.")
+
+    except (AttributeError, TypeError, Exception) as e:
         db.rollback()
         print(f"Error creating test audit logs: {e}")
-    
+
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     create_test_audit_logs()

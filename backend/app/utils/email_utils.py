@@ -1,14 +1,18 @@
+from app.settings import get_settings
 import os
 import logging
-from typing import List, Optional
+from typing import Optional
 from fastapi import Request, HTTPException
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 
-import os
-
-def send_email_background(subject: str, body: str, to_emails: list[str], from_email: Optional[str] = None, html: Optional[str] = None):
+def send_email_background(
+        subject: str,
+        body: str,
+        to_emails: list[str],
+        from_email: Optional[str] = None,
+        html: Optional[str] = None):
     """
     Send an email using SendGrid settings from environment variables. Use this for background jobs where FastAPI Request is not available.
     """
@@ -33,13 +37,21 @@ def send_email_background(subject: str, body: str, to_emails: list[str], from_em
         sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)
         if response.status_code >= 400:
-            logging.error(f"SendGrid error: {response.status_code} {response.body}")
+            logging.error(
+                f"SendGrid error: {response.status_code} {response.body}")
             raise Exception("Could not send email.")
-    except Exception as e:
+    except (OSError, AttributeError, TypeError) as e:
         logging.error(f"Email sending failed: {e}")
         raise Exception(f"Could not send email: {e}")
 
-def send_email(subject: str, body: str, to_emails: list[str], request: Request, from_email: Optional[str] = None, html: Optional[str] = None):
+
+def send_email(
+        subject: str,
+        body: str,
+        to_emails: list[str],
+        request: Request,
+        from_email: Optional[str] = None,
+        html: Optional[str] = None):
     """
     Send an email using SendGrid settings from FastAPI app.state.settings.
     Args:
@@ -54,12 +66,17 @@ def send_email(subject: str, body: str, to_emails: list[str], request: Request, 
     sendgrid_api_key = getattr(settings, 'SENDGRID_API_KEY', None)
     if not sendgrid_api_key:
         logging.error("SENDGRID_API_KEY not configured in settings.")
-        raise HTTPException(status_code=500, detail="Email service not configured.")
+        raise HTTPException(status_code=500,
+                            detail="Email service not configured.")
 
-    from_email = from_email or getattr(settings, 'EMAIL_USER', None) or getattr(settings, 'EMAIL_HOST', None)
+    from_email = from_email or getattr(
+        settings, 'EMAIL_USER', None) or getattr(
+        settings, 'EMAIL_HOST', None)
     if not from_email:
         logging.error("No from_email configured.")
-        raise HTTPException(status_code=500, detail="Sender email not configured.")
+        raise HTTPException(
+            status_code=500,
+            detail="Sender email not configured.")
 
     # SendGrid expects a single email or a list
     message = Mail(
@@ -73,16 +90,24 @@ def send_email(subject: str, body: str, to_emails: list[str], request: Request, 
         sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)
         if response.status_code >= 400:
-            logging.error(f"SendGrid error: {response.status_code} {response.body}")
-            raise HTTPException(status_code=502, detail="Could not send email.")
-    except Exception as e:
+            logging.error(
+                f"SendGrid error: {response.status_code} {response.body}")
+            raise HTTPException(
+                status_code=502,
+                detail="Could not send email.")
+    except (OSError, AttributeError, TypeError) as e:
         logging.error(f"Email sending failed: {e}")
-        raise HTTPException(status_code=502, detail=f"Could not send email: {e}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not send email: {e}")
 
 
-from app.settings import get_settings
-
-def send_invite_email(to_email: str, to_name: str, invite_link: str, password: str, request: Request):
+def send_invite_email(
+        to_email: str,
+        to_name: str,
+        invite_link: str,
+        password: str,
+        request: Request):
     subject = "Invite - Welcome to Cognativ Technology Ltd"
     body = (
         f"Hello {to_name},\n\n"
@@ -115,10 +140,15 @@ def send_invite_email(to_email: str, to_name: str, invite_link: str, password: s
     </html>
     """
     send_email(subject, body, [to_email], request=request, html=html)
-        
 
 
-def send_leave_request_notification(to_email: str, requester_name: str, leave_details: dict, request: Request, request_id: int = None, requestor_email: str = None):
+def send_leave_request_notification(
+        to_email: str,
+        requester_name: str,
+        leave_details: dict,
+        request: Request,
+        request_id: int = None,
+        requestor_email: str = None):
     """
     Send a leave request notification with approve/reject links and a table of leave details.
     leave_details should be a dict with keys/values for the table.
@@ -130,7 +160,9 @@ def send_leave_request_notification(to_email: str, requester_name: str, leave_de
 
     # HTML Table for leave details
     if isinstance(leave_details, dict):
-        table_rows = ''.join(f'<tr><td style=\"padding:4px 8px;border:1px solid #ddd;\"><b>{k}</b></td><td style=\"padding:4px 8px;border:1px solid #ddd;\">{v}</td></tr>' for k, v in leave_details.items())
+        table_rows = ''.join(
+            f'<tr><td style=\"padding:4px 8px;border:1px solid #ddd;\"><b>{k}</b></td><td style=\"padding:4px 8px;border:1px solid #ddd;\">{v}</td></tr>' for k,
+            v in leave_details.items())
         details_table = f'<table style=\"border-collapse:collapse;margin:12px 0;\">{table_rows}</table>'
     else:
         details_table = f'<pre>{leave_details}</pre>'
@@ -168,10 +200,19 @@ def send_leave_request_notification(to_email: str, requester_name: str, leave_de
             <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
         </div>
         '''
-        send_email(confirm_subject, confirm_body, [requestor_email], request=request, html=confirm_html)
+        send_email(
+            confirm_subject,
+            confirm_body,
+            [requestor_email],
+            request=request,
+            html=confirm_html)
 
 
-def send_leave_approval_notification(to_email: str, leave_details, approved: bool, request: Request):
+def send_leave_approval_notification(
+        to_email: str,
+        leave_details,
+        approved: bool,
+        request: Request):
     status = "approved" if approved else "rejected"
     subject = f"Your Leave Request has been {status.title()}"
 
@@ -194,9 +235,12 @@ def send_leave_approval_notification(to_email: str, leave_details, approved: boo
             parsed_details = None
 
     if parsed_details:
-        table_rows = ''.join(f'<tr><td style="padding:4px 8px;border:1px solid #ddd;"><b>{k}</b></td><td style="padding:4px 8px;border:1px solid #ddd;">{v}</td></tr>' for k, v in parsed_details.items())
+        table_rows = ''.join(
+            f'<tr><td style="padding:4px 8px;border:1px solid #ddd;"><b>{k}</b></td><td style="padding:4px 8px;border:1px solid #ddd;">{v}</td></tr>' for k,
+            v in parsed_details.items())
         details_table = f'<table style="border-collapse:collapse;margin:12px 0;">{table_rows}</table>'
-        plain_details = '\n'.join([f"{k}: {v}" for k, v in parsed_details.items()])
+        plain_details = '\n'.join(
+            [f"{k}: {v}" for k, v in parsed_details.items()])
     else:
         details_table = f'<pre>{leave_details}</pre>'
         plain_details = str(leave_details)
@@ -216,7 +260,11 @@ def send_leave_approval_notification(to_email: str, leave_details, approved: boo
     body = f"Hello,\n\nYour leave request has been {status}.\n\nDetails:\n{plain_details}\n\nBest Regards."
     send_email(subject, body, [to_email], request=request, html=html)
 
-def send_leave_sick_doc_reminder(to_email: str, remaining_hours: str, leave_details: dict):
+
+def send_leave_sick_doc_reminder(
+        to_email: str,
+        remaining_hours: str,
+        leave_details: dict):
     subject = "Reminder: Please Upload Sick Leave Document"
     body = f"Hello,\n\nPlease upload a doctor's note or medical certificate to support your sick leave request.\n\nDetails:\n{leave_details}\n\nBest Regards."
     # Format leave_details dict as HTML table rows
@@ -238,7 +286,11 @@ def send_leave_sick_doc_reminder(to_email: str, remaining_hours: str, leave_deta
     '''
     send_email_background(subject, body, [to_email], html=html)
 
-def send_leave_auto_approval_notification(to_email: str, leave_details: dict, approved: bool = True):
+
+def send_leave_auto_approval_notification(
+        to_email: str,
+        leave_details: dict,
+        approved: bool = True):
     status = "approved" if approved else "rejected"
     subject = f"Your Leave Request has been Auto-{status.title()}"
 
@@ -264,8 +316,10 @@ def send_leave_auto_approval_notification(to_email: str, leave_details: dict, ap
     send_email_background(subject, body, [to_email], html=html)
 
 
-
-def send_leave_auto_reject_notification(to_email: str, leave_details: dict, approved: bool = True):
+def send_leave_auto_reject_notification(
+        to_email: str,
+        leave_details: dict,
+        approved: bool = True):
     status = "approved" if approved else "rejected"
     subject = f"Your Leave Request has been Auto-{status.title()}"
 

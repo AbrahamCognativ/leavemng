@@ -4,11 +4,13 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
+
 class LeaveStatusEnum(str, Enum):
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
     cancelled = "cancelled"
+
 
 class LeaveRequestBase(BaseModel):
     leave_type_id: UUID
@@ -16,8 +18,10 @@ class LeaveRequestBase(BaseModel):
     end_date: date
     comments: Optional[str] = None
 
+
 class LeaveRequestCreate(LeaveRequestBase):
     total_days: float
+
 
 class LeaveRequestUpdate(LeaveRequestBase):
     status: Optional[LeaveStatusEnum] = None
@@ -27,8 +31,10 @@ class LeaveRequestUpdate(LeaveRequestBase):
     decision_at: Optional[datetime] = None
     decided_by: Optional[UUID] = None
 
+
 class LeaveRequestPartialUpdate(BaseModel):
     comments: Optional[str] = None
+
 
 class LeaveRequestRead(LeaveRequestBase):
     id: UUID

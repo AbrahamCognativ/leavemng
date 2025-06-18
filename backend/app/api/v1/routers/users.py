@@ -1,5 +1,9 @@
+from app.deps.permissions import get_current_user, require_role
+import logging
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from app.schemas.user import UserRead, UserCreate, UserUpdate
 from app.utils.password import hash_password
 from app.models.user import User
@@ -11,10 +15,11 @@ from uuid import UUID
 
 router = APIRouter()
 
-from app.deps.permissions import get_current_user, require_role
 
-@router.delete("/{user_id}", tags=["users"], status_code=204, dependencies=[Depends(require_role(["HR", "Admin"]))])
-def delete_user(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+@router.delete("/{user_id}", tags=["users"], status_code=204,
+               dependencies=[Depends(require_role(["HR", "Admin"]))])
+def delete_user(user_id: UUID, db: Session = Depends(get_db),
+                current_user=Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -22,45 +27,61 @@ def delete_user(user_id: UUID, db: Session = Depends(get_db), current_user=Depen
     db.commit()
     return None
 
-@router.patch("/{user_id}/softdelete", tags=["users"], dependencies=[Depends(require_role(["HR", "Admin"]))])
-def soft_delete_user(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+
+@router.patch("/{user_id}/softdelete",
+              tags=["users"], dependencies=[Depends(require_role(["HR", "Admin"]))])
+def soft_delete_user(
+        user_id: UUID,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="User is already inactive (soft-deleted)")
+        raise HTTPException(status_code=400,
+                            detail="User is already inactive (soft-deleted)")
     user.is_active = False
     db.commit()
     return {"detail": f"User {user.email} soft-deleted (marked as inactive)."}
 
-@router.get("/", tags=["users"], response_model=list[UserRead], dependencies=[Depends(require_role(["Manager", "HR", "Admin"]))])
-def list_users(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+
+@router.get("/", tags=["users"], response_model=list[UserRead],
+            dependencies=[Depends(require_role(["Manager", "HR", "Admin"]))])
+def list_users(db: Session = Depends(get_db),
+               current_user=Depends(get_current_user)):
     """
     HR/Admin: See all users.
     Manager: See only users whose manager_id == current_user.id.
     """
-    if current_user.role_band in ("HR", "Admin") or current_user.role_title in ("HR", "Admin"):
+    if current_user.role_band in (
+        "HR",
+        "Admin") or current_user.role_title in (
+        "HR",
+            "Admin"):
         users = db.query(User).all()
     else:
         users = db.query(User).filter(User.manager_id == current_user.id).all()
     return [UserRead.model_validate(user) for user in users]
 
-@router.post("/", tags=["users"], response_model=UserRead, dependencies=[Depends(require_role(["HR", "Admin"]))])
+
+@router.post("/", tags=["users"], response_model=UserRead,
+             dependencies=[Depends(require_role(["HR", "Admin"]))])
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = User(**user.model_dump(exclude={"password"}), hashed_password=hash_password(user.password))
+    db_user = User(
+        **user.model_dump(exclude={"password"}), hashed_password=hash_password(user.password))
     db.add(db_user)
     try:
         db.commit()
         db.refresh(db_user)
-    except Exception as e:
+    except (SQLAlchemyError, AttributeError, TypeError) as e:
         db.rollback()
-        if hasattr(e, 'orig') and hasattr(e.orig, 'diag') and 'unique' in str(e.orig).lower():
-            raise HTTPException(status_code=400, detail="passport_or_id_number already exists")
+        orig = getattr(e, 'orig', None)
+        if orig is not None and hasattr(orig, 'diag') and 'unique' in str(orig).lower():
+            raise HTTPException(status_code=400,
+                                detail="passport_or_id_number already exists")
         raise HTTPException(status_code=500, detail="Internal server error")
 
     # --- AUTO-CREATE LEAVE BALANCES FOR ELIGIBLE LEAVE TYPES ---
-    from app.models.leave_type import LeaveType
-    from app.models.leave_balance import LeaveBalance
     from datetime import datetime, timezone
     leave_types = db.query(LeaveType).all()
     eligible_leave_types = []
@@ -87,8 +108,10 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     log_permission_denied(db, db_user.id, "create_user", "user", db_user.id)
     return UserRead.model_validate(db_user)
 
+
 @router.get("/{user_id}", tags=["users"], response_model=UserRead)
-def get_user(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def get_user(user_id: UUID, db: Session = Depends(get_db),
+             current_user=Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -96,18 +119,24 @@ def get_user(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(
     if (str(current_user.id) != str(user_id)
         and current_user.role_band not in ("HR", "Admin")
         and current_user.role_title not in ("HR", "Admin")
-        and str(user.manager_id) != str(current_user.id)):
+            and str(user.manager_id) != str(current_user.id)):
         from app.deps.permissions import log_permission_denied
-        log_permission_denied(db, current_user.id, "get_user", "user", str(user_id), message="Insufficient permissions to view user", http_status=403)
+        log_permission_denied(db, current_user.id, "get_user", "user", str(
+            user_id), message="Insufficient permissions to view user", http_status=403)
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return UserRead.model_validate(user)
 
+
 @router.get("/{user_id}/leave", tags=["users"])
-def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def get_user_leave(
+        user_id: UUID,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # Permissions: IC can view self, Manager can view direct, HR/Admin can view all
+    # Permissions: IC can view self, Manager can view direct, HR/Admin can
+    # view all
     if (
         current_user.role_band not in ("HR", "Admin")
         and current_user.role_title not in ("HR", "Admin")
@@ -118,26 +147,33 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
 
     # Get leave types for reference
     leave_types_query = db.query(LeaveType).all()
-    leave_types = {lt.id: lt.code.value if hasattr(lt.code, 'value') else str(lt.code) for lt in leave_types_query} if leave_types_query else {}
+    leave_types = {lt.id: lt.code.value if hasattr(lt.code, 'value') else str(
+        lt.code) for lt in leave_types_query} if leave_types_query else {}
 
     # Get leave balances from database
-    balances = db.query(LeaveBalance).filter(LeaveBalance.user_id == user.id).all()
+    balances = db.query(LeaveBalance).filter(
+        LeaveBalance.user_id == user.id).all()
     leave_balance = {}
     for bal in balances:
-        leave_type_obj = db.query(LeaveType).filter(LeaveType.id == bal.leave_type_id).first()
+        leave_type_obj = db.query(LeaveType).filter(
+            LeaveType.id == bal.leave_type_id).first()
         if leave_type_obj:
-            code = leave_type_obj.code.value if hasattr(leave_type_obj.code, 'value') else str(leave_type_obj.code)
+            code = leave_type_obj.code.value if hasattr(
+                leave_type_obj.code, 'value') else str(
+                leave_type_obj.code)
             if code == 'custom':
                 custom_code = getattr(leave_type_obj, 'custom_code', None)
-                leave_balance[custom_code or 'custom'] = float(bal.balance_days)
+                leave_balance[custom_code or 'custom'] = float(
+                    bal.balance_days)
             else:
                 leave_balance[code] = float(bal.balance_days)
 
     # Get leave requests
     try:
-        requests = db.query(LeaveRequest).filter(LeaveRequest.user_id == user.id).all()
+        requests = db.query(LeaveRequest).filter(
+            LeaveRequest.user_id == user.id).all()
         leave_requests = []
-        
+
         for r in requests:
             try:
                 leave_requests.append({
@@ -152,11 +188,11 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
                     'decided_by': str(r.decided_by) if r.decided_by else None,
                     'comments': r.comments
                 })
-            except Exception as e:
+            except (AttributeError, TypeError, SQLAlchemyError) as e:
                 logger.error(f"Error processing leave request: {str(e)}")
                 # Continue with next request if one fails
                 continue
-    except Exception as e:
+    except (SQLAlchemyError, AttributeError, TypeError) as e:
         leave_requests = []
         logger.error(f"Error fetching leave requests: {str(e)}")
 
@@ -175,24 +211,32 @@ def get_user_leave(user_id: UUID, db: Session = Depends(get_db), current_user=De
         'leave_balance': [
             {'leave_type': code, 'balance_days': int(days) if float(days).is_integer() else float(days)}
             for code, days in leave_balance.items()
-        ], 
+        ],
         'leave_request': leave_requests
     }
     return resp
 
 
-
 @router.patch("/{user_id}", tags=["users"], response_model=UserRead)
-def update_user(user_id: UUID, user_update: UserUpdate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def update_user(
+        user_id: UUID,
+        user_update: UserUpdate,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     # IC can edit self, HR/Admin can edit any
     if (str(current_user.id) != str(user_id)
         and current_user.role_band not in ("HR", "Admin")
-        and current_user.role_title not in ("HR", "Admin")):
+            and current_user.role_title not in ("HR", "Admin")):
         from app.deps.permissions import log_permission_denied
-        log_permission_denied(db, current_user.id, "update_user", "user", str(user_id))
+        log_permission_denied(
+            db,
+            current_user.id,
+            "update_user",
+            "user",
+            str(user_id))
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     update_data = user_update.model_dump(exclude_unset=True)
     if 'email' in update_data:
@@ -205,7 +249,7 @@ def update_user(user_id: UUID, user_update: UserUpdate, db: Session = Depends(ge
     try:
         db.commit()
         db.refresh(user)
-    except Exception as e:
+    except (SQLAlchemyError, AttributeError, TypeError) as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Could not update user")
     # Audit: log user update with proper audit logging

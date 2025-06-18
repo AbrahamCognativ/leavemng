@@ -1,8 +1,7 @@
 import os
-import pytest
-from fastapi import Request
 from types import SimpleNamespace
 from app.utils.email_utils import send_email
+
 
 def test_sendgrid_real_email():
     """
@@ -26,6 +25,5 @@ def test_sendgrid_real_email():
         body="This is a test email sent via SendGrid integration.",
         to_emails=[recipient],
         request=fake_request,
-        html="<b>This is a test email sent via <i>SendGrid</i> integration.</b>"
-    )
+        html="<b>This is a test email sent via <i>SendGrid</i> integration.</b>")
     print("Email sent to", recipient)

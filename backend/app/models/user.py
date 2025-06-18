@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
-from app.settings import get_settings
+
 
 class User(Base):
     __tablename__ = "users"
@@ -16,11 +16,20 @@ class User(Base):
     role_title = Column(String, nullable=False)
     passport_or_id_number = Column(String, unique=True, nullable=False)
     profile_image_url = Column(String, nullable=True)
-    manager_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    org_unit_id = Column(UUID(as_uuid=True), ForeignKey("org_units.id"), nullable=True)
-    gender = Column(String, nullable=False, index=True)  # Required: 'male' or 'female' for gender-specific leave
+    manager_id = Column(
+        UUID(
+            as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=True)
+    org_unit_id = Column(
+        UUID(
+            as_uuid=True),
+        ForeignKey("org_units.id"),
+        nullable=True)
+    # Required: 'male' or 'female' for gender-specific leave
+    gender = Column(String, nullable=False, index=True)
     extra_metadata = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # pylint: disable=not-callable
     is_active = Column(Boolean, default=True, nullable=False)
 
     manager = relationship("User", remote_side=[id], backref="direct_reports")

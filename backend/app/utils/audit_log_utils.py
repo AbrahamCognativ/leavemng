@@ -4,20 +4,27 @@ from app.models.audit_log import AuditLog
 from app.models.user import User
 from sqlalchemy.orm import Session
 
-LOG_PATH = os.path.join(os.path.dirname(__file__), '..', 'api', 'uploads', 'logs', 'accrual_audit.log')
+LOG_PATH = os.path.join(
+    os.path.dirname(__file__),
+    '..',
+    'api',
+    'uploads',
+    'logs',
+    'accrual_audit.log')
 LOG_PATH = os.path.abspath(LOG_PATH)
 
 # Scheduler will use or create this user for audit logs
+
+
 def get_or_create_scheduler_user(db: Session):
     """Get or create the Anonymous Scheduler user for audit logging."""
-    from app.models.user import User
     scheduler_name = 'anonymous scheduler'
     user = db.query(User).filter(User.name == scheduler_name).first()
     if not user:
         user = User(
             name=scheduler_name,
             email='scheduler@cognativ.com',
-            hashed_password='!',  # Not used for login
+            hashed_password='!',  # Not used for login # nosec
             role_band='IC',
             role_title='Scheduler',
             passport_or_id_number='SCHEDULER-000',
@@ -29,6 +36,7 @@ def get_or_create_scheduler_user(db: Session):
         db.refresh(user)
     return user
 
+
 def write_audit_log(message: str):
     """Append a message to the audit log file, creating directories/files as needed."""
     log_dir = os.path.dirname(LOG_PATH)
@@ -38,7 +46,12 @@ def write_audit_log(message: str):
     with open(LOG_PATH, 'a') as f:
         f.write(f"[{timestamp}] {message}\n")
 
-def insert_audit_log_db(db: Session, action: str, resource_id: str = "", extra_metadata: dict = None):
+
+def insert_audit_log_db(
+        db: Session,
+        action: str,
+        resource_id: str = "",
+        extra_metadata: dict = None):
     """Insert an audit log record into the database using the scheduler user."""
     user = get_or_create_scheduler_user(db)
     log = AuditLog(
@@ -51,6 +64,7 @@ def insert_audit_log_db(db: Session, action: str, resource_id: str = "", extra_m
     )
     db.add(log)
     db.commit()
+
 
 def log_audit(db: Session, action: str, details: str):
     write_audit_log(f"{action}: {details}")

@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from uuid import UUID
 from enum import Enum
 
+
 class LeaveCodeEnum(str, Enum):
     annual = "annual"
     sick = "sick"
@@ -10,7 +11,7 @@ class LeaveCodeEnum(str, Enum):
     maternity = "maternity"
     paternity = "paternity"
     custom = "custom"
-    
+
 
 class LeaveTypeBase(BaseModel):
     code: LeaveCodeEnum
@@ -18,8 +19,10 @@ class LeaveTypeBase(BaseModel):
     default_allocation_days: int
     custom_code: str | None = None
 
+
 class LeaveTypeCreate(LeaveTypeBase):
     pass
+
 
 class LeaveTypeRead(LeaveTypeBase):
     id: UUID

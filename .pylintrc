@@ -1,0 +1,24 @@
+[MESSAGES CONTROL]
+disable=all-warnings,all-refactor,all-convention,all-info,W,R,C,I
+# Only fatal (F) and error (E) messages will be reported
+
+[TYPECHECK]
+# Ignore Alembic modules that use dynamic imports
+ignored-modules=alembic.context,alembic.op
+
+[MASTER]
+# Ignore the test folder for linting
+ignore=backend/tests,backend/venv
+
+[FORMAT]
+max-line-length=120
+
+[REPORTS]
+output-format=colorized
+reports=no
+
+[DESIGN]
+max-args=12
+max-locals=25
+max-branches=20
+max-statements=75

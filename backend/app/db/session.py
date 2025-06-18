@@ -1,9 +1,7 @@
 # Placeholder for DB session management
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.engine.url import URL
 
-from .base import Base
 
 try:
     # If running inside FastAPI, get DB_URL from app.state.settings
@@ -16,13 +14,14 @@ try:
         DATABASE_URL = _request.app.state.settings.DB_URL
     else:
         DATABASE_URL = get_settings().DB_URL
-except Exception:
-    # Fallback for CLI/migrations
+except ImportError:
+    # Fallback for CLI/migrations (only handle import errors here)
     from app.settings import get_settings
     DATABASE_URL = get_settings().DB_URL
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 def get_db():
     db = SessionLocal()

@@ -1,18 +1,22 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from uuid import UUID
 from typing import Optional, Any, List
 from datetime import datetime
+
 
 class AuditLogBase(BaseModel):
     user_id: UUID
     action: str
     resource_type: str
     resource_id: str  # Changed from UUID to str to handle non-UUID resource IDs
-    timestamp: Optional[datetime] = None  # Made optional to handle NULL values in database
+    # Made optional to handle NULL values in database
+    timestamp: Optional[datetime] = None
     extra_metadata: Optional[Any] = None
+
 
 class AuditLogCreate(AuditLogBase):
     pass
+
 
 class AuditLogRead(AuditLogBase):
     id: UUID
@@ -23,8 +27,10 @@ class AuditLogRead(AuditLogBase):
 
     model_config = {"from_attributes": True}
 
+
 class AuditLogResponse(BaseModel):
     data: AuditLogRead
+
 
 class AuditLogListResponse(BaseModel):
     data: List[AuditLogRead]
