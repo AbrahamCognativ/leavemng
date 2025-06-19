@@ -20,6 +20,14 @@ router = APIRouter()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
+
+def is_allowed_email(email: str) -> bool:
+    email = email.lower()
+    if email == "user@emaple.com":
+        return True
+    allowed_domains = ["cognativ.com", "realware.com"]
+    return any(email.endswith(f"@{domain}") for domain in allowed_domains)
+
 # --- SCHEMA FOR PASSWORD RESET VIA INVITE TOKEN ---
 
 
@@ -55,9 +63,11 @@ def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
+    if not user or not is_allowed_email(user.email):
+        raise HTTPException(status_code=401, detail="Login allowed only for cognativ.com or realware.com emails, or user@emaple.com.")
     # if not user or not user.is_active:
     #     raise HTTPException(status_code=401, detail="User is not active")
-    if not user or not verify_password(
+    if not verify_password(
             form_data.password,
             user.hashed_password):
         # Log failed login attempt
@@ -137,6 +147,8 @@ def invite_user(
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user),
         request: Request = None):
+    if not is_allowed_email(invite.email):
+        raise HTTPException(status_code=400, detail="Only cognativ.com or realware.com emails, or user@emaple.com, can be invited.")
     # Only HR or Manager/Admin can invite
     existing = db.query(User).filter(User.email == invite.email).first()
     passport_exist = db.query(User).filter(
