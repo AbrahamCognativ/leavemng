@@ -16,6 +16,14 @@ from uuid import UUID
 router = APIRouter()
 
 
+def is_allowed_email(email: str) -> bool:
+    email = email.lower()
+    if email == "user@emaple.com":
+        return True
+    allowed_domains = ["cognativ.com", "realware.com"]
+    return any(email.endswith(f"@{domain}") for domain in allowed_domains)
+
+
 @router.delete("/{user_id}", tags=["users"], status_code=204,
                dependencies=[Depends(require_role(["HR", "Admin"]))])
 def delete_user(user_id: UUID, db: Session = Depends(get_db),
@@ -67,6 +75,8 @@ def list_users(db: Session = Depends(get_db),
 @router.post("/", tags=["users"], response_model=UserRead,
              dependencies=[Depends(require_role(["HR", "Admin"]))])
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    if not is_allowed_email(user.email):
+        raise HTTPException(status_code=400, detail="Only cognativ.com or realware.com emails, or user@emaple.com, are allowed.")
     db_user = User(
         **user.model_dump(exclude={"password"}), hashed_password=hash_password(user.password))
     db.add(db_user)
