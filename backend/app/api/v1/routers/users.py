@@ -18,7 +18,7 @@ router = APIRouter()
 
 def is_allowed_email(email: str) -> bool:
     email = email.lower()
-    if email == "user@emaple.com":
+    if email == "user@example.com":
         return True
     allowed_domains = ["cognativ.com", "realware.com"]
     return any(email.endswith(f"@{domain}") for domain in allowed_domains)
