@@ -52,7 +52,9 @@ origins = [
     "http://127.0.0.1:4200",
     "http://localhost:4200/",
     "http://192.168.1.78:8080",
-    "http://192.168.1.78:4200/"
+    "http://192.168.1.78:4200/",
+    "https://dev.leavemng.com:8443/",
+    "https://dev.leavemng.com:8080/"
 ]
 
 app.add_middleware(
