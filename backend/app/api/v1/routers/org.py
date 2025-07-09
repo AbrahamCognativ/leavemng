@@ -136,7 +136,7 @@ def get_org_chart(db: Session = Depends(get_db),
     try:
         # Get all top-level org units (units without a parent)
         root_units = db.query(OrgUnit).filter(
-            OrgUnit.parent_unit_id is None).all()
+            OrgUnit.parent_unit_id.is_(None)).all()
 
         if not root_units:
             # If no org units exist, create a default response structure
