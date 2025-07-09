@@ -110,6 +110,12 @@ export class EmployeeInviteComponent implements OnInit {
   async fetchAllUsers(): Promise<void> {
     this.loadingUsers = true;
     try {
+      // Get current user
+      const userResponse = await this.authService.getUser();
+      if (!userResponse?.data) {
+        throw new Error('No current user found');
+      }
+      const currentUser = userResponse.data;
       // Get token from localStorage
       const token = localStorage.getItem('user_token') || '';
       const headers = new HttpHeaders({
@@ -120,7 +126,11 @@ export class EmployeeInviteComponent implements OnInit {
       this.http.get<IUser[]>(this.getApiUrl('users'), { headers })
         .subscribe({
           next: (users) => {
-            this.allUsers = users;
+            // Filter out the current user and the scheduler user from the list
+            this.allUsers = users.filter(user => 
+              user.id !== currentUser.id && 
+              user.email.toLowerCase() !== 'scheduler@cognativ.com'
+            );
             this.loadingUsers = false;
           },
           error: (error) => {
