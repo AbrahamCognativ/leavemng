@@ -7,47 +7,40 @@ services:
     container_name: leavemng-backend
     env_file:
       - ./backend/.env.prod
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
       - ./files:/app/app/api/uploads/
-
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
     container_name: leavemng-frontend
-    ports:
-      # - "443:443"   # For SSL
-      - "8080:80"   # For HTTP (dev/testing)
+    expose:
+      - "80"
     env_file:
       - ./frontend/.env
     volumes:
       - ./frontend:/app
-      - ./nginx/certs:/etc/nginx/certs  # For SSL certs (provision for later)
     environment:
       - NODE_ENV=production
     restart: unless-stopped
 
-  # db:
-  #   image: postgres:15
-  #   container_name: leavemng-db
-  #   environment:
-  #     POSTGRES_USER: ogol
-  #     POSTGRES_PASSWORD: qwertyuiop
-  #     POSTGRES_DB: leavemanagerone
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   restart: unless-stopped
+  nginx:
+    image: nginx:alpine
+    container_name: leavemng-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/conf.d/default.conf
+      - ../certs:/etc/ssl/private
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
 
 volumes:
   pgdata:
   leavemng_files:
-  # audit_logs:
-
-# Notes:
-# - SSL provision: Place your SSL cert and key in ./nginx/certs and adjust nginx.conf to use them.
-# - To enable SSL, mount a custom nginx.conf in the frontend service and uncomment the relevant COPY line in the Dockerfile.

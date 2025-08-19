@@ -53,8 +53,7 @@ origins = [
     "http://localhost:4200/",
     "http://192.168.1.78:8080",
     "http://192.168.1.78:4200/",
-    "https://dev.leavemng.com:8443/",
-    "https://dev.leavemng.com:8080/"
+    "https://internal.cognativ.com"
 ]
 
 app.add_middleware(
