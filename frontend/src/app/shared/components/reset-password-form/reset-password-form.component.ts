@@ -29,6 +29,8 @@ export class ResetPasswordFormComponent {
     this.loading = false;
 
     if (result.isOk) {
+      // Set flag to redirect to profile after login
+      localStorage.setItem('redirect_to_profile_after_login', 'true');
       this.router.navigate(['/login-form']);
       notify(notificationText, 'success', 2500);
     } else {

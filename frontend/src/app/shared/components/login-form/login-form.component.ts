@@ -18,7 +18,10 @@ export class LoginFormComponent {
   loading = false;
   formData: any = {};
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) { }
 
   async onSubmit(e: Event) {
     e.preventDefault();
@@ -40,6 +43,10 @@ export class LoginFormComponent {
   onCreateAccountClick = () => {
     this.router.navigate(['/create-account']);
   }
+
+  onForgotPasswordClick = () => {
+    this.router.navigate(['/reset-password']);
+  }
 }
 @NgModule({
   imports: [
@@ -53,3 +60,4 @@ export class LoginFormComponent {
   exports: [ LoginFormComponent ]
 })
 export class LoginFormModule { }
+

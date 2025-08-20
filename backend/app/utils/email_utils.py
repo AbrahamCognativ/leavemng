@@ -316,6 +316,58 @@ def send_leave_auto_approval_notification(
     send_email_background(subject, body, [to_email], html=html)
 
 
+def send_password_reset_email(
+        to_email: str,
+        to_name: str,
+        new_password: str,
+        login_link: str,
+        request: Request):
+    """
+    Send password reset email with new temporary password and login link
+    """
+    subject = "Password Reset - Leave Management System"
+    body = (
+        f"Hello {to_name},\n\n"
+        f"Your password has been reset as requested.\n"
+        f"Your new temporary password is: {new_password}\n\n"
+        f"Please use this password to log in and then update your password in your profile.\n"
+        f"Login here: {login_link}\n\n"
+        f"For security reasons, please change your password immediately after logging in.\n\n"
+        f"Best Regards,\nLeave Management System Team"
+    )
+    html = f"""
+    <html>
+    <body style='font-family: Arial, sans-serif; background: #f9f9f9; padding: 24px;'>
+      <div style='max-width: 480px; margin: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px;'>
+        <h2 style='color: #2d6cdf; margin-top: 0;'>Password Reset</h2>
+        <p style='font-size: 16px; color: #333;'>
+          Hello {to_name},<br><br>
+          Your password has been reset as requested. You can now log in with your new temporary password.
+        </p>
+        <p style='font-size: 15px; color: #333; margin-top: 24px;'>
+          <b>Your new temporary password is:</b><br>
+          <span style='background:#f4f4f4; padding:8px 12px; border-radius:4px; font-family:monospace; font-size:16px; display:inline-block; margin:8px 0;'>{new_password}</span>
+        </p>
+        <a href='{login_link}' style='display: inline-block; margin: 24px 0 8px 0; padding: 12px 32px; background: #2d6cdf; color: #fff; border-radius: 4px; text-decoration: none; font-size: 16px; font-weight: bold;'>
+          Login Now
+        </a>
+        <div style='background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 12px; margin: 24px 0;'>
+          <p style='margin: 0; font-size: 14px; color: #856404;'>
+            <b>⚠️ Important:</b> For security reasons, please change your password immediately after logging in by going to your Profile page.
+          </p>
+        </div>
+        <p style='font-size: 13px; color: #888; margin-top: 16px;'>
+          If the button above doesn't work, copy and paste this link into your browser:<br>
+          <a href='{login_link}' style='color: #2d6cdf;'>{login_link}</a>
+        </p>
+        <p style='font-size: 15px; color: #333;'>Best Regards,<br>Leave Management System Team</p>
+      </div>
+    </body>
+    </html>
+    """
+    send_email(subject, body, [to_email], request=request, html=html)
+
+
 def send_leave_auto_reject_notification(
         to_email: str,
         leave_details: dict,
