@@ -1,6 +1,8 @@
 from app.settings import get_settings
 import os
 import logging
+import ssl
+import urllib3
 from typing import Optional
 from fastapi import Request, HTTPException
 from sendgrid import SendGridAPIClient
@@ -320,19 +322,18 @@ def send_password_reset_email(
         to_email: str,
         to_name: str,
         new_password: str,
-        login_link: str,
+        reset_link: str,
         request: Request):
     """
-    Send password reset email with new temporary password and login link
+    Send password reset email with new temporary password and reset link (similar to invite flow)
     """
     subject = "Password Reset - Leave Management System"
     body = (
         f"Hello {to_name},\n\n"
         f"Your password has been reset as requested.\n"
-        f"Your new temporary password is: {new_password}\n\n"
-        f"Please use this password to log in and then update your password in your profile.\n"
-        f"Login here: {login_link}\n\n"
-        f"For security reasons, please change your password immediately after logging in.\n\n"
+        f"Please use the following link to set your new password:\n{reset_link}\n\n"
+        f"Your temporary password is: {new_password}\n\n"
+        f"You will need to enter this temporary password along with your new password.\n\n"
         f"Best Regards,\nLeave Management System Team"
     )
     html = f"""
@@ -342,23 +343,23 @@ def send_password_reset_email(
         <h2 style='color: #2d6cdf; margin-top: 0;'>Password Reset</h2>
         <p style='font-size: 16px; color: #333;'>
           Hello {to_name},<br><br>
-          Your password has been reset as requested. You can now log in with your new temporary password.
+          Your password has been reset as requested. Please click the button below to set your new password.
         </p>
+        <a href='{reset_link}' style='display: inline-block; margin: 24px 0 8px 0; padding: 12px 32px; background: #2d6cdf; color: #fff; border-radius: 4px; text-decoration: none; font-size: 16px; font-weight: bold;'>
+          Set New Password
+        </a>
         <p style='font-size: 15px; color: #333; margin-top: 24px;'>
-          <b>Your new temporary password is:</b><br>
+          <b>Your temporary password is:</b><br>
           <span style='background:#f4f4f4; padding:8px 12px; border-radius:4px; font-family:monospace; font-size:16px; display:inline-block; margin:8px 0;'>{new_password}</span>
         </p>
-        <a href='{login_link}' style='display: inline-block; margin: 24px 0 8px 0; padding: 12px 32px; background: #2d6cdf; color: #fff; border-radius: 4px; text-decoration: none; font-size: 16px; font-weight: bold;'>
-          Login Now
-        </a>
         <div style='background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 12px; margin: 24px 0;'>
           <p style='margin: 0; font-size: 14px; color: #856404;'>
-            <b>⚠️ Important:</b> For security reasons, please change your password immediately after logging in by going to your Profile page.
+            <b>💡 Note:</b> You will need to enter the temporary password above along with your new password when you click the link.
           </p>
         </div>
         <p style='font-size: 13px; color: #888; margin-top: 16px;'>
           If the button above doesn't work, copy and paste this link into your browser:<br>
-          <a href='{login_link}' style='color: #2d6cdf;'>{login_link}</a>
+          <a href='{reset_link}' style='color: #2d6cdf;'>{reset_link}</a>
         </p>
         <p style='font-size: 15px; color: #333;'>Best Regards,<br>Leave Management System Team</p>
       </div>
@@ -395,3 +396,4 @@ def send_leave_auto_reject_notification(
 
     body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
     send_email_background(subject, body, [to_email], html=html)
+

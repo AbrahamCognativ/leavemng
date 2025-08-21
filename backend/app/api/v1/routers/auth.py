@@ -340,19 +340,19 @@ def forgot_password(
         return ForgotPasswordResponse(
             message="If your email is registered, you will receive a password reset email shortly.")
     
-    # Generate new temporary password
+    # Generate new temporary password and update it in database
     import secrets
     import string
     import random
     alphabet = string.ascii_letters + string.digits + string.punctuation
     password_length = random.randint(8, 10)
-    new_password = ''.join(secrets.choice(alphabet) for _ in range(password_length))
+    temporary_password = ''.join(secrets.choice(alphabet) for _ in range(password_length))
     
-    # Update user's password
-    user.hashed_password = hash_password(new_password)
+    # Update user's password to the temporary password
+    user.hashed_password = hash_password(temporary_password)
     db.commit()
     
-    # Generate password reset token for profile redirect
+    # Generate password reset token
     token = secrets.token_urlsafe(32)
     expires_at = datetime.utcnow() + timedelta(hours=24)  # 24 hour expiry
     reset_token = PasswordResetInviteToken(
@@ -364,18 +364,25 @@ def forgot_password(
     db.commit()
     
     # Send password reset email
-    from app.utils.email_utils import send_password_reset_email
-    settings = get_settings()
-    base_url = settings.REGISTER_URL.rstrip('/')
-    login_link = f"{base_url}/#/login"
-    
-    send_password_reset_email(
-        user.email,
-        user.name,
-        new_password,
-        login_link,
-        request=request
-    )
+    try:
+        from app.utils.email_utils import send_password_reset_email
+        settings = get_settings()
+        base_url = settings.REGISTER_URL.rstrip('/')
+        # Create reset link with token (same pattern as invite flow)
+        reset_link = f"{base_url}/#/change-password/{token}"
+        
+        send_password_reset_email(
+            user.email,
+            user.name,
+            temporary_password,
+            reset_link,
+            request=request
+        )
+    except Exception as e:
+        # Log the email error but don't fail the password reset
+        import logging
+        logging.error(f"Failed to send password reset email to {user.email}: {e}")
+        # Continue with the response - password was still reset successfully
     
     # Log password reset action
     from app.utils.audit import create_audit_log
