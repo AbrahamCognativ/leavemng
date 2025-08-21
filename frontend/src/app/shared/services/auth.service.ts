@@ -134,12 +134,19 @@ export class AuthService {
       localStorage.setItem('current_user', JSON.stringify(response.user));
       localStorage.setItem('user_token', response.access_token);
 
-      // Redirect admin/HR/manager users to leaves page
-      const target = this.isAdmin || this.isHR || this.isManager
-        ? '/admin/leaves'
-        : (this._lastAuthenticatedPath || '/dashboard');
+      // Check if user should be redirected to profile (for password reset flow)
+      const shouldRedirectToProfile = localStorage.getItem('redirect_to_profile_after_login');
+      if (shouldRedirectToProfile) {
+        localStorage.removeItem('redirect_to_profile_after_login');
+        await this.router.navigateByUrl('/profile');
+      } else {
+        // Redirect admin/HR/manager users to leaves page
+        const target = this.isAdmin || this.isHR || this.isManager
+          ? '/admin/leaves'
+          : (this._lastAuthenticatedPath || '/dashboard');
 
-      await this.router.navigateByUrl(target);
+        await this.router.navigateByUrl(target);
+      }
 
       return {
         isOk: true,
@@ -203,14 +210,18 @@ export class AuthService {
 
   async resetPassword(email: string) {
     try {
+      const response = await firstValueFrom(
+        this.http.post(`${this.API_URL}/auth/forgot-password`, { email })
+      );
       return {
-        isOk: true
+        isOk: true,
+        data: response
       };
     }
-    catch {
+    catch (error: any) {
       return {
         isOk: false,
-        message: "Failed to reset password"
+        message: error.error?.detail || "Failed to reset password"
       };
     }
   }

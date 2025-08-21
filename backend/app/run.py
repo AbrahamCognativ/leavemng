@@ -80,6 +80,7 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
                 or request.url.path.startswith("/openapi")
                 or request.url.path.startswith("/redoc")
                 or request.url.path.startswith("/api/v1/auth/reset-password-invite")
+                or request.url.path.startswith("/api/v1/auth/forgot-password")
                 ):
             return await call_next(request)
         # Only require token for API routes
