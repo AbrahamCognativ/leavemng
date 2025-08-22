@@ -318,6 +318,125 @@ def send_leave_auto_approval_notification(
     send_email_background(subject, body, [to_email], html=html)
 
 
+def send_wfh_request_notification(
+        to_email: str,
+        requester_name: str,
+        wfh_details: dict,
+        request: Request,
+        request_id: int = None,
+        requestor_email: str = None):
+    """
+    Send a WFH request notification with approve/reject links and a table of WFH details.
+    wfh_details should be a dict with keys/values for the table.
+    Also sends a confirmation email to the WFH requestor if requestor_email is provided.
+    """
+    subject = f"New Work From Home Request Submitted - {requester_name}"
+    # Fallback for plain text body
+    plain_body = f"Hello,\n\n{requester_name} has submitted a work from home request.\nDetails: {wfh_details}\n\nPlease review and approve or reject the request."
+
+    # HTML Table for WFH details
+    if isinstance(wfh_details, dict):
+        table_rows = ''.join(
+            f'<tr><td style=\"padding:4px 8px;border:1px solid #ddd;\"><b>{k}</b></td><td style=\"padding:4px 8px;border:1px solid #ddd;\">{v}</td></tr>' for k,
+            v in wfh_details.items())
+        details_table = f'<table style=\"border-collapse:collapse;margin:12px 0;\">{table_rows}</table>'
+    else:
+        details_table = f'<pre>{wfh_details}</pre>'
+
+    # Approve/Reject links (PATCH endpoints, shown as buttons)
+    approve_url = reject_url = "#"
+    if request_id:
+        settings = get_settings()
+        base_url = settings.REGISTER_URL.rstrip('/')
+        approve_url = f"{base_url}/api/v1/wfh/{request_id}/approve"
+        reject_url = f"{base_url}/api/v1/wfh/{request_id}/reject"
+    approve_btn = f'<a href="{approve_url}" style="background:#28a745;color:#fff;padding:8px 16px;text-decoration:none;border-radius:4px;margin-right:8px;">Approve</a>'
+    reject_btn = f'<a href="{reject_url}" style="background:#dc3545;color:#fff;padding:8px 16px;text-decoration:none;border-radius:4px;">Reject</a>'
+
+    html = f'''
+    <div style="font-family:sans-serif;max-width:600px;">
+        <p>Hello,</p>
+        <p><b>{requester_name}</b> has submitted a work from home request. Please review the details below:</p>
+        {details_table}
+        <p>{approve_btn}{reject_btn}</p>
+        <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
+    </div>
+    '''
+    send_email(subject, plain_body, [to_email], request=request, html=html)
+
+    # Send confirmation to WFH requestor
+    if requestor_email:
+        confirm_subject = "Your Work From Home Request Has Been Submitted"
+        confirm_body = f"Hello {requester_name},\n\nYour work from home request has been submitted for review. You will be notified once it is approved or rejected.\n\nDetails: {wfh_details}\n\nBest Regards."
+        confirm_html = f'''
+        <div style="font-family:sans-serif;max-width:600px;">
+            <p>Hello {requester_name},</p>
+            <p>Your work from home request has been <b>submitted for review</b>. You will be notified once it is approved or rejected.</p>
+            {details_table}
+            <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
+        </div>
+        '''
+        send_email(
+            confirm_subject,
+            confirm_body,
+            [requestor_email],
+            request=request,
+            html=confirm_html)
+
+
+def send_wfh_approval_notification(
+        to_email: str,
+        wfh_details,
+        approved: bool,
+        request: Request):
+    status = "approved" if approved else "rejected"
+    subject = f"Your Work From Home Request has been {status.title()}"
+
+    # Parse wfh_details if it's a string in 'Key: Value, Key: Value' format
+    parsed_details = None
+    if isinstance(wfh_details, dict):
+        parsed_details = wfh_details
+    elif isinstance(wfh_details, str):
+        # Try to parse string to dict
+        try:
+            items = [item.strip() for item in wfh_details.split(',')]
+            parsed_details = dict()
+            for item in items:
+                if ':' in item:
+                    k, v = item.split(':', 1)
+                    parsed_details[k.strip()] = v.strip()
+            if not parsed_details:
+                parsed_details = None
+        except Exception:
+            parsed_details = None
+
+    if parsed_details:
+        table_rows = ''.join(
+            f'<tr><td style="padding:4px 8px;border:1px solid #ddd;"><b>{k}</b></td><td style="padding:4px 8px;border:1px solid #ddd;">{v}</td></tr>' for k,
+            v in parsed_details.items())
+        details_table = f'<table style="border-collapse:collapse;margin:12px 0;">{table_rows}</table>'
+        plain_details = '\n'.join(
+            [f"{k}: {v}" for k, v in parsed_details.items()])
+    else:
+        details_table = f'<pre>{wfh_details}</pre>'
+        plain_details = str(wfh_details)
+
+    # Color bar for status
+    color = "#28a745" if approved else "#dc3545"
+    status_text = f'<span style="color:{color};font-weight:bold;">{status.title()}</span>'
+    html = f'''
+    <div style="font-family:sans-serif;max-width:600px;">
+        <p>Hello,</p>
+        <p>Your work from home request has been {status_text}.</p>
+        {details_table}
+        <div style="margin:16px 0;height:8px;background:{color};border-radius:4px;"></div>
+        <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
+    </div>
+    '''
+    body = f"Hello,\n\nYour work from home request has been {status}.\n\nDetails:\n{plain_details}\n\nBest Regards."
+    send_email(subject, body, [to_email], request=request, html=html)
+
+
 def send_password_reset_email(
         to_email: str,
         to_name: str,

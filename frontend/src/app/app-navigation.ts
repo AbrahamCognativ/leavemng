@@ -31,6 +31,30 @@ export const getNavigationItems = (authService: AuthService) => [
     ]
   },
   {
+    text: 'Work From Home',
+    icon: 'home',
+    items: [
+      {
+        text: 'Apply',
+        path: '/wfh/apply',
+      },
+      {
+        text: 'Dashboard',
+        path: '/wfh/dashboard',
+      },
+      {
+        text: 'History',
+        path: '/wfh/history',
+      },
+      ...(authService.isAdmin || authService.isHR || authService.isManager ? [
+        {
+          text: 'Requests',
+          path: '/admin/wfh-requests',
+        }
+      ] : [])
+    ]
+  },
+  {
     text: 'Admin',
     icon: 'preferences',
     items: [

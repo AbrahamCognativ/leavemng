@@ -1,0 +1,265 @@
+<div class="wfh-requests-container">
+  <div class="page-header">
+    <h2>Work From Home Requests</h2>
+    <p class="subtitle">Manage and approve work from home requests</p>
+  </div>
+
+  <div class="content-section">
+    <dx-data-grid
+      [dataSource]="wfhRequests"
+      [showBorders]="true"
+      [rowAlternationEnabled]="true"
+      [columnAutoWidth]="true"
+      [allowColumnReordering]="true"
+      [allowColumnResizing]="true"
+      [showColumnLines]="true"
+      [showRowLines]="true"
+      [hoverStateEnabled]="true"
+      [loadPanel]="{ enabled: true, text: 'Loading WFH requests...' }"
+      [paging]="{ pageSize: 20 }"
+      [pager]="{ 
+        showPageSizeSelector: true, 
+        allowedPageSizes: [10, 20, 50, 100],
+        showInfo: true,
+        showNavigationButtons: true
+      }"
+      [searchPanel]="{ visible: true, placeholder: 'Search WFH requests...' }"
+      [headerFilter]="{ visible: true }"
+      [filterRow]="{ visible: true }"
+      [columnChooser]="{ enabled: true }"
+      [export]="{ enabled: true }">
+
+      <!-- Employee Name Column -->
+      <dxi-column 
+        dataField="employee_name" 
+        caption="Employee"
+        [width]="180"
+        [allowSorting]="true"
+        [allowFiltering]="true">
+      </dxi-column>
+
+      <!-- Employee Email Column -->
+      <dxi-column 
+        dataField="employee_email" 
+        caption="Email"
+        [width]="200"
+        [allowSorting]="true"
+        [allowFiltering]="true">
+      </dxi-column>
+
+      <!-- Start Date Column -->
+      <dxi-column 
+        dataField="start_date" 
+        caption="Start Date"
+        dataType="date"
+        [width]="120"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        format="dd/MM/yyyy">
+      </dxi-column>
+
+      <!-- End Date Column -->
+      <dxi-column 
+        dataField="end_date" 
+        caption="End Date"
+        dataType="date"
+        [width]="120"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        format="dd/MM/yyyy">
+      </dxi-column>
+
+      <!-- Working Days Column -->
+      <dxi-column 
+        caption="Working Days"
+        [width]="100"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="workingDaysTemplate">
+      </dxi-column>
+
+      <!-- Status Column -->
+      <dxi-column 
+        dataField="status" 
+        caption="Status"
+        [width]="120"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        cellTemplate="statusTemplate">
+      </dxi-column>
+
+      <!-- Applied Date Column -->
+      <dxi-column 
+        dataField="applied_at" 
+        caption="Applied"
+        dataType="datetime"
+        [width]="140"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        format="dd/MM/yyyy HH:mm">
+      </dxi-column>
+
+      <!-- Reason Column -->
+      <dxi-column 
+        dataField="reason" 
+        caption="Reason"
+        [width]="200"
+        [allowSorting]="false"
+        [allowFiltering]="true"
+        cellTemplate="reasonTemplate">
+      </dxi-column>
+
+      <!-- Actions Column -->
+      <dxi-column 
+        caption="Actions"
+        [width]="120"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="actionsTemplate">
+      </dxi-column>
+
+      <!-- Working Days Template -->
+      <div *dxTemplate="let data of 'workingDaysTemplate'">
+        <span class="working-days-badge">
+          {{ calculateDays(data.data.start_date, data.data.end_date) }}
+        </span>
+      </div>
+
+      <!-- Status Template -->
+      <div *dxTemplate="let data of 'statusTemplate'">
+        <div class="status-cell">
+          <i class="dx-icon-{{ getStatusIcon(data.value) }}" 
+             [style.color]="getStatusColor(data.value)"></i>
+          <span [style.color]="getStatusColor(data.value)" 
+                class="status-text">
+            {{ data.value | titlecase }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Reason Template -->
+      <div *dxTemplate="let data of 'reasonTemplate'">
+        <span class="reason-text" 
+              [title]="data.value || 'No reason provided'">
+          {{ (data.value || 'No reason provided') | slice:0:50 }}
+          <span *ngIf="data.value && data.value.length > 50">...</span>
+        </span>
+      </div>
+
+      <!-- Actions Template -->
+      <div *dxTemplate="let data of 'actionsTemplate'">
+        <div class="actions-cell">
+          <dx-button
+            icon="info"
+            hint="View Details"
+            stylingMode="text"
+            (onClick)="viewDetails(data.data)">
+          </dx-button>
+          
+          <dx-button
+            *ngIf="canApproveReject(data.data)"
+            icon="check"
+            hint="Approve"
+            stylingMode="text"
+            [elementAttr]="{ class: 'approve-btn' }"
+            (onClick)="approveRequest(data.data)">
+          </dx-button>
+          
+          <dx-button
+            *ngIf="canApproveReject(data.data)"
+            icon="close"
+            hint="Reject"
+            stylingMode="text"
+            [elementAttr]="{ class: 'reject-btn' }"
+            (onClick)="rejectRequest(data.data)">
+          </dx-button>
+        </div>
+      </div>
+
+    </dx-data-grid>
+  </div>
+</div>
+
+<!-- Details Popup -->
+<dx-popup
+  [visible]="detailsPopupVisible"
+  [hideOnOutsideClick]="true"
+  [showCloseButton]="true"
+  [width]="600"
+  [height]="500"
+  title="WFH Request Details"
+  (onHiding)="closeDetailsPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="request-details" *ngIf="selectedRequest">
+      <dx-form [formData]="selectedRequest" [colCount]="2" [readOnly]="true">
+        
+        <dxi-item dataField="employee_name" [colSpan]="1">
+          <dxo-label text="Employee Name"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="employee_email" [colSpan]="1">
+          <dxo-label text="Email"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="start_date" [colSpan]="1" editorType="dxDateBox">
+          <dxo-label text="Start Date"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="end_date" [colSpan]="1" editorType="dxDateBox">
+          <dxo-label text="End Date"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="working_days" [colSpan]="1">
+          <dxo-label text="Working Days"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="status" [colSpan]="1">
+          <dxo-label text="Status"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="applied_at" [colSpan]="2" editorType="dxDateBox">
+          <dxo-label text="Applied At"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="reason" [colSpan]="2" editorType="dxTextArea">
+          <dxo-label text="Reason"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="decision_at" [colSpan]="1" editorType="dxDateBox" *ngIf="selectedRequest.decision_at">
+          <dxo-label text="Decision At"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="decided_by" [colSpan]="1" *ngIf="selectedRequest.decided_by">
+          <dxo-label text="Decided By"></dxo-label>
+        </dxi-item>
+        
+      </dx-form>
+      
+      <!-- Action buttons in popup -->
+      <div class="popup-actions" *ngIf="canApproveReject(selectedRequest)">
+        <dx-button
+          text="Approve"
+          type="default"
+          icon="check"
+          (onClick)="approveRequest(selectedRequest); closeDetailsPopup()">
+        </dx-button>
+        <dx-button
+          text="Reject"
+          type="danger"
+          icon="close"
+          (onClick)="rejectRequest(selectedRequest); closeDetailsPopup()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Toast Notification -->
+<dx-toast
+  [visible]="toastVisible"
+  [message]="toastMessage"
+  [type]="toastType"
+  [displayTime]="4000"
+  (onHiding)="toastVisible = false">
+</dx-toast>

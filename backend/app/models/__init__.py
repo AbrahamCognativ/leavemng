@@ -5,4 +5,5 @@ from .leave_type import LeaveType
 from .leave_balance import LeaveBalance
 from .leave_request import LeaveRequest
 from .leave_document import LeaveDocument
+from .wfh_request import WFHRequest
 from .audit_log import AuditLog

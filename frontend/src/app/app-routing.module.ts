@@ -8,6 +8,9 @@ import {LeaveRequestComponent} from './pages/leave-request/leave-request.compone
 import {LeaveHistoryComponent} from './pages/leave-history/leave-history.component';
 import {LeaveRequestDetailsComponent} from './pages/admin/leave-request-details/leave-request-details.component';
 import {LeaveScheduleComponent} from './pages/leave-schedule/leave-schedule.component';
+import {WFHRequestComponent} from './pages/wfh-request/wfh-request.component';
+import {WfhDashboardComponent} from './pages/wfh-dashboard/wfh-dashboard.component';
+import {WfhHistoryComponent} from './pages/wfh-history/wfh-history.component';
 
 const routes: Routes = [
   {
@@ -28,6 +31,21 @@ const routes: Routes = [
   {
     path: 'leave/schedule',
     component: LeaveScheduleComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'wfh/apply',
+    component: WFHRequestComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'wfh/dashboard',
+    component: WfhDashboardComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'wfh/history',
+    component: WfhHistoryComponent,
     canActivate: [ AuthGuardService ]
   },
   {

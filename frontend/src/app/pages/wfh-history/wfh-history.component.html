@@ -1,0 +1,94 @@
+<h2>Your Work From Home History</h2>
+
+<div class="content-block dx-card responsive-paddings">
+  <div class="wfh-history-header">
+    <p>View your past work from home requests</p>
+  </div>
+  
+  <div *ngIf="isLoading" class="loading-container">
+    <dx-load-indicator width="50" height="50"></dx-load-indicator>
+    <p>Loading WFH history...</p>
+  </div>
+  
+  <div *ngIf="errorMessage" class="error-message">
+    <p>{{ errorMessage }}</p>
+  </div>
+  
+  <div *ngIf="!isLoading && !errorMessage">
+    <dx-data-grid
+      [dataSource]="wfhHistory"
+      [showBorders]="true"
+      [columnAutoWidth]="true"
+      [wordWrapEnabled]="true"
+      [showRowLines]="true"
+      [showColumnLines]="true"
+      [rowAlternationEnabled]="true"
+      [allowColumnReordering]="true"
+      [allowColumnResizing]="true"
+      [noDataText]="'No past WFH records found'"
+    >
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20]"
+        [showInfo]="true"
+      ></dxo-pager>
+      
+      <dxi-column
+        dataField="start_date"
+        caption="Start Date"
+        [width]="120"
+        cellTemplate="startDateTemplate"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="end_date"
+        caption="End Date"
+        [width]="120"
+        cellTemplate="endDateTemplate"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="working_days"
+        caption="Working Days"
+        [width]="100"
+        alignment="center"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="decision_at"
+        caption="Approved On"
+        [width]="120"
+        cellTemplate="approvedDateTemplate"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="approver_name"
+        caption="Approved By"
+        [width]="150"
+      ></dxi-column>
+      
+      <dxi-column
+        dataField="reason"
+        caption="Reason"
+        [minWidth]="200"
+      ></dxi-column>
+      
+      <div *dxTemplate="let data of 'startDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+      
+      <div *dxTemplate="let data of 'endDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+      
+      <div *dxTemplate="let data of 'approvedDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+    </dx-data-grid>
+  </div>
+  
+  <div *ngIf="!isLoading && !errorMessage && wfhHistory.length === 0" class="no-data">
+    <p>No past approved WFH records found.</p>
+  </div>
+</div>

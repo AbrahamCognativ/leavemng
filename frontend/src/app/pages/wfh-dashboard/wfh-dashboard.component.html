@@ -1,0 +1,138 @@
+<div class="wfh-dashboard-container">
+  <div class="dashboard-header">
+    <h2>Work From Home Dashboard</h2>
+    <dx-button
+      text="Apply for WFH"
+      type="default"
+      [width]="130"
+      (onClick)="navigateToApply()">
+    </dx-button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>Pending Requests</h3>
+      <div class="stat-value">{{pendingRequests}}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Approved Requests</h3>
+      <div class="stat-value">{{approvedRequests}}</div>
+    </div>
+    <div class="stat-card">
+      <h3>Rejected Requests</h3>
+      <div class="stat-value">{{rejectedRequests}}</div>
+    </div>
+  </div>
+
+  <div class="wfh-requests-container">
+    <div class="section-header">
+      <h3>My Work From Home Requests</h3>
+      <dx-button
+        text="Refresh"
+        type="normal"
+        stylingMode="outlined"
+        [width]="100"
+        (onClick)="refreshData()">
+      </dx-button>
+    </div>
+    
+    <dx-data-grid
+      [dataSource]="wfhRequests"
+      [showBorders]="true"
+      [columnAutoWidth]="true"
+      [wordWrapEnabled]="true"
+      [showRowLines]="true"
+      [showColumnLines]="true"
+      [rowAlternationEnabled]="true"
+      [allowColumnReordering]="true"
+      [allowColumnResizing]="true"
+      [noDataText]="'No WFH requests found'"
+      (onRowClick)="onRowClick($event)">
+      
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20]"
+        [showInfo]="true">
+      </dxo-pager>
+      
+      <dxi-column 
+        dataField="start_date" 
+        caption="Start Date" 
+        [width]="120"
+        cellTemplate="startDateTemplate">
+      </dxi-column>
+      
+      <dxi-column 
+        dataField="end_date" 
+        caption="End Date" 
+        [width]="120"
+        cellTemplate="endDateTemplate">
+      </dxi-column>
+      
+      <dxi-column 
+        dataField="working_days" 
+        caption="Working Days" 
+        [width]="120"
+        alignment="center">
+      </dxi-column>
+      
+      <dxi-column 
+        dataField="reason" 
+        caption="Reason" 
+        [minWidth]="200">
+      </dxi-column>
+      
+      <dxi-column 
+        dataField="status" 
+        caption="Status" 
+        [width]="120"
+        cellTemplate="statusTemplate">
+      </dxi-column>
+      
+      <dxi-column
+        dataField="applied_at"
+        caption="Applied On"
+        [width]="120"
+        cellTemplate="appliedDateTemplate">
+      </dxi-column>
+      
+      <dxi-column 
+        dataField="approver_name" 
+        caption="Approved By" 
+        [width]="150">
+      </dxi-column>
+      
+      <div *dxTemplate="let data of 'startDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+      
+      <div *dxTemplate="let data of 'endDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+      
+      <div *dxTemplate="let data of 'appliedDateTemplate'">
+        {{ formatDate(data.value) }}
+      </div>
+      
+      <div *dxTemplate="let data of 'statusTemplate'">
+        <span [class]="getStatusClass(data.value)">
+          {{ data.value | titlecase }}
+        </span>
+      </div>
+    </dx-data-grid>
+  </div>
+
+  <div *ngIf="wfhRequests.length === 0" class="no-data">
+    <div class="no-data-content">
+      <h4>No WFH Requests Found</h4>
+      <p>You haven't submitted any work from home requests yet.</p>
+      <dx-button
+        text="Apply for WFH"
+        type="default"
+        [width]="130"
+        (onClick)="navigateToApply()">
+      </dx-button>
+    </div>
+  </div>
+</div>
