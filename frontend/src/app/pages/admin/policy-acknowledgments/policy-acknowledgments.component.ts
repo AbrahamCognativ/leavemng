@@ -244,10 +244,6 @@ export class PolicyAcknowledmentsComponent implements OnInit, AfterViewInit {
     this.showToast('Data refreshed', 'success');
   }
 
-  exportData(): void {
-    // Implement export functionality
-    this.showToast('Export functionality to be implemented', 'info');
-  }
 
   getPriorityClass(stats: PolicyAcknowledmentStats): string {
     if (stats.overdue_count > 0) return 'high-priority';

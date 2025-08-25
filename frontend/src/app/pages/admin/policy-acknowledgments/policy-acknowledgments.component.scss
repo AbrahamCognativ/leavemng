@@ -14,7 +14,7 @@
     }
     
     h2 {
-      color: #2d6cdf;
+      color: #000000;
       margin: 0 0 8px 0;
       font-size: 28px;
       font-weight: 600;
@@ -98,16 +98,20 @@
 
 // Policy name styling with priority indicators
 .policy-name {
+  strong {
+    color: #000000;
+  }
+  
   &.high-priority strong {
-    color: #dc3545;
+    color: #000000;
   }
   
   &.medium-priority strong {
-    color: #fd7e14;
+    color: #000000;
   }
   
   &.normal-priority strong {
-    color: #28a745;
+    color: #000000;
   }
 }
 

@@ -65,14 +65,89 @@
     <!-- Policy Content Display -->
     <div class="content-section">
       
-      <!-- Content Loading -->
-      <div *ngIf="contentLoading" class="content-loading">
+      <!-- PDF Loading -->
+      <div *ngIf="pdfLoading" class="content-loading">
         <dx-load-indicator [visible]="true"></dx-load-indicator>
-        <p>Extracting policy content...</p>
+        <p>Loading policy document...</p>
       </div>
       
-      <!-- Extracted Text Content -->
-      <div *ngIf="!contentLoading && policyContent" class="text-content">
+      <!-- PDF Viewer -->
+      <div *ngIf="!pdfLoading && pdfSrc && !showTextFallback && !pdfError" class="pdf-content">
+        <div class="content-header">
+          <h2>Policy Document</h2>
+          <div class="pdf-controls">
+            <div class="zoom-controls">
+              <dx-button
+                icon="minus"
+                stylingMode="text"
+                hint="Zoom Out"
+                (onClick)="zoomOut()">
+              </dx-button>
+              <span class="zoom-level">{{ (zoom * 100) | number:'1.0-0' }}%</span>
+              <dx-button
+                icon="plus"
+                stylingMode="text"
+                hint="Zoom In"
+                (onClick)="zoomIn()">
+              </dx-button>
+              <dx-button
+                text="Reset"
+                stylingMode="text"
+                hint="Reset Zoom"
+                (onClick)="resetZoom()">
+              </dx-button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="pdf-viewer-container">
+          <pdf-viewer
+            [src]="pdfSrc"
+            [render-text]="true"
+            [original-size]="false"
+            [fit-to-page]="true"
+            [zoom]="zoom"
+            [show-all]="true"
+            [autoresize]="true"
+            (after-load-complete)="onPdfLoadComplete($event)"
+            (error)="onPdfError($event)"
+            class="pdf-viewer">
+          </pdf-viewer>
+        </div>
+        
+        <!-- Acknowledgment Section -->
+        <div class="acknowledgment-section" *ngIf="canAcknowledge()">
+          <div class="acknowledgment-prompt">
+            <h3>Policy Acknowledgment</h3>
+            <p>
+              By clicking "I Acknowledge and Agree" below, you confirm that you have read,
+              understood, and agree to comply with this policy.
+            </p>
+            
+            <dx-button
+              text="I Acknowledge and Agree"
+              icon="check"
+              type="success"
+              [width]="200"
+              (onClick)="openSignaturePopup()">
+            </dx-button>
+          </div>
+        </div>
+        
+        <!-- Already Acknowledged -->
+        <div class="already-acknowledged" *ngIf="userPolicyStatus?.is_acknowledged">
+          <div class="acknowledged-message">
+            <i class="dx-icon-check"></i>
+            <div>
+              <h3>Policy Acknowledged</h3>
+              <p>You acknowledged this policy on {{ formatDate(userPolicyStatus?.acknowledged_at || '') }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Text Content Fallback -->
+      <div *ngIf="(showTextFallback || pdfError || !pdfSrc) && policyContent" class="text-content">
         <div class="content-header">
           <h2>Policy Content</h2>
           <p class="content-note">
@@ -97,7 +172,7 @@
           <div class="acknowledgment-prompt">
             <h3>Policy Acknowledgment</h3>
             <p>
-              By clicking "I Acknowledge and Agree" below, you confirm that you have read, 
+              By clicking "I Acknowledge and Agree" below, you confirm that you have read,
               understood, and agree to comply with this policy.
             </p>
             
@@ -105,7 +180,7 @@
               text="I Acknowledge and Agree"
               icon="check"
               type="success"
-              [width]="250"
+              [width]="200"
               (onClick)="openSignaturePopup()">
             </dx-button>
           </div>
@@ -123,13 +198,13 @@
         </div>
       </div>
       
-      <!-- Content Extraction Failed -->
-      <div *ngIf="!contentLoading && !policyContent" class="content-fallback">
+      <!-- Content Loading Failed -->
+      <div *ngIf="!pdfLoading && !contentLoading && !policyContent && (pdfError || !pdfSrc)" class="content-fallback">
         <div class="fallback-message">
           <i class="dx-icon-doc"></i>
           <h3>Content Preview Unavailable</h3>
           <p>
-            We couldn't extract the text content from this policy document. 
+            We couldn't load the policy document for preview.
             Please download the PDF to read the complete policy.
           </p>
           
@@ -232,7 +307,7 @@
         </dx-button>
         
         <dx-button
-          text="I Acknowledge and Electronically Sign"
+          text="Sign"
           type="success"
           icon="check"
           [disabled]="signing"

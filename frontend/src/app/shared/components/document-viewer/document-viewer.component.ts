@@ -21,6 +21,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy, OnChanges {
   isLoading: boolean = false;
   canPreview: boolean = false;
   errorMessage: string = '';
+  documentKey: string = '';
 
   constructor(
     private sanitizer: DomSanitizer,
@@ -48,6 +49,9 @@ export class DocumentViewerComponent implements OnInit, OnDestroy, OnChanges {
       this.isLoading = true;
       this.errorMessage = '';
       
+      // Generate a unique key for this document to force iframe refresh
+      this.documentKey = `${this.documentUrl}_${Date.now()}_${Math.random()}`;
+      
       // Normalize file type to MIME type
       const normalizedFileType = this.normalizeFileType(this.fileType);
       
@@ -55,13 +59,19 @@ export class DocumentViewerComponent implements OnInit, OnDestroy, OnChanges {
       this.canPreview = this.canPreviewFileType(normalizedFileType);
       
       if (this.canPreview) {
+        // Add cache-busting parameter to prevent browser caching
+        const cacheBuster = `cacheBust=${Date.now()}`;
+        const separator = this.documentUrl.includes('?') ? '&' : '?';
+        const urlWithCacheBuster = `${this.documentUrl}${separator}${cacheBuster}`;
+        
         // For PDFs, we can embed directly
         if (this.isPdf(normalizedFileType)) {
-          this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.documentUrl);
+          this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlWithCacheBuster);
         } else if (this.isDocx(normalizedFileType)) {
           // For DOCX files, use the preview endpoint that converts to PDF
           const previewUrl = this.getPreviewUrl(this.documentUrl);
-          this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl);
+          const previewUrlWithCacheBuster = `${previewUrl}${previewUrl.includes('?') ? '&' : '?'}${cacheBuster}`;
+          this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(previewUrlWithCacheBuster);
         } else {
           // For other files, we'll show a preview message
           this.safeUrl = null;
@@ -138,6 +148,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy, OnChanges {
     this.isLoading = false;
     this.canPreview = false;
     this.errorMessage = '';
+    this.documentKey = '';
   }
 
   // Public methods for template access

@@ -5,6 +5,7 @@
   </div>
 
   <div class="content-wrapper">
+    <!-- Left Column: Main Form -->
     <div class="form-section">
       <dx-form [formData]="wfhRequest" [colCount]="1">
         
@@ -75,6 +76,29 @@
         </dxi-item>
       </dx-form>
     </div>
+
+    <!-- Right Column: WFH Guidelines -->
+    <div class="sidebar-section">
+      <div class="wfh-guidelines-card">
+        <h3>Important Points to Note</h3>
+        <div class="guidelines-list">
+          <div class="guideline-item">
+            <div class="guideline-content">
+              <h4>Advance Notice Required</h4>
+              <p>WFH requests should be submitted at least <strong>3 days in advance</strong> to allow for proper planning and approval.</p>
+            </div>
+          </div>
+          
+          <div class="guideline-item">
+            <div class="guideline-content">
+              <h4>Not a Leave Day</h4>
+              <p>Remember that WFH is <strong>not a leave day</strong>. You are expected to work your normal hours and be available during business hours.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 

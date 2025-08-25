@@ -26,6 +26,7 @@
       <div *ngIf="canPreview && (isPdf(fileType) || isDocx(fileType))" class="pdf-container">
         <iframe
           [src]="safeUrl"
+          [attr.key]="documentKey"
           class="pdf-iframe"
           frameborder="0"
           (load)="onIframeLoad()"

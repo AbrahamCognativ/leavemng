@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxToastModule } from 'devextreme-angular/ui/toast';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
+import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { PolicyService, Policy } from '../../shared/services/policy.service';
 import { PolicyAcknowledmentService, UserPolicyStatus } from '../../shared/services/policy-acknowledgment.service';
 import { AuthService } from '../../shared/services/auth.service';
@@ -27,10 +28,11 @@ interface PolicyContent {
     DxButtonModule,
     DxToastModule,
     DxPopupModule,
-    DxLoadIndicatorModule
+    DxLoadIndicatorModule,
+    PdfViewerModule
   ]
 })
-export class PolicyViewComponent implements OnInit {
+export class PolicyViewComponent implements OnInit, OnDestroy {
   policyId: string = '';
   policy: Policy | null = null;
   policyContent: PolicyContent | null = null;
@@ -46,6 +48,15 @@ export class PolicyViewComponent implements OnInit {
   // Electronic signing
   signaturePopupVisible = false;
   signing = false;
+  
+  // PDF viewer properties
+  pdfSrc: string = '';
+  pdfLoading = false;
+  pdfError = false;
+  showTextFallback = false;
+  zoom = 1.0;
+  totalPages = 0;
+  private pdfBlobUrl: string | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -64,8 +75,20 @@ export class PolicyViewComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    // Clean up blob URL to prevent memory leaks
+    if (this.pdfBlobUrl) {
+      URL.revokeObjectURL(this.pdfBlobUrl);
+      this.pdfBlobUrl = null;
+    }
+  }
+
   async loadData(): Promise<void> {
     this.loading = true;
+    
+    // Reset all state variables when loading new policy
+    this.resetPolicyState();
+    
     try {
       await Promise.all([
         this.loadCurrentUser(),
@@ -74,13 +97,37 @@ export class PolicyViewComponent implements OnInit {
       ]);
       
       if (this.policy) {
-        await this.loadPolicyContent();
+        await this.loadPolicyPdf();
       }
     } catch (error) {
       this.showToast('Error loading policy data', 'error');
     } finally {
       this.loading = false;
     }
+  }
+
+  private resetPolicyState(): void {
+    // Reset PDF-related state
+    this.pdfSrc = '';
+    this.pdfLoading = false;
+    this.pdfError = false;
+    this.showTextFallback = false;
+    this.zoom = 1.0;
+    this.totalPages = 0;
+    
+    // Clean up previous blob URL
+    if (this.pdfBlobUrl) {
+      URL.revokeObjectURL(this.pdfBlobUrl);
+      this.pdfBlobUrl = null;
+    }
+    
+    // Reset content-related state
+    this.policyContent = null;
+    this.contentLoading = false;
+    
+    // Reset policy and user status (will be reloaded)
+    this.policy = null;
+    this.userPolicyStatus = null;
   }
 
   async loadCurrentUser(): Promise<void> {
@@ -112,6 +159,72 @@ export class PolicyViewComponent implements OnInit {
     }
   }
 
+  async loadPolicyPdf(): Promise<void> {
+    if (!this.policy) return;
+    
+    this.pdfLoading = true;
+    this.pdfError = false;
+    
+    try {
+      // For PDF files, load directly using preview endpoint
+      if (this.policy.file_type.toLowerCase() === 'pdf') {
+        // Reset text fallback state for PDF files
+        this.showTextFallback = false;
+        this.policyContent = null;
+        
+        // Use the preview endpoint which handles authentication properly
+        this.pdfSrc = await this.getPdfUrl();
+      } else {
+        // For other files, reset PDF state and load text content
+        this.pdfSrc = '';
+        if (this.pdfBlobUrl) {
+          URL.revokeObjectURL(this.pdfBlobUrl);
+          this.pdfBlobUrl = null;
+        }
+        
+        // Load text content for non-PDF files
+        await this.loadPolicyContent();
+        this.showTextFallback = true;
+      }
+    } catch (error) {
+      console.error('Error loading policy PDF:', error);
+      this.pdfError = true;
+      // Fall back to text content
+      await this.loadPolicyContent();
+      this.showTextFallback = true;
+    } finally {
+      this.pdfLoading = false;
+    }
+  }
+
+  private async getPdfUrl(): Promise<string> {
+    // Clean up previous blob URL if exists
+    if (this.pdfBlobUrl) {
+      URL.revokeObjectURL(this.pdfBlobUrl);
+      this.pdfBlobUrl = null;
+    }
+    
+    // Create a blob URL for the PDF to handle authentication
+    try {
+      const response = await fetch(`${this.policyService['API_URL']}/policies/${this.policyId}/download?inline=true`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('user_token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load PDF: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      this.pdfBlobUrl = URL.createObjectURL(blob);
+      return this.pdfBlobUrl;
+    } catch (error) {
+      console.error('Error creating PDF URL:', error);
+      throw error;
+    }
+  }
+
   async loadPolicyContent(): Promise<void> {
     if (!this.policy) return;
     
@@ -134,6 +247,33 @@ export class PolicyViewComponent implements OnInit {
     } finally {
       this.contentLoading = false;
     }
+  }
+
+  // PDF viewer event handlers
+  onPdfLoadComplete(pdf: any): void {
+    this.totalPages = pdf.numPages;
+    this.pdfError = false;
+  }
+
+  onPdfError(error: any): void {
+    console.error('PDF loading error:', error);
+    this.pdfError = true;
+    this.showTextFallback = true;
+    // Try to load text content as fallback
+    this.loadPolicyContent();
+  }
+
+  // PDF viewer controls
+  zoomIn(): void {
+    this.zoom = Math.min(this.zoom + 0.25, 3.0);
+  }
+
+  zoomOut(): void {
+    this.zoom = Math.max(this.zoom - 0.25, 0.5);
+  }
+
+  resetZoom(): void {
+    this.zoom = 1.0;
   }
 
   showToast(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {

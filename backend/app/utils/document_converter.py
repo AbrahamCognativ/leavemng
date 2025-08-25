@@ -187,3 +187,22 @@ class DocumentConverter:
         
         # Create or update the preview
         return DocumentConverter.convert_docx_to_pdf(docx_path, preview_path)
+    
+    @staticmethod
+    def convert_to_pdf(input_path: str, output_path: str) -> str:
+        """
+        Convert a document to PDF. Currently supports DOCX files.
+        
+        Args:
+            input_path: Path to the input document
+            output_path: Path for the output PDF file
+            
+        Returns:
+            Path to the generated PDF file
+        """
+        file_ext = Path(input_path).suffix.lower()
+        
+        if file_ext in ['.doc', '.docx']:
+            return DocumentConverter.convert_docx_to_pdf(input_path, output_path)
+        else:
+            raise ValueError(f"Unsupported file type for conversion: {file_ext}")

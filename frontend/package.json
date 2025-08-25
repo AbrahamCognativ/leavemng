@@ -25,6 +25,7 @@
     "devextreme-schematics": "^1.10.1",
     "dotenv": "^16.5.0",
     "file-saver": "^2.0.5",
+    "ng2-pdf-viewer": "^10.4.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"

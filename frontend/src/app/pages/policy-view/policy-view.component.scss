@@ -23,7 +23,7 @@
 .policy-content {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -279,36 +279,168 @@
   }
 }
 
+// PDF Viewer Styles
+.pdf-content {
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+    flex-wrap: wrap;
+    gap: 15px;
+    
+    h2 {
+      color: #2c3e50;
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0;
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .pdf-controls {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+      
+      .zoom-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .zoom-level {
+        font-size: 14px;
+        color: #6c757d;
+        min-width: 45px;
+        text-align: center;
+      }
+      
+      ::ng-deep .dx-button {
+        min-width: auto;
+        
+        &.dx-button-outlined {
+          background: #f8f9fa;
+          border-color: #dee2e6;
+          color: #6c757d;
+          
+          &:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+          }
+        }
+        
+        &.dx-button-mode-text {
+          color: #6c757d;
+          
+          &:hover {
+            background: #f8f9fa;
+          }
+          
+          &.dx-state-disabled {
+            opacity: 0.4;
+          }
+        }
+      }
+    }
+  }
+  
+  .pdf-viewer-container {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+    min-height: 600px;
+    display: flex;
+    justify-content: center;
+    
+    .pdf-viewer {
+      width: 100%;
+      max-width: 100%;
+      
+      ::ng-deep {
+        .ng2-pdf-viewer-container {
+          overflow: auto;
+          
+          .pdfViewer {
+            .page {
+              margin: 0 auto 20px auto;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+              border-radius: 4px;
+              overflow: hidden;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.text-content {
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+    flex-wrap: wrap;
+    gap: 15px;
+    
+    h2 {
+      color: #2c3e50;
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0;
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    
+    .content-note {
+      color: #6c757d;
+      font-size: 16px;
+      margin: 10px 0 0 0;
+      font-style: italic;
+      width: 100%;
+    }
+  }
+}
+
 .acknowledgment-section {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border: 2px solid #28a745;
-  border-radius: 12px;
-  padding: 30px;
-  margin-top: 40px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 20px;
+  margin-top: 20px;
   text-align: center;
   
   .acknowledgment-prompt {
     h3 {
-      color: #28a745;
-      font-size: 22px;
+      color: #495057;
+      font-size: 18px;
       font-weight: 600;
-      margin: 0 0 15px 0;
+      margin: 0 0 10px 0;
     }
     
     p {
-      color: #495057;
-      font-size: 16px;
-      line-height: 1.6;
-      margin: 0 0 25px 0;
-      max-width: 600px;
+      color: #6c757d;
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0 0 15px 0;
+      max-width: 500px;
       margin-left: auto;
       margin-right: auto;
     }
     
     ::ng-deep .dx-button {
-      font-size: 16px;
-      font-weight: 600;
-      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 16px;
       
       &.dx-button-success {
         background: #28a745;
@@ -317,8 +449,6 @@
         &:hover {
           background: #218838;
           border-color: #1e7e34;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
         }
       }
     }
@@ -608,8 +738,50 @@
     padding: 20px;
   }
   
-  .text-content .content-header h2 {
-    font-size: 20px;
+  // PDF viewer responsive styles
+  .pdf-content {
+    .content-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 15px;
+      
+      h2 {
+        font-size: 20px;
+        text-align: center;
+      }
+      
+      .pdf-controls {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        
+        .zoom-controls {
+          gap: 5px;
+        }
+      }
+    }
+    
+    .pdf-viewer-container {
+      padding: 10px;
+      min-height: 400px;
+    }
+  }
+  
+  .text-content {
+    .content-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 15px;
+      
+      h2 {
+        font-size: 20px;
+        text-align: center;
+      }
+      
+      .content-note {
+        text-align: center;
+      }
+    }
   }
   
   .acknowledgment-section,
@@ -652,6 +824,24 @@
 @media (max-width: 480px) {
   .policy-header .policy-title {
     font-size: 20px;
+  }
+  
+  .pdf-content {
+    .content-header {
+      .pdf-controls {
+        flex-direction: column;
+        gap: 10px;
+        
+        .zoom-controls {
+          justify-content: center;
+        }
+      }
+    }
+    
+    .pdf-viewer-container {
+      padding: 5px;
+      min-height: 300px;
+    }
   }
   
   .text-content .content-body {

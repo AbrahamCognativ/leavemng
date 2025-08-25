@@ -428,45 +428,44 @@ Leave Management System Team
     send_email_background(subject, body, [to_email], html=html)
 
 
-async def generate_and_send_signed_pdf(db: Session, acknowledgment: PolicyAcknowledgment, policy: Policy, user: User):
-    """Generate a signed PDF copy with original policy content and send it to the user"""
+async def append_signature_to_pdf(original_pdf_path: str, output_path: str, acknowledgment: PolicyAcknowledgment, policy: Policy, user: User):
+    """Append signature page to original PDF file"""
     try:
+        from PyPDF2 import PdfReader, PdfWriter
         from reportlab.pdfgen import canvas
-        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
         from reportlab.lib import colors
         from reportlab.lib.units import inch
         import tempfile
-        import os
         from datetime import datetime
         
-        # Create temporary file for the signed PDF
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
-            temp_path = temp_file.name
+        # Create signature page
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as sig_temp:
+            sig_temp_path = sig_temp.name
         
-        # Create the PDF document
-        doc = SimpleDocTemplate(temp_path, pagesize=A4)
+        # Create signature page PDF
+        doc = SimpleDocTemplate(sig_temp_path, pagesize=A4)
         styles = getSampleStyleSheet()
         story = []
         
-        # Title
+        # Signature page content
         title_style = ParagraphStyle(
-            'CustomTitle',
+            'SignatureTitle',
             parent=styles['Heading1'],
-            fontSize=18,
-            spaceAfter=30,
+            fontSize=16,
+            spaceAfter=20,
             textColor=colors.darkblue,
-            alignment=1  # Center alignment
+            alignment=1
         )
-        story.append(Paragraph(f"{policy.name} - SIGNED COPY", title_style))
+        story.append(Paragraph("ELECTRONIC ACKNOWLEDGMENT AND SIGNATURE", title_style))
         story.append(Spacer(1, 20))
         
-        # Policy Information Header
+        # Policy info
         policy_info = [
             ['Policy Name:', policy.name],
             ['Document:', policy.file_name],
-            ['Description:', policy.description or 'N/A'],
             ['Published Date:', policy.created_at.strftime('%B %d, %Y')],
         ]
         
@@ -476,72 +475,23 @@ async def generate_and_send_signed_pdf(db: Session, acknowledgment: PolicyAcknow
             ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ]))
         
         story.append(policy_table)
         story.append(Spacer(1, 30))
         
-        # Extract and include original policy content
-        try:
-            # Import the text extraction functions from policy router
-            from app.api.v1.routers.policy import extract_pdf_text, extract_docx_text
-            
-            policy_content = ""
-            if policy.file_type.lower() == 'pdf':
-                policy_content = extract_pdf_text(policy.file_path)
-            elif policy.file_type.lower() in ['doc', 'docx']:
-                policy_content = extract_docx_text(policy.file_path)
-            
-            if policy_content:
-                # Add policy content section
-                story.append(Paragraph("POLICY CONTENT", styles['Heading2']))
-                story.append(Spacer(1, 15))
-                
-                # Split content into paragraphs and add them
-                content_style = ParagraphStyle(
-                    'PolicyContent',
-                    parent=styles['Normal'],
-                    fontSize=10,
-                    leading=14,
-                    spaceAfter=12,
-                    leftIndent=0,
-                    rightIndent=0
-                )
-                
-                # Split content into paragraphs (by double line breaks)
-                paragraphs = policy_content.split('\n\n')
-                for para in paragraphs:
-                    para = para.strip()
-                    if para:
-                        # Replace single line breaks with spaces for better formatting
-                        para = para.replace('\n', ' ')
-                        story.append(Paragraph(para, content_style))
-                
-                story.append(PageBreak())  # Start signature section on new page
-            
-        except Exception as e:
-            print(f"Could not extract policy content: {e}")
-            # Continue without content if extraction fails
-            story.append(Paragraph("Policy content could not be extracted. Please refer to the original document.", styles['Normal']))
-            story.append(Spacer(1, 30))
+        # Acknowledgment statement
+        statement_text = f"""
+        I, {user.name}, hereby acknowledge that I have read, understood, and agree to comply with
+        the policy titled "{policy.name}". I understand the requirements, procedures, and guidelines
+        outlined in this policy and acknowledge my responsibility to adhere to them.
         
-        # Signature Section
-        signature_title_style = ParagraphStyle(
-            'SignatureTitle',
-            parent=styles['Heading1'],
-            fontSize=16,
-            spaceAfter=20,
-            textColor=colors.darkblue,
-            alignment=1  # Center alignment
-        )
-        story.append(Paragraph("ELECTRONIC ACKNOWLEDGMENT AND SIGNATURE", signature_title_style))
-        story.append(Spacer(1, 20))
+        This electronic acknowledgment was provided on {acknowledgment.acknowledged_at.strftime('%B %d, %Y at %I:%M %p UTC')}
+        and has the same legal effect as a handwritten signature.
+        """
         
-        # Acknowledgment Statement
         statement_style = ParagraphStyle(
             'Statement',
             parent=styles['Normal'],
@@ -556,25 +506,15 @@ async def generate_and_send_signed_pdf(db: Session, acknowledgment: PolicyAcknow
             backColor=colors.lightgrey
         )
         
-        statement_text = f"""
-        I, {user.name}, hereby acknowledge that I have read, understood, and agree to comply with
-        the policy titled "{policy.name}". I understand the requirements, procedures, and guidelines
-        outlined in this policy and acknowledge my responsibility to adhere to them.
-        
-        This electronic acknowledgment was provided on {acknowledgment.acknowledged_at.strftime('%B %d, %Y at %I:%M %p UTC')}
-        and has the same legal effect as a handwritten signature.
-        """
-        
         story.append(Paragraph(statement_text, statement_style))
         story.append(Spacer(1, 30))
         
-        # Signature Details
+        # Signature details
         signature_info = [
             ['Employee Name:', user.name],
             ['Employee Email:', user.email],
             ['Acknowledgment Date:', acknowledgment.acknowledged_at.strftime('%B %d, %Y at %I:%M %p UTC')],
             ['Signature Method:', acknowledgment.signature_method.replace('_', ' ').title()],
-            ['Digital Signature ID:', str(acknowledgment.id)],
             ['Verification Code:', f"ACK-{str(acknowledgment.id)[:8].upper()}"],
         ]
         
@@ -588,7 +528,6 @@ async def generate_and_send_signed_pdf(db: Session, acknowledgment: PolicyAcknow
             ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ]))
         
         story.append(Paragraph("Signature Details", styles['Heading2']))
@@ -596,49 +535,229 @@ async def generate_and_send_signed_pdf(db: Session, acknowledgment: PolicyAcknow
         story.append(signature_table)
         story.append(Spacer(1, 30))
         
-        # Signature Line
+        # Electronic signature line
         signature_line_text = f"""
-        <br/><br/>
         Acknowledged and signed by: {user.name}<br/>
         Date: {acknowledgment.acknowledged_at.strftime('%B %d, %Y at %I:%M %p UTC')}<br/>
         <br/>
         ________________________________<br/>
-        Electronic Signature<br/>
+        Electronic Signature
         """
         
-        signature_line_style = ParagraphStyle(
-            'SignatureLine',
-            parent=styles['Normal'],
-            fontSize=12,
-            leading=16,
-            spaceAfter=20,
-            leftIndent=50,
-            rightIndent=50,
-            alignment=0  # Left alignment
-        )
+        story.append(Paragraph(signature_line_text, styles['Normal']))
         
-        story.append(Paragraph(signature_line_text, signature_line_style))
+        # Build signature page
+        doc.build(story)
+        
+        # Merge original PDF with signature page
+        reader_original = PdfReader(original_pdf_path)
+        reader_signature = PdfReader(sig_temp_path)
+        writer = PdfWriter()
+        
+        # Add all pages from original PDF
+        for page in reader_original.pages:
+            writer.add_page(page)
+        
+        # Add signature page(s)
+        for page in reader_signature.pages:
+            writer.add_page(page)
+        
+        # Write merged PDF
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+        
+        # Clean up temporary signature file
+        import os
+        os.unlink(sig_temp_path)
+        
+    except Exception as e:
+        print(f"Error appending signature to PDF: {e}")
+        # Fallback to creating signature-only PDF
+        await create_signature_only_pdf(output_path, acknowledgment, policy, user)
+
+
+async def convert_docx_and_append_signature(docx_path: str, output_path: str, acknowledgment: PolicyAcknowledgment, policy: Policy, user: User):
+    """Convert DOCX to PDF and append signature page"""
+    try:
+        from app.utils.document_converter import DocumentConverter
+        import tempfile
+        
+        # Convert DOCX to PDF first
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
+            temp_pdf_path = temp_pdf.name
+        
+        # Check if conversion is available
+        if DocumentConverter.is_conversion_available():
+            # Convert DOCX to PDF
+            DocumentConverter.convert_to_pdf(docx_path, temp_pdf_path)
+            
+            # Now append signature to the converted PDF
+            await append_signature_to_pdf(temp_pdf_path, output_path, acknowledgment, policy, user)
+            
+            # Clean up temporary PDF
+            import os
+            os.unlink(temp_pdf_path)
+        else:
+            # Fallback: create signature-only PDF with note about original document
+            await create_signature_only_pdf(output_path, acknowledgment, policy, user, include_note=True)
+            
+    except Exception as e:
+        print(f"Error converting DOCX and appending signature: {e}")
+        # Fallback to creating signature-only PDF
+        await create_signature_only_pdf(output_path, acknowledgment, policy, user, include_note=True)
+
+
+async def create_signature_only_pdf(output_path: str, acknowledgment: PolicyAcknowledgment, policy: Policy, user: User, include_note: bool = False):
+    """Create a PDF with signature information only"""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from datetime import datetime
+        
+        doc = SimpleDocTemplate(output_path, pagesize=A4)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            spaceAfter=30,
+            textColor=colors.darkblue,
+            alignment=1
+        )
+        story.append(Paragraph(f"POLICY ACKNOWLEDGMENT CERTIFICATE", title_style))
         story.append(Spacer(1, 20))
         
-        # Footer
-        footer_text = f"""
-        This document contains the original policy content with electronic acknowledgment signature.
-        Generated on {datetime.now().strftime('%B %d, %Y at %I:%M %p UTC')} by the Leave Management System.
-        For verification purposes, please contact the HR department with the verification code: ACK-{str(acknowledgment.id)[:8].upper()}
+        if include_note:
+            note_style = ParagraphStyle(
+                'Note',
+                parent=styles['Normal'],
+                fontSize=10,
+                textColor=colors.red,
+                alignment=1,
+                spaceAfter=20
+            )
+            story.append(Paragraph("Note: This certificate should be read together with the original policy document.", note_style))
+        
+        # Policy Information
+        policy_info = [
+            ['Policy Name:', policy.name],
+            ['Document:', policy.file_name],
+            ['Description:', policy.description or 'N/A'],
+            ['Published Date:', policy.created_at.strftime('%B %d, %Y')],
+        ]
+        
+        policy_table = Table(policy_info, colWidths=[2*inch, 4*inch])
+        policy_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        
+        story.append(policy_table)
+        story.append(Spacer(1, 30))
+        
+        # Rest of signature content (same as in append_signature_to_pdf)
+        statement_text = f"""
+        I, {user.name}, hereby acknowledge that I have read, understood, and agree to comply with
+        the policy titled "{policy.name}". I understand the requirements, procedures, and guidelines
+        outlined in this policy and acknowledge my responsibility to adhere to them.
+        
+        This electronic acknowledgment was provided on {acknowledgment.acknowledged_at.strftime('%B %d, %Y at %I:%M %p UTC')}
+        and has the same legal effect as a handwritten signature.
         """
         
-        footer_style = ParagraphStyle(
-            'Footer',
+        statement_style = ParagraphStyle(
+            'Statement',
             parent=styles['Normal'],
-            fontSize=9,
-            textColor=colors.grey,
-            alignment=1  # Center alignment
+            fontSize=11,
+            leading=16,
+            spaceAfter=20,
+            leftIndent=20,
+            rightIndent=20,
+            borderWidth=1,
+            borderColor=colors.grey,
+            borderPadding=15,
+            backColor=colors.lightgrey
         )
         
-        story.append(Paragraph(footer_text, footer_style))
+        story.append(Paragraph(statement_text, statement_style))
+        story.append(Spacer(1, 30))
         
-        # Build the PDF
+        # Signature details
+        signature_info = [
+            ['Employee Name:', user.name],
+            ['Employee Email:', user.email],
+            ['Acknowledgment Date:', acknowledgment.acknowledged_at.strftime('%B %d, %Y at %I:%M %p UTC')],
+            ['Signature Method:', acknowledgment.signature_method.replace('_', ' ').title()],
+            ['Verification Code:', f"ACK-{str(acknowledgment.id)[:8].upper()}"],
+        ]
+        
+        signature_table = Table(signature_info, colWidths=[2.5*inch, 3.5*inch])
+        signature_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
+            ('TEXTCOLOR', (1, 0), (1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        
+        story.append(Paragraph("Signature Details", styles['Heading2']))
+        story.append(Spacer(1, 10))
+        story.append(signature_table)
+        story.append(Spacer(1, 30))
+        
+        # Electronic signature line
+        signature_line_text = f"""
+        Acknowledged and signed by: {user.name}<br/>
+        Date: {acknowledgment.acknowledged_at.strftime('%B %d, %Y at %I:%M %p UTC')}<br/>
+        <br/>
+        ________________________________<br/>
+        Electronic Signature
+        """
+        
+        story.append(Paragraph(signature_line_text, styles['Normal']))
+        
+        # Build PDF
         doc.build(story)
+        
+    except Exception as e:
+        print(f"Error creating signature PDF: {e}")
+        raise
+
+
+async def generate_and_send_signed_pdf(db: Session, acknowledgment: PolicyAcknowledgment, policy: Policy, user: User):
+    """Generate a signed PDF copy by appending signature to the original document"""
+    try:
+        import tempfile
+        import os
+        from datetime import datetime
+        
+        # Create temporary file for the signed PDF
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+            temp_path = temp_file.name
+        
+        # Handle different file types
+        if policy.file_type.lower() == 'pdf':
+            # For PDF files, append signature page to original PDF
+            await append_signature_to_pdf(policy.file_path, temp_path, acknowledgment, policy, user)
+        elif policy.file_type.lower() in ['doc', 'docx']:
+            # For DOCX files, convert to PDF first, then append signature
+            await convert_docx_and_append_signature(policy.file_path, temp_path, acknowledgment, policy, user)
+        else:
+            # For other file types, create a new PDF with signature info
+            await create_signature_only_pdf(temp_path, acknowledgment, policy, user)
         
         # Send email with signed PDF attachment
         subject = f"Policy Acknowledgment Confirmation: {policy.name}"
@@ -648,7 +767,8 @@ Hello {user.name},
 
 Thank you for acknowledging the policy "{policy.name}".
 
-Please find attached your signed policy acknowledgment certificate for your records.
+Please find attached your signed policy document for your records.
+This document contains the original policy content with your electronic signature appended.
 
 Acknowledgment Details:
 - Policy: {policy.name}
@@ -677,7 +797,8 @@ Leave Management System Team
             </div>
             
             <p style='font-size: 16px; color: #333;'>
-              Please find attached your signed policy acknowledgment certificate for your records.
+              Please find attached your signed policy document for your records.
+              This document contains the original policy content with your electronic signature appended.
             </p>
             
             <p style='font-size: 15px; color: #333; margin-top: 32px;'>Best Regards,<br>Leave Management System Team</p>
@@ -687,7 +808,7 @@ Leave Management System Team
         """
         
         # Send email with attachment
-        filename = f"Policy_Acknowledgment_{policy.name.replace(' ', '_')}_{user.name.replace(' ', '_')}.pdf"
+        filename = f"Signed_{policy.name.replace(' ', '_')}_{user.name.replace(' ', '_')}.pdf"
         
         send_email_background(
             subject=subject,

@@ -60,9 +60,9 @@ export class WFHRequestComponent implements OnInit {
     private wfhService: WFHService,
     private authService: AuthService,
     private router: Router
-  ) { 
-    // Set minimum date to tomorrow
-    this.minDate.setDate(this.minDate.getDate() + 1);
+  ) {
+    // Set minimum date to 3 days from now
+    this.minDate.setDate(this.minDate.getDate() + 3);
   }
 
   ngOnInit(): void {
@@ -190,11 +190,11 @@ export class WFHRequestComponent implements OnInit {
     }
     
     const selectedDate = new Date(params.value);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    const threeDaysFromNow = new Date();
+    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+    threeDaysFromNow.setHours(0, 0, 0, 0);
     
-    return selectedDate >= tomorrow;
+    return selectedDate >= threeDaysFromNow;
   }
 
   // Validation function for end date

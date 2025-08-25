@@ -1,14 +1,14 @@
 .wfh-request-container {
   padding: 20px;
-  max-width: 1000px;
+  max-width: 1680px;
   margin: 0 auto;
 
   .page-header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 30px;
     
     h2 {
-      color: #2c5aa0;
+      color: #333;
       font-size: 28px;
       font-weight: 600;
       margin-bottom: 8px;
@@ -22,17 +22,65 @@
   }
 
   .content-wrapper {
-    display: flex;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
     gap: 30px;
     align-items: flex-start;
 
     .form-section {
-      flex: 1;
       background: white;
       border-radius: 12px;
       padding: 30px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       border: 1px solid #e9ecef;
+    }
+
+    .sidebar-section {
+      .wfh-guidelines-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+
+        h3 {
+          margin: 0 0 20px;
+          font-size: 18px;
+          color: #333;
+          font-weight: 600;
+        }
+
+        .guidelines-list {
+          .guideline-item {
+            margin-bottom: 24px;
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+
+            .guideline-content {
+              h4 {
+                margin: 0 0 8px;
+                font-size: 14px;
+                color: #333;
+                font-weight: 600;
+              }
+
+              p {
+                margin: 0;
+                font-size: 13px;
+                color: #666;
+                line-height: 1.5;
+
+                strong {
+                  color: #2c5aa0;
+                  font-weight: 600;
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -172,17 +220,49 @@
 }
 
 // Responsive design
+@media (max-width: 1024px) {
+  .wfh-request-container {
+    .content-wrapper {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar-section {
+      order: -1;
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .wfh-request-container {
     padding: 15px;
     
     .content-wrapper {
-      flex-direction: column;
+      grid-template-columns: 1fr;
       gap: 20px;
     }
     
     .form-section {
       padding: 20px;
+    }
+
+    .sidebar-section {
+      .wfh-guidelines-card {
+        padding: 16px;
+
+        .guidelines-list {
+          .guideline-item {
+            .guideline-content {
+              h4 {
+                font-size: 13px;
+              }
+
+              p {
+                font-size: 12px;
+              }
+            }
+          }
+        }
+      }
     }
     
     .date-range-container {
