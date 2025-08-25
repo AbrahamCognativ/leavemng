@@ -11,6 +11,7 @@ import {LeaveScheduleComponent} from './pages/leave-schedule/leave-schedule.comp
 import {WFHRequestComponent} from './pages/wfh-request/wfh-request.component';
 import {WfhDashboardComponent} from './pages/wfh-dashboard/wfh-dashboard.component';
 import {WfhHistoryComponent} from './pages/wfh-history/wfh-history.component';
+import {PoliciesComponent} from './pages/policies/policies.component';
 
 const routes: Routes = [
   {
@@ -51,6 +52,11 @@ const routes: Routes = [
   {
     path: 'leave-request/:id',
     component: LeaveRequestDetailsComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'policies',
+    component: PoliciesComponent,
     canActivate: [ AuthGuardService ]
   },
   {

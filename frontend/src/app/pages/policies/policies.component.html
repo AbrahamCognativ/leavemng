@@ -1,0 +1,204 @@
+<div class="policies-container">
+  <div class="page-header">
+    <h2>Company Policies</h2>
+    <p class="subtitle">View and download company policy documents</p>
+    <div class="header-actions">
+      <dx-select-box
+        [dataSource]="orgUnits"
+        displayExpr="name"
+        valueExpr="id"
+        [value]="selectedOrgUnitId"
+        placeholder="Filter by organization"
+        [showClearButton]="true"
+        (onValueChanged)="onOrgUnitFilterChanged($event)">
+      </dx-select-box>
+      
+      <dx-button
+        *ngIf="canManagePolicies()"
+        text="Manage Policies"
+        type="default"
+        icon="preferences"
+        (onClick)="navigateToManagePolicies()">
+      </dx-button>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <dx-data-grid
+      [dataSource]="policies"
+      [showBorders]="true"
+      [rowAlternationEnabled]="true"
+      [columnAutoWidth]="true"
+      [allowColumnReordering]="false"
+      [allowColumnResizing]="true"
+      [showColumnLines]="true"
+      [showRowLines]="true"
+      [hoverStateEnabled]="true"
+      [loadPanel]="{ enabled: true, text: 'Loading policies...' }"
+      [paging]="{ pageSize: 20 }"
+      [pager]="{
+        showPageSizeSelector: true,
+        allowedPageSizes: [10, 20, 50],
+        showInfo: true,
+        showNavigationButtons: true
+      }"
+      [searchPanel]="{ visible: true, placeholder: 'Search policies...' }"
+      [headerFilter]="{ visible: true }"
+      [filterRow]="{ visible: true }"
+      [export]="{ enabled: true }"
+      (onRowClick)="onRowClick($event)">
+
+      <!-- Policy Name Column -->
+      <dxi-column 
+        dataField="name" 
+        caption="Policy Name"
+        [width]="300"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        cellTemplate="nameTemplate">
+      </dxi-column>
+
+      <!-- Description Column -->
+      <dxi-column 
+        dataField="description" 
+        caption="Description"
+        [width]="350"
+        [allowSorting]="false"
+        [allowFiltering]="true"
+        cellTemplate="descriptionTemplate">
+      </dxi-column>
+
+      <!-- File Info Column -->
+      <dxi-column 
+        caption="Document"
+        [width]="200"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="fileTemplate">
+      </dxi-column>
+
+      <!-- Organization Column -->
+      <dxi-column 
+        dataField="org_unit_name" 
+        caption="Applies To"
+        [width]="180"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        cellTemplate="orgTemplate">
+      </dxi-column>
+
+      <!-- Created Date Column -->
+      <dxi-column 
+        dataField="created_at" 
+        caption="Published"
+        dataType="datetime"
+        [width]="160"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        format="dd/MM/yyyy">
+      </dxi-column>
+
+      <!-- Actions Column -->
+      <dxi-column 
+        caption="Actions"
+        [width]="100"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="actionsTemplate">
+      </dxi-column>
+
+      <!-- Policy Name Template -->
+      <div *dxTemplate="let data of 'nameTemplate'">
+        <div class="policy-name">
+          <strong>{{ data.value }}</strong>
+        </div>
+      </div>
+
+      <!-- Description Template -->
+      <div *dxTemplate="let data of 'descriptionTemplate'">
+        <span class="description-text" 
+              [title]="data.value || 'No description available'">
+          {{ (data.value || 'No description available') | slice:0:100 }}
+          <span *ngIf="data.value && data.value.length > 100">...</span>
+        </span>
+      </div>
+
+      <!-- File Template -->
+      <div *dxTemplate="let data of 'fileTemplate'">
+        <div class="file-info">
+          <div class="file-name">
+            <i [class]="getFileIcon(data.data.file_type)" 
+               [style.color]="getFileTypeColor(data.data.file_type)"></i>
+            <span class="file-name-text" [title]="data.data.file_name">
+              {{ data.data.file_name | slice:0:15 }}
+              <span *ngIf="data.data.file_name.length > 15">...</span>
+            </span>
+          </div>
+          <div class="file-details">
+            <span class="file-type">{{ data.data.file_type.toUpperCase() }}</span>
+            <span class="file-size" *ngIf="data.data.file_size">{{ data.data.file_size }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Organization Template -->
+      <div *dxTemplate="let data of 'orgTemplate'">
+        <span class="org-name">
+          {{ getOrgUnitDisplayName(data.value) }}
+        </span>
+      </div>
+
+      <!-- Actions Template -->
+      <div *dxTemplate="let data of 'actionsTemplate'">
+        <div class="actions-cell">
+          <dx-button
+            icon="eyeopen"
+            hint="View Document"
+            stylingMode="text"
+            type="default"
+            [elementAttr]="{ class: 'view-btn' }"
+            (onClick)="viewPolicy(data.data)">
+          </dx-button>
+          
+          <dx-button
+            icon="download"
+            hint="Download Policy"
+            stylingMode="text"
+            type="default"
+            [elementAttr]="{ class: 'download-btn' }"
+            (onClick)="downloadPolicy(data.data)">
+          </dx-button>
+        </div>
+      </div>
+
+    </dx-data-grid>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && policies.length === 0">
+    <div class="empty-icon">
+      <i class="dx-icon-doc"></i>
+    </div>
+    <h3>No Policies Available</h3>
+    <p>There are currently no policies published for your organization.</p>
+    <p *ngIf="selectedOrgUnitId">Try selecting a different organization or view all policies.</p>
+  </div>
+</div>
+
+<!-- Document Viewer -->
+<app-document-viewer
+  [visible]="documentViewerVisible"
+  [documentUrl]="currentDocumentUrl"
+  [documentName]="currentDocumentName"
+  [fileType]="currentDocumentType"
+  (onPopupHiding)="closeDocumentViewer()">
+</app-document-viewer>
+
+<!-- Toast Notification -->
+<dx-toast
+  [visible]="toastVisible"
+  [message]="toastMessage"
+  [type]="toastType"
+  [displayTime]="4000"
+  (onHiding)="toastVisible = false">
+</dx-toast>

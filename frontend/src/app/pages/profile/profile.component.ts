@@ -392,6 +392,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
    */
   handleUploadedEvent(event: FileUploaderEvent): void {
     // This method is kept for backward compatibility but not used in the new flow
-    console.log('Legacy upload event:', event);
+    // Legacy upload event handling
   }
 }

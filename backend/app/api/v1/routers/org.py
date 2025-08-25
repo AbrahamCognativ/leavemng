@@ -140,7 +140,7 @@ def get_org_chart(db: Session = Depends(get_db),
 
         if not root_units:
             # If no org units exist, create a default response structure
-            print("No organization units found in database")
+            # No organization units found in database
             return Response(
                 content=json.dumps(
                     [],
@@ -153,11 +153,8 @@ def get_org_chart(db: Session = Depends(get_db),
             unit_dict = build_org_unit_dict(unit, db)
             result.append(unit_dict)
 
-        # Log the first part of the result for debugging
-        print(f"Generated org chart with {len(result)} root units")
-        if result:
-            print(
-                f"First unit: {result[0]['name'] if 'name' in result[0] else 'Unknown'}")
+        # Generated org chart successfully
+        pass
 
         # Return as a plain JSON response to avoid Pydantic validation issues
         return Response(
@@ -167,8 +164,7 @@ def get_org_chart(db: Session = Depends(get_db),
             media_type="application/json")
     except Exception as e:
         import traceback
-        print(f"Error in get_org_chart: {str(e)}")
-        print(traceback.format_exc())
+        # Error in get_org_chart - handled silently in production
         raise HTTPException(status_code=500,
                             detail="Failed to generate organization chart")
 
@@ -199,11 +195,10 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
             # Handle possible SQLAlchemy lazy loading issues
             try:
                 unit_users = list(unit.users)  # Force load the relationship
-                print(
-                    f"Found {len(unit_users)} users for org unit {unit.name}")
+                # Found users for org unit
             except (AttributeError, TypeError, SQLAlchemyError) as e:
-                print(
-                    f"Error loading users for org unit {unit.name}: {str(e)}")
+                # Error loading users for org unit - handled silently
+                pass
                 unit_users = []
 
             for user in unit_users:
@@ -234,8 +229,8 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
                         "name": user_name
                     })
                 except (AttributeError, TypeError, SQLAlchemyError) as user_err:
-                    print(
-                        f"Error processing user {getattr(user, 'id', 'unknown')}: {str(user_err)}")
+                    # Error processing user - handled silently
+                    pass
 
             # Add manager-subordinate relationships
             for user in unit_users:
@@ -260,11 +255,11 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
                                     users_by_role[manager_role_key]["children"].append(
                                         users_by_role[user_role_key])
                 except (AttributeError, TypeError, SQLAlchemyError) as mgr_err:
-                    print(
-                        f"Error processing manager relationship for user {getattr(user, 'id', 'unknown')}: {str(mgr_err)}")
+                    # Error processing manager relationship - handled silently
+                    pass
         else:
-            print(
-                f"Warning: 'users' relationship not loaded for org unit {unit.name}")
+            # Warning: 'users' relationship not loaded for org unit
+            pass
 
         # Add roles to the unit
         for role_dict in users_by_role.values():
@@ -281,16 +276,14 @@ def build_org_unit_dict(unit: OrgUnit, db: Session) -> Dict[str, Any]:
                 child_dict = build_org_unit_dict(child, db)
                 unit_dict["children"].append(child_dict)
         except (AttributeError, TypeError, SQLAlchemyError) as child_err:
-            print(
-                f"Error loading child units for {unit.name}: {str(child_err)}")
+            # Error loading child units - handled silently
+            pass
 
         return unit_dict
     except Exception as e:
         # Broad catch is used here to ensure a valid structure is always returned, even for unexpected errors.
         import traceback
-        print(
-            f"Error in build_org_unit_dict for unit {getattr(unit, 'name', 'unknown')}: {str(e)}")
-        print(traceback.format_exc())
+        # Error in build_org_unit_dict - handled silently in production
         return {
             "id": str(getattr(unit, 'id', 'unknown')),
             "name": getattr(unit, 'name', 'Error processing unit'),

@@ -39,14 +39,15 @@ FIRST_USER = {
 
 def insert_first_user():
     session = Session(bind=engine)
-    user = session.query(User).filter_by(id=FIRST_USER["id"]).first()
+    # Check by email since that's the unique constraint causing the issue
+    user = session.query(User).filter_by(email=FIRST_USER["email"]).first()
     if not user:
         user = User(**FIRST_USER)
         session.add(user)
         session.commit()
         print("First user inserted.")
     else:
-        print("User already exists.")
+        print("User with email 'user@example.com' already exists.")
     session.close()
 
 

@@ -15,6 +15,7 @@ import { EmployeeInviteComponent } from './employee-invite/employee-invite.compo
 import { AuditLogsComponent } from './audit-logs/audit-logs.component';
 import { LeavesComponent } from './leaves/leaves.component';
 import { WFHRequestsComponent } from './wfh-requests/wfh-requests.component';
+import { PoliciesComponent } from './policies/policies.component';
 import { AuthService } from '../../shared/services';
 import { Router, CanActivate } from '@angular/router';
 import { Injectable } from '@angular/core';
@@ -76,6 +77,11 @@ const routes: Routes = [
     canActivate: [AdminGuard]
   },
   {
+    path: 'policies',
+    component: PoliciesComponent,
+    canActivate: [AdminGuard]
+  },
+  {
     path: 'audit-logs',
     component: AuditLogsComponent,
     canActivate: [AdminGuard]
@@ -98,6 +104,7 @@ const routes: Routes = [
     OrgUnitsComponent,
     EmployeeInviteComponent,
     WFHRequestsComponent,
+    PoliciesComponent,
     AuditLogsComponent
   ],
   providers: [AdminGuard]

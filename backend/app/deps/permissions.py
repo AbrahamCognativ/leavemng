@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from typing import List, Optional
@@ -24,6 +24,27 @@ class UserInToken(UserRead):
 # 1. Extract current user from JWT
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInToken:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Invalid authentication credentials")
+    try:
+        return UserInToken(**payload)
+    except Exception:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Malformed user claims")
+
+# Alternative authentication for file downloads (supports query parameter)
+def get_current_user_from_token_param(token: Optional[str] = Query(None)) -> UserInToken:
+    """Get current user from token query parameter (for file downloads in iframes)"""
+    if not token:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Not authenticated. Add 'Authorization: Bearer <token>' header.")
+    
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:

@@ -49,6 +49,6 @@ def create_audit_log(
         return True
     except (AttributeError, TypeError, Exception) as e:
         # Broad catch remains to ensure no audit log failure ever breaks main flow
-        print(f"Error creating audit log: {e}")
+        # Error creating audit log - handled silently in production
         db.rollback()
         return False

@@ -95,10 +95,25 @@ export class LeaveScheduleComponent {
             };
           }));
 
-          // Process WFH requests
-          const enrichedWFHData = wfhData.map(d => {
+          // Process WFH requests - fetch user details to ensure proper names
+          const enrichedWFHData = await Promise.all(wfhData.map(async d => {
             const userId = d['user_id'];
             const color = this.getColorForUser(userId, true); // true for WFH (light shade)
+
+            // Fetch user details to get proper name, similar to leave processing
+            let employeeName = d.employee_name || 'Unknown';
+            let employeeEmail = d.employee_email || 'Unknown';
+            
+            // If the employee name looks like a fallback (contains UUID), fetch proper user details
+            if (!d.employee_name || d.employee_name.includes('User ') || d.employee_name === 'Unknown') {
+              try {
+                const user = await this.userService.getUserById(userId);
+                employeeName = user?.name || d.employee_name || 'Unknown';
+                employeeEmail = user?.email || d.employee_email || 'Unknown';
+              } catch (error) {
+                // Keep the existing values if user fetch fails
+              }
+            }
 
             return {
               ...d,
@@ -114,17 +129,17 @@ export class LeaveScheduleComponent {
                 month: 'short',
                 day: '2-digit',
               }),
-              employeeName: d.employee_name || 'Unknown',
-              employeeEmail: d.employee_email || 'Unknown',
+              employeeName,
+              employeeEmail,
               employeeID: d['employee_id'],
               leaveType: 'Work From Home',
               description: d['reason'],
               allDay: true,
-              displayMessage: `${d.employee_name || 'Unknown'}'s Work From Home`,
+              displayMessage: `${employeeName}'s Work From Home`,
               color,
               requestType: 'wfh'
             };
-          });
+          }));
 
           // Combine both datasets
           return [...enrichedLeaveData, ...enrichedWFHData];

@@ -158,7 +158,14 @@ export class EmployeeInviteComponent implements OnInit {
     this.http.get<any[]>(this.getApiUrl('users'), { headers })
       .subscribe({
         next: (users) => {
-          this.managers = users.map(user => ({
+          // Filter users to only include Admin, HR, or Manager roles
+          const managerUsers = users.filter(user =>
+            user.role_band === 'Admin' ||
+            user.role_band === 'HR' ||
+            user.role_band === 'Manager'
+          );
+          
+          this.managers = managerUsers.map(user => ({
             id: user.id,
             name: user.name
           }));

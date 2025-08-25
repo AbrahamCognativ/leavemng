@@ -7,6 +7,8 @@ services:
     container_name: leavemng-backend
     env_file:
       - ./backend/.env.prod
+      # Production environment (commented out for dev)
+      # - ./backend/.env.prod
     expose:
       - "8000"
     volumes:
@@ -24,7 +26,10 @@ services:
     volumes:
       - ./frontend:/app
     environment:
-      - NODE_ENV=production
+      # Development environment
+      - NODE_ENV=development
+      # Production environment (commented out for dev)
+      # - NODE_ENV=production
     restart: unless-stopped
 
   nginx:
@@ -32,10 +37,14 @@ services:
     container_name: leavemng-proxy
     ports:
       - "80:80"
-      - "443:443"
+      # SSL port commented out for development (no SSL cert)
+      # - "443:443"
     volumes:
-      - ./nginx-proxy.conf:/etc/nginx/conf.d/default.conf
-      - ../certs:/etc/ssl/private
+      # Development nginx config (no SSL)
+      - ./nginx-proxy-dev.conf:/etc/nginx/conf.d/default.conf
+      # Production nginx config with SSL (commented out for dev)
+      # - ./nginx-proxy.conf:/etc/nginx/conf.d/default.conf
+      # - ../certs:/etc/ssl/private
     depends_on:
       - backend
       - frontend

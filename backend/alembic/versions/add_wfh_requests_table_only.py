@@ -20,8 +20,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Use existing WFH status enum
-    wfh_status_enum = postgresql.ENUM('pending', 'approved', 'rejected', 'cancelled', name='wfhstatusenum', create_type=False)
+    # Create WFH status enum
+    wfh_status_enum = postgresql.ENUM('pending', 'approved', 'rejected', 'cancelled', name='wfhstatusenum', create_type=True)
     
     # Create wfh_requests table
     op.create_table('wfh_requests',

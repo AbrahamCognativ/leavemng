@@ -100,13 +100,22 @@
       </dxi-column>
 
       <!-- Reason Column -->
-      <dxi-column 
-        dataField="reason" 
+      <dxi-column
+        dataField="reason"
         caption="Reason"
         [width]="200"
         [allowSorting]="false"
         [allowFiltering]="true"
         cellTemplate="reasonTemplate">
+      </dxi-column>
+
+      <!-- Approved By Column -->
+      <dxi-column
+        dataField="approver_name"
+        caption="Approved By"
+        [width]="150"
+        [allowSorting]="true"
+        [allowFiltering]="true">
       </dxi-column>
 
       <!-- Actions Column -->
@@ -230,8 +239,8 @@
           <dxo-label text="Decision At"></dxo-label>
         </dxi-item>
         
-        <dxi-item dataField="decided_by" [colSpan]="1" *ngIf="selectedRequest.decided_by">
-          <dxo-label text="Decided By"></dxo-label>
+        <dxi-item dataField="approver_name" [colSpan]="1" *ngIf="selectedRequest.approver_name">
+          <dxo-label text="Approved By"></dxo-label>
         </dxi-item>
         
       </dx-form>

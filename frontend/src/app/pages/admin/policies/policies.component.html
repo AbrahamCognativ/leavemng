@@ -1,0 +1,282 @@
+<div class="policies-container">
+  <div class="page-header">
+    <h2>Company Policies</h2>
+    <p class="subtitle">Manage company policy documents</p>
+    <div class="header-actions">
+      <dx-button
+        *ngIf="canManagePolicies()"
+        text="Add Policy"
+        type="default"
+        icon="plus"
+        (onClick)="openAddPolicyPopup()">
+      </dx-button>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <dx-data-grid
+      [dataSource]="policies"
+      [showBorders]="true"
+      [rowAlternationEnabled]="true"
+      [columnAutoWidth]="true"
+      [allowColumnReordering]="true"
+      [allowColumnResizing]="true"
+      [showColumnLines]="true"
+      [showRowLines]="true"
+      [hoverStateEnabled]="true"
+      [loadPanel]="{ enabled: true, text: 'Loading policies...' }"
+      [paging]="{ pageSize: 20 }"
+      [pager]="{ 
+        showPageSizeSelector: true, 
+        allowedPageSizes: [10, 20, 50, 100],
+        showInfo: true,
+        showNavigationButtons: true
+      }"
+      [searchPanel]="{ visible: true, placeholder: 'Search policies...' }"
+      [headerFilter]="{ visible: true }"
+      [filterRow]="{ visible: true }"
+      [columnChooser]="{ enabled: true }"
+      [export]="{ enabled: true }">
+
+      <!-- Policy Name Column -->
+      <dxi-column 
+        dataField="name" 
+        caption="Policy Name"
+        [width]="250"
+        [allowSorting]="true"
+        [allowFiltering]="true">
+      </dxi-column>
+
+      <!-- Description Column -->
+      <dxi-column 
+        dataField="description" 
+        caption="Description"
+        [width]="300"
+        [allowSorting]="false"
+        [allowFiltering]="true"
+        cellTemplate="descriptionTemplate">
+      </dxi-column>
+
+      <!-- File Info Column -->
+      <dxi-column 
+        caption="File"
+        [width]="200"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="fileTemplate">
+      </dxi-column>
+
+      <!-- Organization Column -->
+      <dxi-column 
+        dataField="org_unit_name" 
+        caption="Organization"
+        [width]="180"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        cellTemplate="orgTemplate">
+      </dxi-column>
+
+      <!-- Created By Column -->
+      <dxi-column 
+        dataField="creator_name" 
+        caption="Created By"
+        [width]="150"
+        [allowSorting]="true"
+        [allowFiltering]="true">
+      </dxi-column>
+
+      <!-- Created Date Column -->
+      <dxi-column 
+        dataField="created_at" 
+        caption="Created"
+        dataType="datetime"
+        [width]="160"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        format="dd/MM/yyyy HH:mm">
+      </dxi-column>
+
+      <!-- Actions Column -->
+      <dxi-column 
+        caption="Actions"
+        [width]="150"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="actionsTemplate">
+      </dxi-column>
+
+      <!-- Description Template -->
+      <div *dxTemplate="let data of 'descriptionTemplate'">
+        <span class="description-text" 
+              [title]="data.value || 'No description'">
+          {{ (data.value || 'No description') | slice:0:80 }}
+          <span *ngIf="data.value && data.value.length > 80">...</span>
+        </span>
+      </div>
+
+      <!-- File Template -->
+      <div *dxTemplate="let data of 'fileTemplate'">
+        <div class="file-info">
+          <div class="file-name">
+            <i [class]="getFileIcon(data.data.file_type)" 
+               [style.color]="getFileTypeColor(data.data.file_type)"></i>
+            <span class="file-name-text" [title]="data.data.file_name">
+              {{ data.data.file_name | slice:0:20 }}
+              <span *ngIf="data.data.file_name.length > 20">...</span>
+            </span>
+          </div>
+          <div class="file-details">
+            <span class="file-type">{{ data.data.file_type.toUpperCase() }}</span>
+            <span class="file-size" *ngIf="data.data.file_size">{{ data.data.file_size }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Organization Template -->
+      <div *dxTemplate="let data of 'orgTemplate'">
+        <span class="org-name">
+          {{ getOrgUnitDisplayName(data.value) }}
+        </span>
+      </div>
+
+      <!-- Actions Template -->
+      <div *dxTemplate="let data of 'actionsTemplate'">
+        <div class="actions-cell">
+          <dx-button
+            icon="eyeopen"
+            hint="View Document"
+            stylingMode="text"
+            [elementAttr]="{ class: 'view-btn' }"
+            (onClick)="viewPolicy(data.data)">
+          </dx-button>
+          
+          <dx-button
+            icon="download"
+            hint="Download"
+            stylingMode="text"
+            [elementAttr]="{ class: 'download-btn' }"
+            (onClick)="downloadPolicy(data.data)">
+          </dx-button>
+          
+          <dx-button
+            *ngIf="canManagePolicies()"
+            icon="edit"
+            hint="Edit"
+            stylingMode="text"
+            [elementAttr]="{ class: 'edit-btn' }"
+            (onClick)="openEditPolicyPopup(data.data)">
+          </dx-button>
+          
+          <dx-button
+            *ngIf="canDeletePolicy()"
+            icon="trash"
+            hint="Delete"
+            stylingMode="text"
+            [elementAttr]="{ class: 'delete-btn' }"
+            (onClick)="deletePolicy(data.data)">
+          </dx-button>
+        </div>
+      </div>
+
+    </dx-data-grid>
+  </div>
+</div>
+
+<!-- Add/Edit Policy Popup -->
+<dx-popup
+  [visible]="addEditPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="600"
+  [height]="500"
+  [title]="isEditMode ? 'Edit Policy' : 'Add New Policy'"
+  (onHiding)="closeAddEditPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="policy-form">
+      <dx-form [formData]="formData" [colCount]="1">
+        
+        <dxi-item dataField="name" [isRequired]="true">
+          <dxo-label text="Policy Name"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="description" editorType="dxTextArea">
+          <dxo-label text="Description"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="org_unit_id" editorType="dxSelectBox" 
+                  [editorOptions]="{
+                    dataSource: orgUnits,
+                    displayExpr: 'name',
+                    valueExpr: 'id',
+                    placeholder: 'Select organization (optional)'
+                  }">
+          <dxo-label text="Organization"></dxo-label>
+        </dxi-item>
+        
+      </dx-form>
+      
+      <!-- File Upload Section -->
+      <div class="file-upload-section" *ngIf="!isEditMode">
+        <label class="upload-label">Policy Document *</label>
+        <dx-file-uploader
+          [multiple]="false"
+          [accept]="fileUploaderOptions.accept"
+          [uploadMode]="fileUploaderOptions.uploadMode"
+          [showFileList]="fileUploaderOptions.showFileList"
+          [labelText]="fileUploaderOptions.labelText"
+          [selectButtonText]="fileUploaderOptions.selectButtonText"
+          (onValueChanged)="onFileSelected($event)">
+        </dx-file-uploader>
+        <div class="upload-help">
+          Supported formats: PDF, DOC, DOCX, PPT, PPTX, JPG, JPEG, PNG
+        </div>
+      </div>
+      
+      <div class="file-info-section" *ngIf="isEditMode && selectedPolicy">
+        <label class="info-label">Current File</label>
+        <div class="current-file-info">
+          <i [class]="getFileIcon(selectedPolicy.file_type)" 
+             [style.color]="getFileTypeColor(selectedPolicy.file_type)"></i>
+          <span>{{ selectedPolicy.file_name }}</span>
+          <span class="file-size" *ngIf="selectedPolicy.file_size">({{ selectedPolicy.file_size }})</span>
+        </div>
+        <div class="file-note">
+          Note: To change the file, please delete this policy and create a new one.
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          (onClick)="closeAddEditPopup()">
+        </dx-button>
+        <dx-button
+          [text]="isEditMode ? 'Update Policy' : 'Create Policy'"
+          type="default"
+          (onClick)="savePolicy()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Document Viewer -->
+<app-document-viewer
+  [visible]="documentViewerVisible"
+  [documentUrl]="currentDocumentUrl"
+  [documentName]="currentDocumentName"
+  [fileType]="currentDocumentType"
+  (onPopupHiding)="closeDocumentViewer()">
+</app-document-viewer>
+
+<!-- Toast Notification -->
+<dx-toast
+  [visible]="toastVisible"
+  [message]="toastMessage"
+  [type]="toastType"
+  [displayTime]="4000"
+  (onHiding)="toastVisible = false">
+</dx-toast>

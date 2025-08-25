@@ -82,6 +82,11 @@ export const getNavigationItems = (authService: AuthService) => [
     ]
   },
   {
+    text: 'Policies',
+    path: '/policies',
+    icon: 'doc'
+  },
+  {
     text: 'Profile',
     path: '/profile',
     icon: 'user'

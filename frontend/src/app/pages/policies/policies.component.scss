@@ -1,0 +1,263 @@
+.policies-container {
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    margin: 0;
+    color: #333;
+    font-size: 28px;
+    font-weight: 600;
+  }
+
+  .subtitle {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+  }
+}
+
+.content-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+// Data grid customizations
+:host ::ng-deep {
+  .dx-datagrid {
+    border: none;
+    
+    .dx-datagrid-headers {
+      background-color: #f8f9fa;
+      border-bottom: 2px solid #dee2e6;
+      
+      .dx-header-row {
+        background-color: #f8f9fa;
+        
+        td {
+          border-right: 1px solid #dee2e6;
+          font-weight: 600;
+          color: #495057;
+        }
+      }
+    }
+    
+    .dx-row {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      
+      &:hover {
+        background-color: #e3f2fd !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      
+      &.dx-row-alt {
+        background-color: #fdfdfd;
+        
+        &:hover {
+          background-color: #e3f2fd !important;
+        }
+      }
+    }
+  }
+}
+
+// Policy name styling
+.policy-name {
+  strong {
+    color: #333;
+    font-size: 14px;
+  }
+}
+
+// File info styling
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .file-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    
+    i {
+      font-size: 16px;
+    }
+    
+    .file-name-text {
+      font-weight: 500;
+      color: #333;
+      font-size: 13px;
+    }
+  }
+
+  .file-details {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    
+    .file-type {
+      background-color: #e9ecef;
+      color: #495057;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+    
+    .file-size {
+      color: #6c757d;
+    }
+  }
+}
+
+// Description styling
+.description-text {
+  color: #666;
+  line-height: 1.4;
+  font-size: 13px;
+}
+
+// Organization styling
+.org-name {
+  color: #495057;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+// Actions styling
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+
+  :host ::ng-deep {
+    .view-btn .dx-button-content {
+      color: #6f42c1 !important;
+    }
+    
+    .download-btn .dx-button-content {
+      color: #28a745 !important;
+    }
+  }
+}
+
+// Empty state styling
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  .empty-icon {
+    margin-bottom: 20px;
+    
+    i {
+      font-size: 48px;
+      color: #dee2e6;
+    }
+  }
+  
+  h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  
+  p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 14px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .policies-container {
+    padding: 10px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+    
+    .header-actions {
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+  }
+  
+  .empty-state {
+    padding: 40px 15px;
+    
+    .empty-icon i {
+      font-size: 36px;
+    }
+    
+    h3 {
+      font-size: 18px;
+    }
+  }
+}
+
+// Toast customization
+:host ::ng-deep {
+  .dx-toast-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+  }
+  
+  .dx-toast-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+  
+  .dx-toast-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+  }
+  
+  .dx-toast-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+  }
+}
+
+// Filter select box styling
+:host ::ng-deep {
+  .dx-selectbox {
+    min-width: 200px;
+  }
+}

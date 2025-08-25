@@ -1,0 +1,275 @@
+.policies-container {
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    margin: 0;
+    color: #333;
+    font-size: 28px;
+    font-weight: 600;
+  }
+
+  .subtitle {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+  }
+}
+
+.content-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+// Data grid customizations
+:host ::ng-deep {
+  .dx-datagrid {
+    border: none;
+    
+    .dx-datagrid-headers {
+      background-color: #f8f9fa;
+      border-bottom: 2px solid #dee2e6;
+      
+      .dx-header-row {
+        background-color: #f8f9fa;
+        
+        td {
+          border-right: 1px solid #dee2e6;
+          font-weight: 600;
+          color: #495057;
+        }
+      }
+    }
+    
+    .dx-row {
+      &:hover {
+        background-color: #f8f9fa;
+      }
+      
+      &.dx-row-alt {
+        background-color: #fdfdfd;
+      }
+    }
+  }
+}
+
+// File info styling
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .file-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    
+    i {
+      font-size: 16px;
+    }
+    
+    .file-name-text {
+      font-weight: 500;
+      color: #333;
+    }
+  }
+
+  .file-details {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    
+    .file-type {
+      background-color: #e9ecef;
+      color: #495057;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+    
+    .file-size {
+      color: #6c757d;
+    }
+  }
+}
+
+// Description styling
+.description-text {
+  color: #666;
+  line-height: 1.4;
+}
+
+// Organization styling
+.org-name {
+  color: #495057;
+  font-weight: 500;
+}
+
+// Actions styling
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+
+  :host ::ng-deep {
+    .view-btn .dx-button-content {
+      color: #6f42c1 !important;
+    }
+    
+    .download-btn .dx-button-content {
+      color: #28a745 !important;
+    }
+    
+    .edit-btn .dx-button-content {
+      color: #007bff !important;
+    }
+    
+    .delete-btn .dx-button-content {
+      color: #dc3545 !important;
+    }
+  }
+}
+
+// Popup styling
+.policy-form {
+  padding: 20px;
+
+  .dx-form {
+    margin-bottom: 20px;
+  }
+}
+
+.file-upload-section {
+  margin: 20px 0;
+  
+  .upload-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .upload-help {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #6c757d;
+  }
+}
+
+.file-info-section {
+  margin: 20px 0;
+  
+  .info-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .current-file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    
+    i {
+      font-size: 16px;
+    }
+    
+    .file-size {
+      color: #6c757d;
+      font-size: 12px;
+    }
+  }
+  
+  .file-note {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+  }
+}
+
+.popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .policies-container {
+    padding: 10px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+    
+    .header-actions {
+      justify-content: flex-end;
+    }
+  }
+  
+  :host ::ng-deep {
+    .dx-popup-content {
+      padding: 10px;
+    }
+  }
+  
+  .policy-form {
+    padding: 10px;
+  }
+}
+
+// Toast customization
+:host ::ng-deep {
+  .dx-toast-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+  }
+  
+  .dx-toast-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+  
+  .dx-toast-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+  }
+  
+  .dx-toast-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+  }
+}

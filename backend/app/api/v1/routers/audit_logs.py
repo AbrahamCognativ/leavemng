@@ -119,7 +119,8 @@ def get_audit_logs(
                             "days": resource.days_requested
                         }
                 except (AttributeError, TypeError, SQLAlchemyError) as e:
-                    print(f"Error getting leave request details: {str(e)}")
+                    # Error getting leave request details - handled silently
+                    pass
 
             elif log.resource_type == "org_unit":
                 from app.models.org_unit import OrgUnit
@@ -132,7 +133,8 @@ def get_audit_logs(
                             "description": resource.description
                         }
                 except (AttributeError, TypeError, SQLAlchemyError) as e:
-                    print(f"Error getting org unit details: {str(e)}")
+                    # Error getting org unit details - handled silently
+                    pass
 
             # Create a dictionary with log data, user info, and resource info
             log_dict = {
@@ -158,8 +160,8 @@ def get_audit_logs(
     except Exception as e:
         # Broad catch is used here to ensure the API always returns a useful error message for unexpected errors.
         import traceback
-        print(f"Error in get_audit_logs: {str(e)}")
-        print(traceback.format_exc())
+        # Error in get_audit_logs - handled silently in production
+        pass
 
         # Return a more helpful error message
         raise HTTPException(

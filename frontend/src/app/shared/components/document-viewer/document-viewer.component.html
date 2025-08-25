@@ -1,0 +1,65 @@
+<dx-popup
+  [visible]="visible"
+  [showTitle]="true"
+  [title]="documentName || 'Document Viewer'"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="true"
+  [showCloseButton]="true"
+  [width]="'90%'"
+  [height]="'90%'"
+  [position]="{ my: 'center', at: 'center' }"
+  (onHiding)="onPopupHiding()">
+  
+  <div class="document-viewer-content">
+    <!-- Loading Panel -->
+    <dx-load-panel
+      [visible]="isLoading"
+      [showIndicator]="true"
+      [showPane]="true"
+      message="Loading document...">
+    </dx-load-panel>
+
+
+    <!-- Document Preview -->
+    <div class="document-preview" *ngIf="!isLoading">
+      <!-- PDF Preview (includes converted DOCX files) -->
+      <div *ngIf="canPreview && (isPdf(fileType) || isDocx(fileType))" class="pdf-container">
+        <iframe
+          [src]="safeUrl"
+          class="pdf-iframe"
+          frameborder="0"
+          (load)="onIframeLoad()"
+          (error)="onIframeError()">
+        </iframe>
+      </div>
+
+      <!-- Image Preview -->
+      <div *ngIf="canPreview && isImage(fileType)" class="image-container">
+        <img [src]="documentUrl" [alt]="documentName" class="document-image" />
+      </div>
+
+      <!-- Non-previewable files -->
+      <div *ngIf="!canPreview" class="no-preview">
+        <div class="no-preview-icon">
+          <i class="dx-icon-doc"></i>
+        </div>
+        <h3>{{ documentName }}</h3>
+        <p>This file type cannot be previewed in the browser.</p>
+        <p>File type: {{ normalizeFileType(fileType) }}</p>
+        <div class="no-preview-actions">
+          <p>Please contact your administrator to access this document.</p>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-message">
+        <div class="error-icon">
+          <i class="dx-icon-warning"></i>
+        </div>
+        <h3>Error Loading Document</h3>
+        <p>{{ errorMessage }}</p>
+        <p>Please contact your administrator if this issue persists.</p>
+      </div>
+    </div>
+  </div>
+</dx-popup>

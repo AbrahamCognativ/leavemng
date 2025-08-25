@@ -1,0 +1,146 @@
+.document-viewer-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: #fafbfc;
+}
+
+.document-actions {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #fafbfc;
+  flex-shrink: 0;
+}
+
+.document-preview {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.pdf-container {
+  height: 100%;
+  width: 100%;
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.image-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fafbfc;
+  overflow: auto;
+}
+
+.document-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.no-preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 40px;
+  background-color: #fafbfc;
+}
+
+.no-preview-icon {
+  font-size: 64px;
+  color: #6c757d;
+  margin-bottom: 20px;
+}
+
+.no-preview h3 {
+  margin: 0 0 10px 0;
+  color: #495057;
+  font-weight: 500;
+}
+
+.no-preview p {
+  margin: 5px 0;
+  color: #6c757d;
+}
+
+.no-preview-actions {
+  margin-top: 30px;
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.error-message {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 40px;
+  background-color: #fefefe;
+}
+
+.error-icon {
+  font-size: 64px;
+  color: #dc3545;
+  margin-bottom: 20px;
+}
+
+.error-message h3 {
+  margin: 0 0 10px 0;
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.error-message p {
+  margin: 5px 0 30px 0;
+  color: #6c757d;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .document-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .no-preview-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .no-preview {
+    padding: 20px;
+  }
+  
+  .no-preview-icon {
+    font-size: 48px;
+  }
+}
+
+/* DevExtreme popup content override */
+:host ::ng-deep .dx-popup-content {
+  padding: 0;
+}
+
+:host ::ng-deep .dx-popup-title {
+  font-weight: 500;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #fafbfc;
+}

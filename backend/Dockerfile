@@ -20,12 +20,15 @@ RUN pip install --upgrade pip \
 # ---- Copy project files ----
 COPY . .
 
-# ---- Alembic migration entrypoint ----
-# (Assumes alembic.ini and migrations/ are present)
-# RUN alembic upgrade head
+# ---- Copy and setup entrypoint script for automated migrations ----
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # ---- Expose port ----
 EXPOSE 8000
 
-# ---- Run the application in prod settings ----
+# ---- Set entrypoint to handle migrations automatically ----
+ENTRYPOINT ["/entrypoint.sh"]
+
+# ---- Run the application (passed as arguments to entrypoint) ----
 CMD ["uvicorn", "app.run:app", "--host", "0.0.0.0", "--port", "8000"]

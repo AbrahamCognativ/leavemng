@@ -7,3 +7,4 @@ from .leave_request import LeaveRequest
 from .leave_document import LeaveDocument
 from .wfh_request import WFHRequest
 from .audit_log import AuditLog
+from .policy import Policy
