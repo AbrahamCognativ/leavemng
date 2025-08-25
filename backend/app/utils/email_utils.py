@@ -14,9 +14,13 @@ def send_email_background(
         body: str,
         to_emails: list[str],
         from_email: Optional[str] = None,
-        html: Optional[str] = None):
+        html: Optional[str] = None,
+        attachments: Optional[list] = None):
     """
     Send an email using SendGrid settings from environment variables. Use this for background jobs where FastAPI Request is not available.
+    
+    Args:
+        attachments: List of tuples (file_path, filename) for attachments
     """
     sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
     if not sendgrid_api_key:
@@ -35,6 +39,38 @@ def send_email_background(
         plain_text_content=body,
         html_content=html or body
     )
+    
+    # Add attachments if provided
+    if attachments:
+        import base64
+        from sendgrid.helpers.mail import Attachment, FileContent, FileName, FileType, Disposition
+        
+        for file_path, filename in attachments:
+            try:
+                with open(file_path, 'rb') as f:
+                    data = f.read()
+                encoded_file = base64.b64encode(data).decode()
+                
+                # Determine file type from extension
+                file_type = "application/pdf"
+                if filename.lower().endswith('.pdf'):
+                    file_type = "application/pdf"
+                elif filename.lower().endswith(('.jpg', '.jpeg')):
+                    file_type = "image/jpeg"
+                elif filename.lower().endswith('.png'):
+                    file_type = "image/png"
+                elif filename.lower().endswith('.docx'):
+                    file_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                
+                attachment = Attachment(
+                    FileContent(encoded_file),
+                    FileName(filename),
+                    FileType(file_type),
+                    Disposition('attachment')
+                )
+                message.attachment = attachment
+            except Exception as e:
+                logging.error(f"Failed to attach file {filename}: {e}")
     try:
         sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)

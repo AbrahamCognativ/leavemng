@@ -1,0 +1,495 @@
+.policy-acknowledgments-container {
+  padding: 24px;
+  background: #f8f9fa;
+  min-height: 100vh;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    
+    .header-content {
+      flex: 1;
+    }
+    
+    h2 {
+      color: #2d6cdf;
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    
+    .subtitle {
+      color: #6c757d;
+      margin: 0;
+      font-size: 16px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+  }
+
+  .content-section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 32px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+
+    .loading-spinner {
+      font-size: 48px;
+      color: #2d6cdf;
+      margin-bottom: 24px;
+      animation: spin 1s linear infinite;
+    }
+
+    p {
+      margin: 0;
+      color: #6c757d;
+      font-size: 16px;
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 64px 32px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    .empty-icon {
+      font-size: 64px;
+      color: #dee2e6;
+      margin-bottom: 24px;
+    }
+    
+    h3 {
+      color: #495057;
+      margin: 0 0 16px 0;
+      font-size: 24px;
+    }
+    
+    p {
+      color: #6c757d;
+      margin: 0 0 16px 0;
+      font-size: 16px;
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Policy name styling with priority indicators
+.policy-name {
+  &.high-priority strong {
+    color: #dc3545;
+  }
+  
+  &.medium-priority strong {
+    color: #fd7e14;
+  }
+  
+  &.normal-priority strong {
+    color: #28a745;
+  }
+}
+
+// Count badges
+.count-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 24px;
+  
+  &.acknowledged {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  &.pending {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  &.overdue {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  &.none {
+    background: #e9ecef;
+    color: #6c757d;
+  }
+}
+
+// Rate display
+.rate-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .rate-bar {
+    flex: 1;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    
+    .rate-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+  }
+  
+  .rate-text {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 35px;
+    text-align: right;
+  }
+}
+
+// Status badges
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  
+  &.high-priority {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  &.medium-priority {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  &.normal-priority {
+    background: #d4edda;
+    color: #155724;
+  }
+}
+
+// Actions cell styling
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  
+  .details-btn {
+    color: #2d6cdf !important;
+  }
+  
+  .notify-btn {
+    color: #fd7e14 !important;
+  }
+}
+
+// Notification form styling
+.notification-form {
+  padding: 16px;
+  
+  .policy-info {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #2d6cdf;
+    
+    h3 {
+      color: #2d6cdf;
+      margin: 0 0 8px 0;
+      font-size: 18px;
+    }
+    
+    p {
+      color: #6c757d;
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+  
+  .notification-info {
+    margin: 24px 0;
+    padding: 16px;
+    background: #e7f3ff;
+    border-radius: 6px;
+    border-left: 4px solid #0066cc;
+    
+    p {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #495057;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      strong {
+        color: #0066cc;
+      }
+    }
+  }
+  
+  .popup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #dee2e6;
+  }
+}
+
+// Details content styling
+.details-content {
+  padding: 16px;
+  
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+    
+    .summary-card {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      
+      .card-icon {
+        font-size: 32px;
+        margin-right: 16px;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+      }
+      
+      .card-content {
+        flex: 1;
+        
+        .card-number {
+          font-size: 24px;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+        
+        .card-label {
+          font-size: 14px;
+          color: #6c757d;
+          text-transform: uppercase;
+          font-weight: 500;
+        }
+      }
+      
+      &.acknowledged {
+        background: #d4edda;
+        
+        .card-icon {
+          background: #28a745;
+          color: white;
+        }
+        
+        .card-number {
+          color: #155724;
+        }
+      }
+      
+      &.pending {
+        background: #fff3cd;
+        
+        .card-icon {
+          background: #ffc107;
+          color: white;
+        }
+        
+        .card-number {
+          color: #856404;
+        }
+      }
+      
+      &.overdue {
+        background: #f8d7da;
+        
+        .card-icon {
+          background: #dc3545;
+          color: white;
+        }
+        
+        .card-number {
+          color: #721c24;
+        }
+      }
+      
+      &.rate {
+        background: #e7f3ff;
+        
+        .card-icon {
+          background: #2d6cdf;
+          color: white;
+        }
+        
+        .card-number {
+          color: #0066cc;
+        }
+      }
+    }
+  }
+  
+  .details-grid {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+}
+
+// User status styling
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  
+  i {
+    font-size: 12px;
+  }
+}
+
+.not-acknowledged, .not-notified {
+  color: #6c757d;
+  font-style: italic;
+  font-size: 12px;
+}
+
+// Data grid customizations
+::ng-deep {
+  .dx-datagrid {
+    .dx-row {
+      &.high-priority {
+        background-color: rgba(220, 53, 69, 0.05);
+        border-left: 3px solid #dc3545;
+      }
+      
+      &.medium-priority {
+        background-color: rgba(253, 126, 20, 0.05);
+        border-left: 3px solid #fd7e14;
+      }
+      
+      &.normal-priority {
+        background-color: rgba(40, 167, 69, 0.05);
+        border-left: 3px solid #28a745;
+      }
+    }
+    
+    .dx-header-row {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+  }
+  
+  // Popup customizations
+  .dx-popup-content {
+    padding: 0;
+  }
+  
+  .dx-form {
+    .dx-field-label {
+      font-weight: 500;
+      color: #495057;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .policy-acknowledgments-container {
+    padding: 16px;
+    
+    .page-header {
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+      
+      h2 {
+        font-size: 24px;
+      }
+      
+      .header-actions {
+        align-self: stretch;
+        
+        button {
+          flex: 1;
+        }
+      }
+    }
+  }
+  
+  .notification-form {
+    padding: 12px;
+    
+    .policy-info h3 {
+      font-size: 16px;
+    }
+    
+    .popup-actions {
+      flex-direction: column;
+      
+      button {
+        width: 100%;
+      }
+    }
+  }
+  
+  .details-content {
+    padding: 12px;
+    
+    .summary-cards {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+      
+      .summary-card {
+        padding: 16px;
+        
+        .card-icon {
+          font-size: 24px;
+          width: 40px;
+          height: 40px;
+          margin-right: 12px;
+        }
+        
+        .card-number {
+          font-size: 20px;
+        }
+      }
+    }
+  }
+}

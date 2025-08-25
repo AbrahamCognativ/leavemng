@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request, Query
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 from app.db.session import get_db
@@ -6,12 +6,17 @@ from app.models.policy import Policy
 from app.models.org_unit import OrgUnit
 from app.models.user import User
 from app.schemas.policy import PolicyCreate, PolicyUpdate, PolicyRead, PolicyListItem
-from app.deps.permissions import get_current_user, require_role, get_current_user_from_token_param
+from app.deps.permissions import get_current_user, require_role, get_current_user_from_token_param, UserInToken
+from app.settings import get_settings
 from typing import List, Optional
 import uuid
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from jose import jwt
+
+SECRET_KEY = get_settings().SECRET_KEY
+ALGORITHM = "HS256"
 
 router = APIRouter()
 
@@ -121,6 +126,50 @@ async def create_policy(
             "org_unit_id": str(org_unit_uuid) if org_unit_uuid else None
         }
     )
+    
+    # Auto-send notifications to all users for new policy
+    try:
+        from app.api.v1.routers.policy_acknowledgment import send_policy_notification_email
+        from datetime import timedelta
+        from app.models.policy_acknowledgment import PolicyAcknowledgment
+        
+        # Get all users that should be notified
+        if org_unit_uuid:
+            users = db.query(User).filter(
+                User.org_unit_id == org_unit_uuid,
+                User.is_active == True
+            ).all()
+        else:
+            users = db.query(User).filter(User.is_active == True).all()
+        
+        # Calculate deadline (5 days from now)
+        deadline = datetime.now(timezone.utc) + timedelta(days=5)
+        
+        # Create acknowledgment records and send notifications
+        for user in users:
+            # Create acknowledgment record with pending status
+            acknowledgment = PolicyAcknowledgment(
+                policy_id=policy.id,
+                user_id=user.id,
+                is_acknowledged=False,
+                acknowledgment_deadline=deadline,
+                notification_sent_at=datetime.now(timezone.utc),
+                reminder_count="1"
+            )
+            db.add(acknowledgment)
+            
+            # Send email notification
+            try:
+                send_policy_notification_email(user.email, user.name, policy, deadline)
+            except Exception as e:
+                # Log error but continue with other users
+                print(f"Failed to send policy notification email to {user.email}: {e}")
+        
+        db.commit()
+        
+    except Exception as e:
+        # Log error but don't fail the policy creation
+        print(f"Failed to send policy notifications: {e}")
     
     return _build_policy_response(db, policy)
 
@@ -284,9 +333,9 @@ def download_policy_file(
     policy_id: uuid.UUID,
     inline: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token_param)
+    current_user: User = Depends(get_current_user)
 ):
-    """Download policy file - accessible to all authenticated users (supports token query parameter for iframe viewing)"""
+    """Download policy file - accessible to all authenticated users"""
     
     policy = db.query(Policy).filter(
         Policy.id == policy_id,
@@ -317,7 +366,6 @@ def download_policy_file(
     # Set appropriate headers for inline viewing vs download
     if inline:
         # For inline viewing (iframe), set Content-Disposition to inline
-        from fastapi.responses import FileResponse
         response = FileResponse(
             policy.file_path,
             media_type=ALLOWED_FILE_TYPES.get(policy.file_type, 'application/octet-stream'),
@@ -344,7 +392,7 @@ def download_policy_file(
 def preview_policy_file(
     policy_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_token_param)
+    current_user: User = Depends(get_current_user)
 ):
     """Generate and serve a PDF preview of the policy file - supports DOCX to PDF conversion"""
     
@@ -461,6 +509,128 @@ def preview_policy_file(
             status_code=400,
             detail=f"Preview not supported for file type: {policy.file_type}. Please download the file instead."
         )
+
+
+@router.get("/{policy_id}/content", tags=["policies"])
+def get_policy_content(
+    policy_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Extract and return text content from policy file"""
+    
+    policy = db.query(Policy).filter(
+        Policy.id == policy_id,
+        Policy.is_active == True
+    ).first()
+    
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    
+    if not os.path.exists(policy.file_path):
+        raise HTTPException(status_code=404, detail="Policy file not found")
+    
+    try:
+        # Extract text content based on file type
+        if policy.file_type.lower() == 'pdf':
+            content = extract_pdf_text(policy.file_path)
+        elif policy.file_type.lower() in ['doc', 'docx']:
+            content = extract_docx_text(policy.file_path)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Text extraction not supported for file type: {policy.file_type}"
+            )
+        
+        # Log audit
+        from app.utils.audit import create_audit_log
+        create_audit_log(
+            db=db,
+            user_id=str(current_user.id),
+            action="view_policy_content",
+            resource_type="policy",
+            resource_id=str(policy.id),
+            metadata={
+                "policy_name": policy.name,
+                "file_name": policy.file_name,
+                "content_length": len(content)
+            }
+        )
+        
+        return {
+            "policy_id": str(policy.id),
+            "policy_name": policy.name,
+            "file_name": policy.file_name,
+            "content": content,
+            "file_type": policy.file_type
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to extract content: {str(e)}"
+        )
+
+
+def extract_pdf_text(file_path: str) -> str:
+    """Extract text content from PDF file with improved formatting"""
+    try:
+        # Try pdfplumber first as it generally provides better text extraction
+        import pdfplumber
+        with pdfplumber.open(file_path) as pdf:
+            text = ""
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    # Clean up the extracted text
+                    page_text = page_text.replace('\x00', '')  # Remove null characters
+                    page_text = ' '.join(page_text.split())  # Normalize whitespace
+                    text += page_text + "\n\n"
+            
+            # Post-process the entire text
+            text = text.strip()
+            # Fix common extraction issues
+            text = text.replace('\n\n\n', '\n\n')  # Remove excessive line breaks
+            text = text.replace('  ', ' ')  # Remove double spaces
+            return text
+            
+    except ImportError:
+        # Fallback to PyPDF2 if pdfplumber is not available
+        try:
+            import PyPDF2
+            with open(file_path, 'rb') as file:
+                pdf_reader = PyPDF2.PdfReader(file)
+                text = ""
+                for page in pdf_reader.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        # Clean up the extracted text
+                        page_text = page_text.replace('\x00', '')  # Remove null characters
+                        page_text = ' '.join(page_text.split())  # Normalize whitespace
+                        text += page_text + "\n\n"
+                
+                # Post-process the entire text
+                text = text.strip()
+                # Fix common extraction issues
+                text = text.replace('\n\n\n', '\n\n')  # Remove excessive line breaks
+                text = text.replace('  ', ' ')  # Remove double spaces
+                return text
+                
+        except ImportError:
+            raise Exception("PDF text extraction requires PyPDF2 or pdfplumber library")
+
+
+def extract_docx_text(file_path: str) -> str:
+    """Extract text content from DOCX file"""
+    try:
+        from docx import Document
+        doc = Document(file_path)
+        text = ""
+        for paragraph in doc.paragraphs:
+            text += paragraph.text + "\n"
+        return text.strip()
+    except ImportError:
+        raise Exception("DOCX text extraction requires python-docx library")
 
 
 def _build_policy_response(db: Session, policy: Policy) -> PolicyRead:

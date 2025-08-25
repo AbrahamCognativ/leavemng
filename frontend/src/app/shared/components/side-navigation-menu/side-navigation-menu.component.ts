@@ -1,8 +1,9 @@
-import { Component, NgModule, Output, Input, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, NgModule, Output, Input, EventEmitter, ViewChild, ElementRef, AfterViewInit, OnDestroy, OnInit } from '@angular/core';
 import { DxTreeViewModule, DxTreeViewComponent, DxTreeViewTypes } from 'devextreme-angular/ui/tree-view';
 import { getNavigationItems } from '../../../app-navigation';
-import { AuthService } from '../../services';
+import { AuthService, NavigationService } from '../../services';
 import * as events from 'devextreme/events';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-side-navigation-menu',
@@ -10,7 +11,7 @@ import * as events from 'devextreme/events';
   styleUrls: ['./side-navigation-menu.component.scss'],
   standalone: false
 })
-export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
+export class SideNavigationMenuComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild(DxTreeViewComponent, { static: true })
   menu!: DxTreeViewComponent;
 
@@ -32,24 +33,10 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
   }
 
   private _items!: Record <string, unknown>[];
+  private navigationSubscription?: Subscription;
+
   get items() {
-    if (!this._items) {
-      // Get navigation items based on user role
-      const navigationItems = getNavigationItems(this.authService);
-      // Filter out admin menu items for non-admin users
-      const filteredNavigation = this.authService.isAdmin ?
-        navigationItems :
-        navigationItems.filter(item => item.text !== 'Admin');
-
-      this._items = filteredNavigation.map((item) => {
-        if(item.path && !(/^\//.test(item.path))){
-          item.path = `/${item.path}`;
-        }
-        return { ...item, expanded: !this._compactMode }
-      });
-    }
-
-    return this._items;
+    return this._items || [];
   }
 
   private _compactMode = false;
@@ -73,8 +60,38 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
 
   constructor(
     private elementRef: ElementRef,
-    private authService: AuthService
+    private authService: AuthService,
+    private navigationService: NavigationService
   ) { }
+
+  async ngOnInit() {
+    // Subscribe to navigation changes
+    this.navigationSubscription = this.navigationService.navigationItems$.subscribe(items => {
+      this.updateNavigationItems(items);
+    });
+
+    // Initialize navigation
+    await this.navigationService.updateNavigation();
+  }
+
+  private updateNavigationItems(navigationItems: any[]) {
+    // Filter out admin menu items for non-admin users
+    const filteredNavigation = this.authService.isAdmin ?
+      navigationItems :
+      navigationItems.filter(item => item.text !== 'Admin');
+
+    this._items = filteredNavigation.map((item) => {
+      if(item.path && !(/^\//.test(item.path))){
+        item.path = `/${item.path}`;
+      }
+      return { ...item, expanded: !this._compactMode }
+    });
+
+    // Refresh the tree view if it exists
+    if (this.menu?.instance) {
+      this.menu.instance.option('items', this._items);
+    }
+  }
 
   onItemClick(event: DxTreeViewTypes.ItemClickEvent) {
     this.selectedItemChanged.emit(event);
@@ -88,6 +105,9 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     events.off(this.elementRef.nativeElement, 'dxclick');
+    if (this.navigationSubscription) {
+      this.navigationSubscription.unsubscribe();
+    }
   }
 }
 

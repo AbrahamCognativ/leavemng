@@ -1,5 +1,6 @@
 import { AuthService } from './shared/services';
 
+// This is now a fallback - the NavigationService will provide dynamic navigation
 export const getNavigationItems = (authService: AuthService) => [
   {
     text: 'Dashboard',
@@ -62,7 +63,6 @@ export const getNavigationItems = (authService: AuthService) => [
         text: 'Dashboard',
         path: '/admin/leave-requests',
       },
-
       {
         text: 'Leave Types',
         path: '/admin/leave-types',
@@ -75,6 +75,12 @@ export const getNavigationItems = (authService: AuthService) => [
         text: 'Users',
         path: '/admin/employee-invite',
       },
+      ...(authService.isAdmin || authService.isHR ? [
+        {
+          text: 'Manage Policies',
+          path: '/admin/policies',
+        }
+      ] : []),
       {
         text: 'Audit Logs',
         path: '/admin/audit-logs',

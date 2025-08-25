@@ -2,7 +2,7 @@ import {Component, NgModule} from '@angular/core';
 import {DxPieChartModule} from 'devextreme-angular';
 import {DxiSeriesModule} from 'devextreme-angular/ui/nested';
 import {LeaveService} from '../../shared/services/leave.service';
-import {AuthService} from '../../shared/services';
+import {AuthService, NavigationService} from '../../shared/services';
 import {CommonModule} from '@angular/common';
 import {DxLoadIndicatorModule} from 'devextreme-angular/ui/load-indicator';
 import {DxDataGridModule} from 'devextreme-angular/ui/data-grid';
@@ -36,12 +36,15 @@ export class DashboardComponent {
   constructor(
     private leaveService: LeaveService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private navigationService: NavigationService
   ) { }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.loadStatistics();
     this.checkUserRole();
+    // Refresh navigation to show any new policies
+    await this.navigationService.refreshNavigation();
   }
 
   private async checkUserRole() {

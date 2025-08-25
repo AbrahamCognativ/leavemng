@@ -111,6 +111,7 @@ def include_routers():
         "leave_types",
         "leave_policy",
         "policy",
+        "policy_acknowledgment",
         "audit_logs"]
     for m in modules:
         router = import_module(f"app.api.v1.routers.{m}")
@@ -123,6 +124,8 @@ def include_routers():
             prefix = "/api/v1/audit-logs"
         elif m == "policy":
             prefix = "/api/v1/policies"
+        elif m == "policy_acknowledgment":
+            prefix = "/api/v1/policy-acknowledgments"
         else:
             prefix = f"/api/v1/{m}"
         app.include_router(router.router, prefix=prefix)

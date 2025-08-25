@@ -1,0 +1,280 @@
+<div class="user-policies-container">
+  <div class="page-header">
+    <h2>Policy Acknowledgments</h2>
+    <p class="subtitle">Track and manage policy acknowledgment compliance</p>
+    <div class="header-actions">
+      <dx-button
+        text="Refresh"
+        icon="refresh"
+        type="default"
+        (onClick)="loadUserPolicies()">
+      </dx-button>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <dx-data-grid
+      [dataSource]="userPolicies"
+      [showBorders]="true"
+      [rowAlternationEnabled]="true"
+      [columnAutoWidth]="true"
+      [allowColumnReordering]="false"
+      [allowColumnResizing]="true"
+      [showColumnLines]="true"
+      [showRowLines]="true"
+      [hoverStateEnabled]="true"
+      [loadPanel]="{ enabled: true, text: 'Loading policies...' }"
+      [paging]="{ pageSize: 20 }"
+      [pager]="{
+        showPageSizeSelector: true,
+        allowedPageSizes: [10, 20, 50],
+        showInfo: true,
+        showNavigationButtons: true
+      }"
+      [searchPanel]="{ visible: true, placeholder: 'Search policies...' }"
+      [headerFilter]="{ visible: true }"
+      [filterRow]="{ visible: true }"
+      [export]="{ enabled: true }"
+      (onRowClick)="onRowClick($event)">
+
+      <!-- Policy Name Column -->
+      <dxi-column 
+        dataField="policy_name" 
+        caption="Policy Name"
+        [width]="250"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        cellTemplate="nameTemplate">
+      </dxi-column>
+
+      <!-- Description Column -->
+      <dxi-column 
+        dataField="policy_description" 
+        caption="Description"
+        [width]="300"
+        [allowSorting]="false"
+        [allowFiltering]="true"
+        cellTemplate="descriptionTemplate">
+      </dxi-column>
+
+      <!-- File Info Column -->
+      <dxi-column 
+        caption="Document"
+        [width]="180"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="fileTemplate">
+      </dxi-column>
+
+      <!-- Status Column -->
+      <dxi-column 
+        caption="Status"
+        [width]="120"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="statusTemplate">
+      </dxi-column>
+
+      <!-- Deadline Column -->
+      <dxi-column 
+        dataField="acknowledgment_deadline" 
+        caption="Deadline"
+        dataType="datetime"
+        [width]="140"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        cellTemplate="deadlineTemplate">
+      </dxi-column>
+
+      <!-- Actions Column -->
+      <dxi-column 
+        caption="Actions"
+        [width]="150"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="actionsTemplate">
+      </dxi-column>
+
+      <!-- Policy Name Template -->
+      <div *dxTemplate="let data of 'nameTemplate'">
+        <div class="policy-name" [class]="getPriorityClass(data.data)">
+          <strong>{{ data.value }}</strong>
+          <span *ngIf="!data.data.is_acknowledged && data.data.is_overdue" class="overdue-badge">OVERDUE</span>
+          <span *ngIf="!data.data.is_acknowledged && !data.data.is_overdue && data.data.days_remaining !== null && data.data.days_remaining <= 2" class="urgent-badge">URGENT</span>
+        </div>
+      </div>
+
+      <!-- Description Template -->
+      <div *dxTemplate="let data of 'descriptionTemplate'">
+        <span class="description-text" 
+              [title]="data.value || 'No description available'">
+          {{ (data.value || 'No description available') | slice:0:80 }}
+          <span *ngIf="data.value && data.value.length > 80">...</span>
+        </span>
+      </div>
+
+      <!-- File Template -->
+      <div *dxTemplate="let data of 'fileTemplate'">
+        <div class="file-info">
+          <div class="file-name">
+            <i [class]="getFileIcon(data.data.file_type)" 
+               [style.color]="getFileTypeColor(data.data.file_type)"></i>
+            <span class="file-name-text" [title]="data.data.file_name">
+              {{ data.data.file_name | slice:0:15 }}
+              <span *ngIf="data.data.file_name.length > 15">...</span>
+            </span>
+          </div>
+          <div class="file-details">
+            <span class="file-type">{{ data.data.file_type.toUpperCase() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Template -->
+      <div *dxTemplate="let data of 'statusTemplate'">
+        <div class="status-cell">
+          <i [class]="getStatusIcon(data.data)" 
+             [style.color]="getStatusColor(data.data)"></i>
+          <span [style.color]="getStatusColor(data.data)">
+            {{ getStatusText(data.data) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Deadline Template -->
+      <div *dxTemplate="let data of 'deadlineTemplate'">
+        <div class="deadline-cell">
+          <span *ngIf="data.value" class="deadline-date">
+            {{ formatDate(data.value) | slice:0:10 }}
+          </span>
+          <div class="deadline-info">
+            <span [class]="getPriorityClass(data.data)">
+              {{ getDaysRemainingText(data.data) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Template -->
+      <div *dxTemplate="let data of 'actionsTemplate'">
+        <div class="actions-cell">
+          <dx-button
+            icon="eyeopen"
+            hint="View Document"
+            stylingMode="text"
+            type="default"
+            [elementAttr]="{ class: 'view-btn' }"
+            (onClick)="viewPolicy(data.data)">
+          </dx-button>
+          
+          <dx-button
+            icon="download"
+            hint="Download Policy"
+            stylingMode="text"
+            type="default"
+            [elementAttr]="{ class: 'download-btn' }"
+            (onClick)="downloadPolicy(data.data)">
+          </dx-button>
+
+          <dx-button
+            *ngIf="canAcknowledge(data.data)"
+            icon="check"
+            hint="Acknowledge Policy"
+            stylingMode="text"
+            type="success"
+            [elementAttr]="{ class: 'acknowledge-btn' }"
+            (onClick)="openAcknowledmentPopup(data.data)">
+          </dx-button>
+        </div>
+      </div>
+
+    </dx-data-grid>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && userPolicies.length === 0">
+    <div class="empty-icon">
+      <i class="dx-icon-doc"></i>
+    </div>
+    <h3>No Policies Available</h3>
+    <p>There are currently no policies published for your organization.</p>
+  </div>
+</div>
+
+<!-- Acknowledgment Popup -->
+<dx-popup
+  [visible]="acknowledgmentPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="500"
+  [height]="400"
+  title="Acknowledge Policy"
+  (onHiding)="closeAcknowledmentPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="acknowledgment-form" *ngIf="selectedPolicy">
+      <div class="policy-info">
+        <h3>{{ selectedPolicy.policy_name }}</h3>
+        <p *ngIf="selectedPolicy.policy_description">{{ selectedPolicy.policy_description }}</p>
+        
+        <div class="policy-details">
+          <div class="detail-item">
+            <strong>Document:</strong> {{ selectedPolicy.file_name }}
+          </div>
+          <div class="detail-item" *ngIf="selectedPolicy.acknowledgment_deadline">
+            <strong>Deadline:</strong> {{ formatDate(selectedPolicy.acknowledgment_deadline) }}
+          </div>
+          <div class="detail-item" *ngIf="!selectedPolicy.is_acknowledged && selectedPolicy.days_remaining !== null">
+            <strong>Time Remaining:</strong> 
+            <span [class]="getPriorityClass(selectedPolicy)">
+              {{ getDaysRemainingText(selectedPolicy) }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="acknowledgment-text">
+        <p><strong>By clicking "I Acknowledge", you confirm that:</strong></p>
+        <ul>
+          <li>You have read and understood this policy</li>
+          <li>You agree to comply with all requirements outlined in this policy</li>
+          <li>You understand the consequences of non-compliance</li>
+          <li>This acknowledgment will be recorded with your digital signature</li>
+        </ul>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          (onClick)="closeAcknowledmentPopup()">
+        </dx-button>
+        <dx-button
+          text="I Acknowledge"
+          type="success"
+          icon="check"
+          (onClick)="acknowledgePolicy()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Document Viewer -->
+<app-document-viewer
+  [visible]="documentViewerVisible"
+  [documentUrl]="currentDocumentUrl"
+  [documentName]="currentDocumentName"
+  [fileType]="currentDocumentType"
+  (onPopupHiding)="closeDocumentViewer()">
+</app-document-viewer>
+
+<!-- Toast Notification -->
+<dx-toast
+  [visible]="toastVisible"
+  [message]="toastMessage"
+  [type]="toastType"
+  [displayTime]="4000"
+  (onHiding)="toastVisible = false">
+</dx-toast>

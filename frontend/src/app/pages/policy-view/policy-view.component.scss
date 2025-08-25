@@ -1,0 +1,670 @@
+.policy-view-container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  
+  p {
+    margin-top: 20px;
+    color: #6c757d;
+    font-size: 16px;
+  }
+}
+
+.policy-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.policy-header {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  color: #495057;
+  padding: 24px;
+  
+  .header-content {
+    margin-bottom: 20px;
+  }
+  
+  .breadcrumb {
+    margin-bottom: 15px;
+    
+    ::ng-deep .dx-button {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      color: #6c757d;
+      
+      &:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+        color: #495057;
+      }
+    }
+  }
+  
+  .policy-title {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 20px 0;
+    line-height: 1.3;
+    color: #2c3e50;
+  }
+  
+  .policy-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+    
+    .meta-item {
+      background: white;
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: 1px solid #e9ecef;
+      
+      strong {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #495057;
+      }
+    }
+  }
+  
+  .status-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 500;
+      color: white;
+      
+      i {
+        font-size: 16px;
+      }
+    }
+    
+    .deadline-info {
+      font-weight: 500;
+      
+      .overdue {
+        color: #dc3545;
+        font-weight: 600;
+      }
+      
+      .normal {
+        color: #ffc107;
+      }
+    }
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    
+    ::ng-deep .dx-button {
+      min-width: 140px;
+      
+      &.dx-button-success {
+        background: #28a745;
+        border-color: #28a745;
+        
+        &.urgent-action {
+          background: #ff6b6b;
+          border-color: #ff6b6b;
+          animation: pulse 2s infinite;
+        }
+        
+        &:hover {
+          background: #218838;
+          border-color: #1e7e34;
+        }
+      }
+      
+      &.dx-button-normal {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        
+        &:hover {
+          background: #e9ecef;
+          border-color: #adb5bd;
+          color: #495057;
+        }
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.content-section {
+  padding: 24px;
+}
+
+.content-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  
+  p {
+    margin-top: 20px;
+    color: #6c757d;
+    font-size: 16px;
+  }
+}
+
+.text-content {
+  .content-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+    
+    h2 {
+      color: #2c3e50;
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 10px 0;
+    }
+    
+    .content-note {
+      color: #6c757d;
+      font-size: 16px;
+      margin: 0;
+      font-style: italic;
+    }
+  }
+  
+  .content-body {
+    line-height: 1.8;
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 40px;
+    
+    .content-section {
+      margin-bottom: 25px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+    
+    .heading-1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a202c;
+      margin: 30px 0 20px 0;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .heading-2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #2d3748;
+      margin: 25px 0 15px 0;
+      padding-left: 10px;
+      border-left: 4px solid #4299e1;
+    }
+    
+    .heading-3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #4a5568;
+      margin: 20px 0 12px 0;
+    }
+    
+    .content-paragraph {
+      margin-bottom: 20px;
+      
+      .paragraph-heading {
+        font-size: 17px;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 10px 0;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .paragraph-text {
+        text-align: justify;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        
+        ::ng-deep br {
+          display: block;
+          margin-bottom: 8px;
+          content: "";
+        }
+        
+        ::ng-deep p {
+          margin-bottom: 16px;
+          line-height: 1.7;
+        }
+      }
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+.acknowledgment-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #28a745;
+  border-radius: 12px;
+  padding: 30px;
+  margin-top: 40px;
+  text-align: center;
+  
+  .acknowledgment-prompt {
+    h3 {
+      color: #28a745;
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 15px 0;
+    }
+    
+    p {
+      color: #495057;
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 0 0 25px 0;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    ::ng-deep .dx-button {
+      font-size: 16px;
+      font-weight: 600;
+      padding: 12px 24px;
+      
+      &.dx-button-success {
+        background: #28a745;
+        border-color: #28a745;
+        
+        &:hover {
+          background: #218838;
+          border-color: #1e7e34;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+      }
+    }
+  }
+}
+
+.already-acknowledged {
+  background: linear-gradient(135deg, #fafffe 0%, #f7fef8 100%);
+  border: 2px solid #d1fae5;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 32px;
+  
+  .acknowledged-message {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    
+    i {
+      font-size: 40px;
+      color: #86efac;
+      flex-shrink: 0;
+    }
+    
+    div {
+      text-align: left;
+      
+      h3 {
+        color: #16a34a;
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0 0 6px 0;
+      }
+      
+      p {
+        color: #15803d;
+        font-size: 15px;
+        margin: 0;
+      }
+    }
+  }
+}
+
+.content-fallback {
+  text-align: center;
+  padding: 60px 20px;
+  
+  .fallback-message {
+    max-width: 500px;
+    margin: 0 auto;
+    
+    i {
+      font-size: 64px;
+      color: #6c757d;
+      margin-bottom: 20px;
+    }
+    
+    h3 {
+      color: #495057;
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 15px 0;
+    }
+    
+    p {
+      color: #6c757d;
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 0 0 30px 0;
+    }
+    
+    .fallback-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      
+      ::ng-deep .dx-button {
+        min-width: 160px;
+      }
+    }
+  }
+}
+
+.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  
+  .error-message {
+    text-align: center;
+    max-width: 500px;
+    
+    i {
+      font-size: 64px;
+      color: #dc3545;
+      margin-bottom: 20px;
+    }
+    
+    h2 {
+      color: #dc3545;
+      font-size: 28px;
+      font-weight: 600;
+      margin: 0 0 15px 0;
+    }
+    
+    p {
+      color: #6c757d;
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 0 0 30px 0;
+    }
+  }
+}
+
+// Signature Popup Styles
+::ng-deep .dx-popup-content {
+  padding: 0 !important;
+}
+
+.signature-form {
+  padding: 30px;
+  
+  .signature-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+    
+    h3 {
+      color: #2c3e50;
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    
+    .signature-subtitle {
+      color: #6c757d;
+      font-size: 16px;
+      margin: 0;
+      font-style: italic;
+    }
+  }
+  
+  .signature-content {
+    margin-bottom: 30px;
+    
+    .acknowledgment-terms {
+      margin-bottom: 25px;
+      
+      h4 {
+        color: #2c3e50;
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0 0 15px 0;
+      }
+      
+      ul {
+        margin: 0;
+        padding-left: 20px;
+        
+        li {
+          color: #495057;
+          font-size: 14px;
+          line-height: 1.6;
+          margin-bottom: 8px;
+          
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+      }
+    }
+    
+    .signature-details {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        strong {
+          color: #495057;
+          font-weight: 600;
+          min-width: 120px;
+        }
+        
+        span {
+          color: #2c3e50;
+          text-align: right;
+          flex: 1;
+        }
+      }
+    }
+    
+    .signature-warning {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 6px;
+      padding: 12px 16px;
+      
+      i {
+        color: #856404;
+        font-size: 18px;
+      }
+      
+      span {
+        color: #856404;
+        font-weight: 500;
+      }
+    }
+  }
+  
+  .signature-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+    
+    ::ng-deep .dx-button {
+      min-width: 140px;
+      
+      &.dx-button-success {
+        background: #28a745;
+        border-color: #28a745;
+        
+        &:hover:not(.dx-state-disabled) {
+          background: #218838;
+          border-color: #1e7e34;
+        }
+        
+        &.dx-state-disabled {
+          opacity: 0.6;
+        }
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .policy-view-container {
+    padding: 10px;
+  }
+  
+  .policy-header {
+    padding: 20px;
+    
+    .policy-title {
+      font-size: 24px;
+    }
+    
+    .policy-meta {
+      grid-template-columns: 1fr;
+    }
+    
+    .header-actions {
+      justify-content: center;
+      
+      ::ng-deep .dx-button {
+        min-width: 120px;
+      }
+    }
+    
+    .status-section {
+      justify-content: center;
+    }
+  }
+  
+  .content-section {
+    padding: 20px;
+  }
+  
+  .text-content .content-header h2 {
+    font-size: 20px;
+  }
+  
+  .acknowledgment-section,
+  .already-acknowledged {
+    padding: 20px;
+  }
+  
+  .already-acknowledged .acknowledged-message {
+    flex-direction: column;
+    text-align: center;
+    
+    div {
+      text-align: center;
+    }
+  }
+  
+  .signature-form {
+    padding: 20px;
+    
+    .signature-actions {
+      flex-direction: column;
+      
+      ::ng-deep .dx-button {
+        width: 100%;
+      }
+    }
+    
+    .signature-details .detail-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      
+      span {
+        text-align: left;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .policy-header .policy-title {
+    font-size: 20px;
+  }
+  
+  .text-content .content-body {
+    font-size: 14px;
+  }
+  
+  .acknowledgment-section .acknowledgment-prompt {
+    h3 {
+      font-size: 18px;
+    }
+    
+    p {
+      font-size: 14px;
+    }
+  }
+}

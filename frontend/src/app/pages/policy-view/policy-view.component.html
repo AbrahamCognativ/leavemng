@@ -1,0 +1,254 @@
+<div class="policy-view-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <dx-load-indicator [visible]="true"></dx-load-indicator>
+    <p>Loading policy...</p>
+  </div>
+
+  <!-- Policy Content -->
+  <div *ngIf="!loading && policy" class="policy-content">
+    
+    <!-- Header -->
+    <div class="policy-header">
+      <div class="header-content">
+        <div class="breadcrumb">
+          <dx-button
+            icon="back"
+            text="Back"
+            stylingMode="text"
+            (onClick)="goBack()">
+          </dx-button>
+        </div>
+        
+        <h1 class="policy-title">{{ policy.name }}</h1>
+        
+        <div class="policy-meta">
+          <div class="meta-item">
+            <strong>Document:</strong> {{ policy.file_name }}
+          </div>
+          <div class="meta-item" *ngIf="policy.description">
+            <strong>Description:</strong> {{ policy.description }}
+          </div>
+          <div class="meta-item">
+            <strong>Published:</strong> {{ formatDate(policy.created_at) }}
+          </div>
+          <div class="meta-item" *ngIf="userPolicyStatus?.acknowledgment_deadline">
+            <strong>Deadline:</strong> {{ formatDate(userPolicyStatus?.acknowledgment_deadline || '') }}
+          </div>
+        </div>
+        
+        <!-- Status Badge -->
+        <div class="status-section" *ngIf="userPolicyStatus">
+          <div class="status-badge" [style.background-color]="getStatusColor()">
+            <i [class]="getStatusIcon()"></i>
+            <span>{{ getStatusText() }}</span>
+          </div>
+          <div class="deadline-info" *ngIf="!userPolicyStatus.is_acknowledged">
+            <span [class]="userPolicyStatus.is_overdue ? 'overdue' : 'normal'">
+              {{ getDaysRemainingText() }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="header-actions">
+        <dx-button
+          text="Download PDF"
+          icon="download"
+          type="normal"
+          (onClick)="downloadPolicy()">
+        </dx-button>
+      </div>
+    </div>
+
+    <!-- Policy Content Display -->
+    <div class="content-section">
+      
+      <!-- Content Loading -->
+      <div *ngIf="contentLoading" class="content-loading">
+        <dx-load-indicator [visible]="true"></dx-load-indicator>
+        <p>Extracting policy content...</p>
+      </div>
+      
+      <!-- Extracted Text Content -->
+      <div *ngIf="!contentLoading && policyContent" class="text-content">
+        <div class="content-header">
+          <h2>Policy Content</h2>
+          <p class="content-note">
+            Please read the complete policy below. You can acknowledge your understanding at the end.
+          </p>
+        </div>
+        
+        <div class="content-body">
+          <div *ngFor="let section of getContentParagraphs()" class="content-section">
+            <h1 *ngIf="section.type === 'heading' && section.level === 1" class="heading-1">{{ section.content }}</h1>
+            <h2 *ngIf="section.type === 'heading' && section.level === 2" class="heading-2">{{ section.content }}</h2>
+            <h3 *ngIf="section.type === 'heading' && section.level === 3" class="heading-3">{{ section.content }}</h3>
+            <div *ngIf="section.type === 'paragraph'" class="content-paragraph">
+              <h4 *ngIf="section.hasHeading" class="paragraph-heading">{{ section.heading }}</h4>
+              <div class="paragraph-text" [innerHTML]="formatParagraphText(section.content)"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Acknowledgment Section -->
+        <div class="acknowledgment-section" *ngIf="canAcknowledge()">
+          <div class="acknowledgment-prompt">
+            <h3>Policy Acknowledgment</h3>
+            <p>
+              By clicking "I Acknowledge and Agree" below, you confirm that you have read, 
+              understood, and agree to comply with this policy.
+            </p>
+            
+            <dx-button
+              text="I Acknowledge and Agree"
+              icon="check"
+              type="success"
+              [width]="250"
+              (onClick)="openSignaturePopup()">
+            </dx-button>
+          </div>
+        </div>
+        
+        <!-- Already Acknowledged -->
+        <div class="already-acknowledged" *ngIf="userPolicyStatus?.is_acknowledged">
+          <div class="acknowledged-message">
+            <i class="dx-icon-check"></i>
+            <div>
+              <h3>Policy Acknowledged</h3>
+              <p>You acknowledged this policy on {{ formatDate(userPolicyStatus?.acknowledged_at || '') }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Content Extraction Failed -->
+      <div *ngIf="!contentLoading && !policyContent" class="content-fallback">
+        <div class="fallback-message">
+          <i class="dx-icon-doc"></i>
+          <h3>Content Preview Unavailable</h3>
+          <p>
+            We couldn't extract the text content from this policy document. 
+            Please download the PDF to read the complete policy.
+          </p>
+          
+          <div class="fallback-actions">
+            <dx-button
+              text="Download Policy PDF"
+              icon="download"
+              type="default"
+              (onClick)="downloadPolicy()">
+            </dx-button>
+            
+            <dx-button
+              *ngIf="canAcknowledge()"
+              text="Acknowledge After Reading"
+              icon="check"
+              type="success"
+              (onClick)="openSignaturePopup()">
+            </dx-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading && !policy" class="error-state">
+    <div class="error-message">
+      <i class="dx-icon-warning"></i>
+      <h2>Policy Not Found</h2>
+      <p>The requested policy could not be found or you don't have permission to view it.</p>
+      <dx-button
+        text="Go Back"
+        type="default"
+        (onClick)="goBack()">
+      </dx-button>
+    </div>
+  </div>
+</div>
+
+<!-- Electronic Signature Popup -->
+<dx-popup
+  [visible]="signaturePopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="600"
+  [height]="500"
+  title="Electronic Policy Acknowledgment"
+  (onHiding)="closeSignaturePopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="signature-form" *ngIf="policy">
+      
+      <div class="signature-header">
+        <h3>{{ policy.name }}</h3>
+        <p class="signature-subtitle">Electronic Acknowledgment and Agreement</p>
+      </div>
+      
+      <div class="signature-content">
+        <div class="acknowledgment-terms">
+          <h4>By providing your electronic signature below, you acknowledge that:</h4>
+          <ul>
+            <li>You have read and fully understand the {{ policy.name }}</li>
+            <li>You agree to comply with all requirements, procedures, and guidelines outlined in this policy</li>
+            <li>You understand the consequences of non-compliance as described in the policy</li>
+            <li>This electronic acknowledgment has the same legal effect as a handwritten signature</li>
+            <li>A copy of your signed acknowledgment will be sent to your email address</li>
+          </ul>
+        </div>
+        
+        <div class="signature-details">
+          <div class="detail-row">
+            <strong>Policy:</strong> {{ policy.name }}
+          </div>
+          <div class="detail-row">
+            <strong>Document:</strong> {{ policy.file_name }}
+          </div>
+          <div class="detail-row" *ngIf="userPolicyStatus?.acknowledgment_deadline">
+            <strong>Deadline:</strong> {{ formatDate(userPolicyStatus?.acknowledgment_deadline || '') }}
+          </div>
+          <div class="detail-row">
+            <strong>Signature Date:</strong> {{ getCurrentDateString() }}
+          </div>
+          <div class="detail-row" *ngIf="currentUser">
+            <strong>Signatory:</strong> {{ currentUser.name }} ({{ currentUser.email }})
+          </div>
+        </div>
+        
+        <div class="signature-warning" *ngIf="userPolicyStatus?.is_overdue">
+          <i class="dx-icon-warning"></i>
+          <span>This policy acknowledgment is overdue. Please complete it immediately.</span>
+        </div>
+      </div>
+      
+      <div class="signature-actions">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          [disabled]="signing"
+          (onClick)="closeSignaturePopup()">
+        </dx-button>
+        
+        <dx-button
+          text="I Acknowledge and Electronically Sign"
+          type="success"
+          icon="check"
+          [disabled]="signing"
+          (onClick)="acknowledgePolicy()">
+          <dx-load-indicator *ngIf="signing" [visible]="true"></dx-load-indicator>
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Toast Notification -->
+<dx-toast
+  [visible]="toastVisible"
+  [message]="toastMessage"
+  [type]="toastType"
+  [displayTime]="4000"
+  (onHiding)="toastVisible = false">
+</dx-toast>

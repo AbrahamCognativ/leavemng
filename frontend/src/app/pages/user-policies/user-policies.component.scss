@@ -1,0 +1,348 @@
+.user-policies-container {
+  padding: 24px;
+  background: #f8f9fa;
+  min-height: 100vh;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    
+    h2 {
+      color: #2d6cdf;
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    
+    .subtitle {
+      color: #6c757d;
+      margin: 0;
+      font-size: 16px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      
+      ::ng-deep .dx-button {
+        min-width: 100px;
+      }
+    }
+  }
+
+  .content-section {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 64px 32px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    .empty-icon {
+      font-size: 64px;
+      color: #dee2e6;
+      margin-bottom: 24px;
+    }
+    
+    h3 {
+      color: #495057;
+      margin: 0 0 16px 0;
+      font-size: 24px;
+    }
+    
+    p {
+      color: #6c757d;
+      margin: 0;
+      font-size: 16px;
+    }
+  }
+}
+
+// Policy name styling with priority indicators
+.policy-name {
+  position: relative;
+  
+  &.overdue strong {
+    color: #dc3545;
+  }
+  
+  &.urgent strong {
+    color: #fd7e14;
+  }
+  
+  &.acknowledged strong {
+    color: #28a745;
+  }
+  
+  .overdue-badge, .urgent-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+    text-transform: uppercase;
+  }
+  
+  .overdue-badge {
+    background: #dc3545;
+    color: white;
+  }
+  
+  .urgent-badge {
+    background: #fd7e14;
+    color: white;
+  }
+}
+
+// Description text styling
+.description-text {
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+// File info styling
+.file-info {
+  .file-name {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    
+    i {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+    
+    .file-name-text {
+      font-size: 14px;
+      color: #495057;
+    }
+  }
+  
+  .file-details {
+    .file-type {
+      font-size: 11px;
+      color: #6c757d;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+  }
+}
+
+// Status cell styling
+.status-cell {
+  display: flex;
+  align-items: center;
+  
+  i {
+    margin-right: 6px;
+    font-size: 14px;
+  }
+  
+  span {
+    font-size: 13px;
+    font-weight: 500;
+  }
+}
+
+// Deadline cell styling
+.deadline-cell {
+  .deadline-date {
+    display: block;
+    font-size: 13px;
+    color: #495057;
+    margin-bottom: 2px;
+  }
+  
+  .deadline-info {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    
+    .overdue {
+      color: #dc3545;
+    }
+    
+    .urgent {
+      color: #fd7e14;
+    }
+    
+    .acknowledged {
+      color: #28a745;
+    }
+    
+    .normal {
+      color: #6c757d;
+    }
+  }
+}
+
+// Actions cell styling
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  
+  .view-btn {
+    color: #2d6cdf !important;
+  }
+  
+  .download-btn {
+    color: #6c757d !important;
+  }
+  
+  .acknowledge-btn {
+    color: #28a745 !important;
+  }
+}
+
+// Acknowledgment popup styling
+.acknowledgment-form {
+  padding: 16px;
+  
+  .policy-info {
+    margin-bottom: 24px;
+    
+    h3 {
+      color: #2d6cdf;
+      margin: 0 0 12px 0;
+      font-size: 20px;
+    }
+    
+    p {
+      color: #6c757d;
+      margin: 0 0 16px 0;
+      line-height: 1.5;
+    }
+    
+    .policy-details {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 6px;
+      border-left: 4px solid #2d6cdf;
+      
+      .detail-item {
+        margin-bottom: 8px;
+        font-size: 14px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        strong {
+          color: #495057;
+        }
+        
+        .overdue {
+          color: #dc3545;
+          font-weight: 600;
+        }
+        
+        .urgent {
+          color: #fd7e14;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+  
+  .acknowledgment-text {
+    margin-bottom: 24px;
+    
+    p {
+      color: #495057;
+      margin: 0 0 12px 0;
+      font-weight: 500;
+    }
+    
+    ul {
+      margin: 0;
+      padding-left: 20px;
+      
+      li {
+        color: #6c757d;
+        margin-bottom: 8px;
+        line-height: 1.4;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+  
+  .popup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #dee2e6;
+  }
+}
+
+// Data grid customizations
+::ng-deep {
+  .dx-datagrid {
+    .dx-row {
+      &.overdue {
+        background-color: rgba(220, 53, 69, 0.05);
+        border-left: 3px solid #dc3545;
+      }
+      
+      &.urgent {
+        background-color: rgba(253, 126, 20, 0.05);
+        border-left: 3px solid #fd7e14;
+      }
+      
+      &.acknowledged {
+        background-color: rgba(40, 167, 69, 0.05);
+        border-left: 3px solid #28a745;
+      }
+    }
+    
+    .dx-header-row {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .user-policies-container {
+    padding: 16px;
+    
+    .page-header {
+      margin-bottom: 24px;
+      
+      h2 {
+        font-size: 24px;
+      }
+    }
+  }
+  
+  .acknowledgment-form {
+    padding: 12px;
+    
+    .policy-info h3 {
+      font-size: 18px;
+    }
+    
+    .popup-actions {
+      flex-direction: column;
+      
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

@@ -1,0 +1,461 @@
+<div class="policy-acknowledgments-container">
+  <div class="page-header">
+    <h2>Policy Acknowledgments</h2>
+    <p class="subtitle">Track and manage policy acknowledgment compliance</p>
+    <div class="header-actions">
+      <dx-button
+        text="Refresh"
+        type="normal"
+        icon="refresh"
+        (onClick)="refreshData()">
+      </dx-button>
+      <dx-button
+        text="Export"
+        type="normal"
+        icon="export"
+        (onClick)="exportData()">
+      </dx-button>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="loading-spinner">
+        <i class="dx-icon-loading"></i>
+      </div>
+      <p>Loading policy statistics...</p>
+    </div>
+
+    <!-- Data Grid -->
+    <dx-data-grid
+      *ngIf="!loading"
+      [dataSource]="policyStats"
+      [showBorders]="true"
+      [rowAlternationEnabled]="true"
+      [columnAutoWidth]="true"
+      [allowColumnReordering]="true"
+      [allowColumnResizing]="true"
+      [showColumnLines]="true"
+      [showRowLines]="true"
+      [hoverStateEnabled]="true"
+      [loadPanel]="{ enabled: false }"
+      [paging]="{ pageSize: 20 }"
+      [pager]="{
+        showPageSizeSelector: true,
+        allowedPageSizes: [10, 20, 50, 100],
+        showInfo: true,
+        showNavigationButtons: true
+      }"
+      [searchPanel]="{ visible: true, placeholder: 'Search policies...' }"
+      [headerFilter]="{ visible: true }"
+      [filterRow]="{ visible: true }"
+      [columnChooser]="{ enabled: true }"
+      [export]="{ enabled: true }">
+
+      <!-- Policy Name Column -->
+      <dxi-column 
+        dataField="policy_name" 
+        caption="Policy Name"
+        [width]="250"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        cellTemplate="nameTemplate">
+      </dxi-column>
+
+      <!-- Total Users Column -->
+      <dxi-column 
+        dataField="total_users" 
+        caption="Total Users"
+        [width]="120"
+        [allowSorting]="true"
+        [allowFiltering]="false"
+        alignment="center">
+      </dxi-column>
+
+      <!-- Acknowledged Column -->
+      <dxi-column 
+        dataField="acknowledged_count" 
+        caption="Acknowledged"
+        [width]="120"
+        [allowSorting]="true"
+        [allowFiltering]="false"
+        alignment="center"
+        cellTemplate="acknowledgedTemplate">
+      </dxi-column>
+
+      <!-- Pending Column -->
+      <dxi-column 
+        dataField="pending_count" 
+        caption="Pending"
+        [width]="100"
+        [allowSorting]="true"
+        [allowFiltering]="false"
+        alignment="center"
+        cellTemplate="pendingTemplate">
+      </dxi-column>
+
+      <!-- Overdue Column -->
+      <dxi-column 
+        dataField="overdue_count" 
+        caption="Overdue"
+        [width]="100"
+        [allowSorting]="true"
+        [allowFiltering]="false"
+        alignment="center"
+        cellTemplate="overdueTemplate">
+      </dxi-column>
+
+      <!-- Acknowledgment Rate Column -->
+      <dxi-column 
+        dataField="acknowledgment_rate" 
+        caption="Compliance Rate"
+        [width]="140"
+        [allowSorting]="true"
+        [allowFiltering]="false"
+        alignment="center"
+        cellTemplate="rateTemplate">
+      </dxi-column>
+
+      <!-- Status Column -->
+      <dxi-column 
+        caption="Status"
+        [width]="120"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        alignment="center"
+        cellTemplate="statusTemplate">
+      </dxi-column>
+
+      <!-- Created Date Column -->
+      <dxi-column 
+        dataField="created_at" 
+        caption="Created"
+        dataType="datetime"
+        [width]="140"
+        [allowSorting]="true"
+        [allowFiltering]="true"
+        format="dd/MM/yyyy">
+      </dxi-column>
+
+      <!-- Actions Column -->
+      <dxi-column 
+        caption="Actions"
+        [width]="180"
+        [allowSorting]="false"
+        [allowFiltering]="false"
+        cellTemplate="actionsTemplate">
+      </dxi-column>
+
+      <!-- Policy Name Template -->
+      <div *dxTemplate="let data of 'nameTemplate'">
+        <div class="policy-name" [class]="getPriorityClass(data.data)">
+          <strong>{{ data.value }}</strong>
+        </div>
+      </div>
+
+      <!-- Acknowledged Template -->
+      <div *dxTemplate="let data of 'acknowledgedTemplate'">
+        <span class="count-badge acknowledged">
+          {{ data.value }}
+        </span>
+      </div>
+
+      <!-- Pending Template -->
+      <div *dxTemplate="let data of 'pendingTemplate'">
+        <span class="count-badge" [class]="data.value > 0 ? 'pending' : 'none'">
+          {{ data.value }}
+        </span>
+      </div>
+
+      <!-- Overdue Template -->
+      <div *dxTemplate="let data of 'overdueTemplate'">
+        <span class="count-badge" [class]="data.value > 0 ? 'overdue' : 'none'">
+          {{ data.value }}
+        </span>
+      </div>
+
+      <!-- Rate Template -->
+      <div *dxTemplate="let data of 'rateTemplate'">
+        <div class="rate-display">
+          <div class="rate-bar">
+            <div class="rate-fill" 
+                 [style.width.%]="data.value"
+                 [style.background-color]="getAcknowledmentRateColor(data.value)">
+            </div>
+          </div>
+          <span class="rate-text" [style.color]="getAcknowledmentRateColor(data.value)">
+            {{ data.value }}%
+          </span>
+        </div>
+      </div>
+
+      <!-- Status Template -->
+      <div *dxTemplate="let data of 'statusTemplate'">
+        <span class="status-badge" [class]="getPriorityClass(data.data)">
+          {{ getComplianceStatus(data.data) }}
+        </span>
+      </div>
+
+      <!-- Actions Template -->
+      <div *dxTemplate="let data of 'actionsTemplate'">
+        <div class="actions-cell">
+          <dx-button
+            icon="info"
+            hint="View Details"
+            stylingMode="text"
+            [elementAttr]="{ class: 'details-btn' }"
+            (onClick)="openDetailsPopup(data.data)">
+          </dx-button>
+          
+          <dx-button
+            *ngIf="canManagePolicies()"
+            icon="email"
+            hint="Send Notifications"
+            stylingMode="text"
+            [elementAttr]="{ class: 'notify-btn' }"
+            (onClick)="openNotificationForPolicy(data.data.policy_id)">
+          </dx-button>
+        </div>
+      </div>
+
+    </dx-data-grid>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && policyStats.length === 0">
+    <div class="empty-icon">
+      <i class="dx-icon-doc"></i>
+    </div>
+    <h3>No Policy Statistics Available</h3>
+    <p>There are currently no policies with acknowledgment data.</p>
+    <dx-button
+      text="Reload Data"
+      type="default"
+      icon="refresh"
+      (onClick)="refreshData()">
+    </dx-button>
+  </div>
+</div>
+
+<!-- Send Notifications Popup -->
+<dx-popup
+  [visible]="notificationPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="600"
+  [height]="500"
+  title="Send Policy Notifications"
+  (onHiding)="closeNotificationPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="notification-form" *ngIf="selectedPolicy">
+      <div class="policy-info">
+        <h3>{{ selectedPolicy.name }}</h3>
+        <p *ngIf="selectedPolicy.description">{{ selectedPolicy.description }}</p>
+      </div>
+      
+      <dx-form [formData]="notificationFormData" [colCount]="1">
+        
+        <dxi-item dataField="deadline_days" [isRequired]="true" editorType="dxNumberBox"
+                  [editorOptions]="{
+                    min: 1,
+                    max: 30,
+                    placeholder: 'Days to acknowledge'
+                  }">
+          <dxo-label text="Acknowledgment Deadline (Days)"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="user_ids" editorType="dxSelectBox" 
+                  [editorOptions]="{
+                    dataSource: users,
+                    displayExpr: 'name',
+                    valueExpr: 'id',
+                    placeholder: 'Select users (leave empty for all users)',
+                    searchEnabled: true,
+                    multiple: true
+                  }">
+          <dxo-label text="Target Users (Optional)"></dxo-label>
+        </dxi-item>
+        
+      </dx-form>
+      
+      <div class="notification-info">
+        <p><strong>Note:</strong> If no users are selected, notifications will be sent to all users in the organization.</p>
+        <p>Users who have already acknowledged this policy will not receive notifications.</p>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          (onClick)="closeNotificationPopup()">
+        </dx-button>
+        <dx-button
+          text="Send Notifications"
+          type="default"
+          icon="email"
+          (onClick)="sendNotifications()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Policy Details Popup -->
+<dx-popup
+  [visible]="detailsPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="900"
+  [height]="700"
+  [title]="'Policy Acknowledgment Details: ' + (selectedPolicyStats?.policy_name || '')"
+  (onHiding)="closeDetailsPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="details-content" *ngIf="selectedPolicyStats">
+      
+      <!-- Summary Cards -->
+      <div class="summary-cards">
+        <div class="summary-card acknowledged">
+          <div class="card-icon">
+            <i class="dx-icon-check"></i>
+          </div>
+          <div class="card-content">
+            <div class="card-number">{{ selectedPolicyStats.acknowledged_count }}</div>
+            <div class="card-label">Acknowledged</div>
+          </div>
+        </div>
+        
+        <div class="summary-card pending">
+          <div class="card-icon">
+            <i class="dx-icon-clock"></i>
+          </div>
+          <div class="card-content">
+            <div class="card-number">{{ selectedPolicyStats.pending_count }}</div>
+            <div class="card-label">Pending</div>
+          </div>
+        </div>
+        
+        <div class="summary-card overdue">
+          <div class="card-icon">
+            <i class="dx-icon-warning"></i>
+          </div>
+          <div class="card-content">
+            <div class="card-number">{{ selectedPolicyStats.overdue_count }}</div>
+            <div class="card-label">Overdue</div>
+          </div>
+        </div>
+        
+        <div class="summary-card rate">
+          <div class="card-icon">
+            <i class="dx-icon-percent"></i>
+          </div>
+          <div class="card-content">
+            <div class="card-number">{{ selectedPolicyStats.acknowledgment_rate }}%</div>
+            <div class="card-label">Compliance Rate</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Acknowledgment Details Grid -->
+      <div class="details-grid">
+        <dx-data-grid
+          [dataSource]="acknowledgmentDetails"
+          [showBorders]="true"
+          [rowAlternationEnabled]="true"
+          [columnAutoWidth]="true"
+          [showColumnLines]="true"
+          [showRowLines]="true"
+          [hoverStateEnabled]="true"
+          [paging]="{ pageSize: 15 }"
+          [searchPanel]="{ visible: true, placeholder: 'Search users...' }"
+          [filterRow]="{ visible: true }">
+
+          <!-- User Name Column -->
+          <dxi-column 
+            dataField="user_name" 
+            caption="User"
+            [width]="200"
+            [allowSorting]="true"
+            [allowFiltering]="true">
+          </dxi-column>
+
+          <!-- User Email Column -->
+          <dxi-column 
+            dataField="user_email" 
+            caption="Email"
+            [width]="250"
+            [allowSorting]="true"
+            [allowFiltering]="true">
+          </dxi-column>
+
+          <!-- Status Column -->
+          <dxi-column 
+            caption="Status"
+            [width]="120"
+            [allowSorting]="false"
+            [allowFiltering]="false"
+            cellTemplate="userStatusTemplate">
+          </dxi-column>
+
+          <!-- Acknowledged Date Column -->
+          <dxi-column 
+            dataField="acknowledged_at" 
+            caption="Acknowledged"
+            dataType="datetime"
+            [width]="160"
+            [allowSorting]="true"
+            [allowFiltering]="true"
+            cellTemplate="acknowledgedDateTemplate">
+          </dxi-column>
+
+          <!-- Notification Sent Column -->
+          <dxi-column 
+            dataField="notification_sent_at" 
+            caption="Notified"
+            dataType="datetime"
+            [width]="160"
+            [allowSorting]="true"
+            [allowFiltering]="true"
+            cellTemplate="notificationDateTemplate">
+          </dxi-column>
+
+          <!-- User Status Template -->
+          <div *dxTemplate="let data of 'userStatusTemplate'">
+            <span class="user-status"
+                  [style.color]="getStatusColor(data.data.is_acknowledged, isOverdue(data.data.acknowledgment_deadline))">
+              <i class="dx-icon-check" *ngIf="data.data.is_acknowledged"></i>
+              <i class="dx-icon-warning" *ngIf="!data.data.is_acknowledged && isOverdue(data.data.acknowledgment_deadline)"></i>
+              <i class="dx-icon-clock" *ngIf="!data.data.is_acknowledged && !isOverdue(data.data.acknowledgment_deadline)"></i>
+              {{ getStatusText(data.data.is_acknowledged, isOverdue(data.data.acknowledgment_deadline)) }}
+            </span>
+          </div>
+
+          <!-- Acknowledged Date Template -->
+          <div *dxTemplate="let data of 'acknowledgedDateTemplate'">
+            <span *ngIf="data.value">{{ formatDate(data.value) }}</span>
+            <span *ngIf="!data.value" class="not-acknowledged">Not acknowledged</span>
+          </div>
+
+          <!-- Notification Date Template -->
+          <div *dxTemplate="let data of 'notificationDateTemplate'">
+            <span *ngIf="data.value">{{ formatDate(data.value) }}</span>
+            <span *ngIf="!data.value" class="not-notified">Not notified</span>
+          </div>
+
+        </dx-data-grid>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Toast Notification -->
+<dx-toast
+  [visible]="toastVisible"
+  [message]="toastMessage"
+  [type]="toastType"
+  [displayTime]="4000"
+  (onHiding)="toastVisible = false">
+</dx-toast>

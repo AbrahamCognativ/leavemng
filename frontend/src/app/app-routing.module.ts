@@ -12,6 +12,8 @@ import {WFHRequestComponent} from './pages/wfh-request/wfh-request.component';
 import {WfhDashboardComponent} from './pages/wfh-dashboard/wfh-dashboard.component';
 import {WfhHistoryComponent} from './pages/wfh-history/wfh-history.component';
 import {PoliciesComponent} from './pages/policies/policies.component';
+import {UserPoliciesComponent} from './pages/user-policies/user-policies.component';
+import {PolicyViewComponent} from './pages/policy-view/policy-view.component';
 
 const routes: Routes = [
   {
@@ -55,8 +57,8 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ]
   },
   {
-    path: 'policies',
-    component: PoliciesComponent,
+    path: 'policy/:policyId',
+    component: PolicyViewComponent,
     canActivate: [ AuthGuardService ]
   },
   {
