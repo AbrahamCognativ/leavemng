@@ -133,14 +133,19 @@ async def create_policy(
         from datetime import timedelta
         from app.models.policy_acknowledgment import PolicyAcknowledgment
         
-        # Get all users that should be notified
+        # Get all users that should be notified (excluding system users)
+        system_emails = ['user@example.com', 'scheduler@example.com']
         if org_unit_uuid:
             users = db.query(User).filter(
                 User.org_unit_id == org_unit_uuid,
-                User.is_active == True
+                User.is_active == True,
+                ~User.email.in_(system_emails)
             ).all()
         else:
-            users = db.query(User).filter(User.is_active == True).all()
+            users = db.query(User).filter(
+                User.is_active == True,
+                ~User.email.in_(system_emails)
+            ).all()
         
         # Calculate deadline (5 days from now)
         deadline = datetime.now(timezone.utc) + timedelta(days=5)
@@ -163,13 +168,15 @@ async def create_policy(
                 send_policy_notification_email(user.email, user.name, policy, deadline)
             except Exception as e:
                 # Log error but continue with other users
-                print(f"Failed to send policy notification email to {user.email}: {e}")
+                import logging
+                logging.error(f"Failed to send policy notification email to {user.email}: {e}")
         
         db.commit()
         
     except Exception as e:
         # Log error but don't fail the policy creation
-        print(f"Failed to send policy notifications: {e}")
+        import logging
+        logging.error(f"Failed to send policy notifications: {e}")
     
     return _build_policy_response(db, policy)
 

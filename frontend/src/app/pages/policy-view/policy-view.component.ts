@@ -54,7 +54,7 @@ export class PolicyViewComponent implements OnInit, OnDestroy {
   pdfLoading = false;
   pdfError = false;
   showTextFallback = false;
-  zoom = 1.0;
+  zoom = 0.75;
   totalPages = 0;
   private pdfBlobUrl: string | null = null;
 
@@ -112,7 +112,7 @@ export class PolicyViewComponent implements OnInit, OnDestroy {
     this.pdfLoading = false;
     this.pdfError = false;
     this.showTextFallback = false;
-    this.zoom = 1.0;
+    this.zoom = 0.75;
     this.totalPages = 0;
     
     // Clean up previous blob URL
@@ -271,7 +271,7 @@ export class PolicyViewComponent implements OnInit, OnDestroy {
   }
 
   resetZoom(): void {
-    this.zoom = 1.0;
+    this.zoom = 0.75;
   }
 
   showToast(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {

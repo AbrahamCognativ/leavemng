@@ -101,7 +101,8 @@ async def acknowledge_policy(
         await generate_and_send_signed_pdf(db, acknowledgment, policy, current_user)
     except Exception as e:
         # Log error but don't fail the acknowledgment
-        print(f"Failed to generate/send signed PDF: {e}")
+        import logging
+        logging.error(f"Failed to generate/send signed PDF: {e}")
     
     return _build_acknowledgment_response(db, acknowledgment)
 
@@ -182,22 +183,28 @@ async def send_policy_notifications(
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
     
-    # Determine which users to notify
+    # Determine which users to notify (excluding system users)
+    system_emails = ['user@example.com', 'scheduler@example.com']
     if notification_request.user_ids:
         # Notify specific users
         users = db.query(User).filter(
             User.id.in_(notification_request.user_ids),
-            User.is_active == True
+            User.is_active == True,
+            ~User.email.in_(system_emails)
         ).all()
     else:
         # Notify all users in the policy's org unit or all users if policy applies to all
         if policy.org_unit_id:
             users = db.query(User).filter(
                 User.org_unit_id == policy.org_unit_id,
-                User.is_active == True
+                User.is_active == True,
+                ~User.email.in_(system_emails)
             ).all()
         else:
-            users = db.query(User).filter(User.is_active == True).all()
+            users = db.query(User).filter(
+                User.is_active == True,
+                ~User.email.in_(system_emails)
+            ).all()
     
     # Calculate deadline
     deadline = datetime.now(timezone.utc) + timedelta(days=notification_request.deadline_days)
@@ -235,7 +242,8 @@ async def send_policy_notifications(
             notifications_sent += 1
         except Exception as e:
             # Log error but continue with other users
-            print(f"Failed to send email to {user.email}: {e}")
+            import logging
+            logging.error(f"Failed to send email to {user.email}: {e}")
     
     db.commit()
     
@@ -280,14 +288,19 @@ def get_policy_acknowledgment_stats(
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
     
-    # Get total users that should acknowledge this policy
+    # Get total users that should acknowledge this policy (excluding system users)
+    system_emails = ['user@example.com', 'scheduler@example.com']
     if policy.org_unit_id:
         total_users = db.query(User).filter(
             User.org_unit_id == policy.org_unit_id,
-            User.is_active == True
+            User.is_active == True,
+            ~User.email.in_(system_emails)
         ).count()
     else:
-        total_users = db.query(User).filter(User.is_active == True).count()
+        total_users = db.query(User).filter(
+            User.is_active == True,
+            ~User.email.in_(system_emails)
+        ).count()
     
     # Get acknowledgment counts
     acknowledged_count = db.query(PolicyAcknowledgment).filter(
@@ -341,11 +354,16 @@ def get_policy_acknowledgments(
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
     
-    # Get acknowledgments with user details
+    # Get acknowledgments with user details (excluding system users)
+    system_emails = ['user@example.com', 'scheduler@example.com']
     acknowledgments = db.query(PolicyAcknowledgment).options(
         joinedload(PolicyAcknowledgment.user),
         joinedload(PolicyAcknowledgment.policy)
-    ).filter(PolicyAcknowledgment.policy_id == policy_id).all()
+    ).filter(
+        PolicyAcknowledgment.policy_id == policy_id
+    ).join(User).filter(
+        ~User.email.in_(system_emails)
+    ).all()
     
     result = []
     for ack in acknowledgments:
@@ -571,7 +589,8 @@ async def append_signature_to_pdf(original_pdf_path: str, output_path: str, ackn
         os.unlink(sig_temp_path)
         
     except Exception as e:
-        print(f"Error appending signature to PDF: {e}")
+        import logging
+        logging.error(f"Error appending signature to PDF: {e}")
         # Fallback to creating signature-only PDF
         await create_signature_only_pdf(output_path, acknowledgment, policy, user)
 
@@ -602,7 +621,8 @@ async def convert_docx_and_append_signature(docx_path: str, output_path: str, ac
             await create_signature_only_pdf(output_path, acknowledgment, policy, user, include_note=True)
             
     except Exception as e:
-        print(f"Error converting DOCX and appending signature: {e}")
+        import logging
+        logging.error(f"Error converting DOCX and appending signature: {e}")
         # Fallback to creating signature-only PDF
         await create_signature_only_pdf(output_path, acknowledgment, policy, user, include_note=True)
 
@@ -733,7 +753,8 @@ async def create_signature_only_pdf(output_path: str, acknowledgment: PolicyAckn
         doc.build(story)
         
     except Exception as e:
-        print(f"Error creating signature PDF: {e}")
+        import logging
+        logging.error(f"Error creating signature PDF: {e}")
         raise
 
 
@@ -850,7 +871,8 @@ Leave Management System Team
         
     except Exception as e:
         # Log error and send simple confirmation
-        print(f"Error generating signed PDF: {e}")
+        import logging
+        logging.error(f"Error generating signed PDF: {e}")
         subject = f"Policy Acknowledgment Confirmation: {policy.name}"
         body = f"""
 Hello {user.name},

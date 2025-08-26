@@ -130,7 +130,7 @@ export class NavigationService {
               path: '/admin/policies',
             },
             {
-              text: 'Policy Ack',
+              text: 'Policy Status',
               path: '/admin/policy-acknowledgments',
             }
           ] : []),

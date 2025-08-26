@@ -7,7 +7,7 @@ import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
-import { DxiItemModule, DxoLabelModule, DxiColumnModule } from 'devextreme-angular/ui/nested';
+import { DxiItemModule, DxoLabelModule, DxiColumnModule, DxoPagingModule, DxoPagerModule } from 'devextreme-angular/ui/nested';
 import { RouterModule } from '@angular/router';
 import { PolicyService, Policy } from '../../../shared/services/policy.service';
 import { PolicyAcknowledmentService, PolicyAcknowledmentStats, PolicyNotificationRequest } from '../../../shared/services/policy-acknowledgment.service';
@@ -30,6 +30,8 @@ import { AuthService } from '../../../shared/services/auth.service';
     DxiItemModule,
     DxoLabelModule,
     DxiColumnModule,
+    DxoPagingModule,
+    DxoPagerModule,
     RouterModule
   ]
 })
@@ -47,7 +49,6 @@ export class PolicyAcknowledmentsComponent implements OnInit, AfterViewInit {
   selectedPolicy: Policy | null = null;
   notificationFormData = {
     policy_id: '',
-    user_ids: [] as string[],
     deadline_days: 5
   };
   
@@ -112,17 +113,9 @@ export class PolicyAcknowledmentsComponent implements OnInit, AfterViewInit {
       // Clear existing stats first
       this.policyStats = [];
       
-      // if (this.policies.length === 0) {
-      //   console.log('No policies available to load stats for');
-      //   return;
-      // }
-
-      // console.log(`Loading stats for ${this.policies.length} policies`);
-      
       const statsPromises = this.policies.map(async (policy) => {
         try {
           const stats = await this.policyAcknowledmentService.getPolicyAcknowledmentStats(policy.id);
-          console.log(`Loaded stats for policy ${policy.id}:`, stats);
           return stats;
         } catch (error) {
           console.error(`Error loading stats for policy ${policy.id}:`, error);
@@ -141,7 +134,6 @@ export class PolicyAcknowledmentsComponent implements OnInit, AfterViewInit {
       });
       
       this.policyStats = await Promise.all(statsPromises);
-      console.log('Final policy stats:', this.policyStats);
     } catch (error) {
       console.error('Error loading policy stats:', error);
       this.policyStats = [];
@@ -158,7 +150,6 @@ export class PolicyAcknowledmentsComponent implements OnInit, AfterViewInit {
     this.selectedPolicy = policy;
     this.notificationFormData = {
       policy_id: policy.id,
-      user_ids: [],
       deadline_days: 5
     };
     this.notificationPopupVisible = true;
@@ -175,7 +166,6 @@ export class PolicyAcknowledmentsComponent implements OnInit, AfterViewInit {
     try {
       const request: PolicyNotificationRequest = {
         policy_id: this.notificationFormData.policy_id,
-        user_ids: this.notificationFormData.user_ids.length > 0 ? this.notificationFormData.user_ids : undefined,
         deadline_days: this.notificationFormData.deadline_days
       };
 
@@ -224,6 +214,12 @@ export class PolicyAcknowledmentsComponent implements OnInit, AfterViewInit {
     if (isAcknowledged) return 'Acknowledged';
     if (isOverdue) return 'Overdue';
     return 'Pending';
+  }
+
+  getStatusIcon(isAcknowledged: boolean, isOverdue: boolean): string {
+    if (isAcknowledged) return 'check';
+    if (isOverdue) return 'warning';
+    return 'clock';
   }
 
   formatDate(date: string | Date): string {

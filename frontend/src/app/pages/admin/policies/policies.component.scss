@@ -116,23 +116,10 @@
   display: flex;
   gap: 4px;
   align-items: center;
-
-  :host ::ng-deep {
-    .view-btn .dx-button-content {
-      color: #6f42c1 !important;
-    }
-    
-    .download-btn .dx-button-content {
-      color: #6c757d !important;
-    }
-    
-    .edit-btn .dx-button-content {
-      color: #007bff !important;
-    }
-    
-    .delete-btn .dx-button-content {
-      color: #dc3545 !important;
-    }
+  
+  .dx-button {
+    min-width: 32px;
+    height: 32px;
   }
 }
 
@@ -208,18 +195,64 @@
 }
 
 // Responsive design
+@media (max-width: 1200px) {
+  .policies-container {
+    padding: 15px;
+    
+    .content-section {
+      padding: 15px;
+    }
+  }
+  
+  .dx-datagrid {
+    font-size: 14px;
+    
+    .dx-datagrid-headers {
+      font-size: 13px;
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .policies-container {
     padding: 10px;
+    
+    .page-header {
+      h2 {
+        font-size: 24px;
+      }
+      
+      .subtitle {
+        font-size: 14px;
+      }
+    }
+    
+    .content-section {
+      padding: 10px;
+    }
   }
   
-  .page-header {
+  .dx-datagrid {
+    .dx-datagrid-rowsview .dx-row > td {
+      padding: 8px 4px;
+    }
+  }
+  
+  .actions-cell {
     flex-direction: column;
-    gap: 15px;
-    align-items: stretch;
+    gap: 2px;
     
-    .header-actions {
-      justify-content: flex-end;
+    .dx-button {
+      min-width: 28px;
+      height: 28px;
+    }
+  }
+  
+  .popup-actions {
+    flex-direction: column;
+    
+    .dx-button {
+      width: 100%;
     }
   }
   

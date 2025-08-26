@@ -27,41 +27,16 @@
       
       <dxi-column dataField="name" caption="Policy Name"></dxi-column>
       <dxi-column dataField="description" caption="Description" cellTemplate="descriptionTemplate"></dxi-column>
-      <dxi-column dataField="file_name" caption="File" cellTemplate="fileTemplate"></dxi-column>
+      <dxi-column dataField="file_name" caption="File"></dxi-column>
       <dxi-column dataField="created_at" caption="Created" dataType="date" format="dd/MM/yyyy"></dxi-column>
       <dxi-column caption="Actions" cellTemplate="actionsTemplate"></dxi-column>
 
       <!-- Description Template -->
       <div *dxTemplate="let data of 'descriptionTemplate'">
-        <span class="description-text" 
+        <span class="description-text"
               [title]="data.value || 'No description'">
-          {{ (data.value || 'No description') | slice:0:80 }}
-          <span *ngIf="data.value && data.value.length > 80">...</span>
-        </span>
-      </div>
-
-      <!-- File Template -->
-      <div *dxTemplate="let data of 'fileTemplate'">
-        <div class="file-info">
-          <div class="file-name">
-            <i [class]="getFileIcon(data.data.file_type)" 
-               [style.color]="getFileTypeColor(data.data.file_type)"></i>
-            <span class="file-name-text" [title]="data.data.file_name">
-              {{ data.data.file_name | slice:0:20 }}
-              <span *ngIf="data.data.file_name.length > 20">...</span>
-            </span>
-          </div>
-          <div class="file-details">
-            <span class="file-type">{{ data.data.file_type.toUpperCase() }}</span>
-            <span class="file-size" *ngIf="data.data.file_size">{{ data.data.file_size }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Organization Template -->
-      <div *dxTemplate="let data of 'orgTemplate'">
-        <span class="org-name">
-          {{ getOrgUnitDisplayName(data.value) }}
+          {{ (data.value || 'No description') | slice:0:50 }}
+          <span *ngIf="data.value && data.value.length > 50">...</span>
         </span>
       </div>
 
@@ -72,7 +47,6 @@
             icon="eyeopen"
             hint="View Document"
             stylingMode="text"
-            [elementAttr]="{ class: 'view-btn' }"
             (onClick)="viewPolicy(data.data)">
           </dx-button>
           
@@ -80,7 +54,6 @@
             icon="download"
             hint="Download"
             stylingMode="text"
-            [elementAttr]="{ class: 'download-btn' }"
             (onClick)="downloadPolicy(data.data)">
           </dx-button>
           
@@ -89,7 +62,6 @@
             icon="edit"
             hint="Edit"
             stylingMode="text"
-            [elementAttr]="{ class: 'edit-btn' }"
             (onClick)="openEditPolicyPopup(data.data)">
           </dx-button>
           
@@ -98,7 +70,6 @@
             icon="trash"
             hint="Delete"
             stylingMode="text"
-            [elementAttr]="{ class: 'delete-btn' }"
             (onClick)="deletePolicy(data.data)">
           </dx-button>
         </div>

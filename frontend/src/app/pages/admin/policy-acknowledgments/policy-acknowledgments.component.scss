@@ -1,42 +1,32 @@
 .policy-acknowledgments-container {
-  padding: 24px;
-  background: #f8f9fa;
-  min-height: 100vh;
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
 
   .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 32px;
-    
-    .header-content {
-      flex: 1;
-    }
+    text-align: left;
+    margin-bottom: 30px;
     
     h2 {
-      color: #000000;
-      margin: 0 0 8px 0;
+      color: #333;
       font-size: 28px;
       font-weight: 600;
+      margin-bottom: 8px;
     }
     
     .subtitle {
       color: #6c757d;
-      margin: 0;
       font-size: 16px;
-    }
-    
-    .header-actions {
-      display: flex;
-      gap: 12px;
+      margin: 0;
     }
   }
 
   .content-section {
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
   }
 
   .loading-state {
@@ -45,9 +35,6 @@
     align-items: center;
     justify-content: center;
     padding: 64px 32px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
 
     .loading-spinner {
@@ -67,9 +54,6 @@
   .empty-state {
     text-align: center;
     padding: 64px 32px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     
     .empty-icon {
       font-size: 64px;
@@ -96,22 +80,27 @@
   100% { transform: rotate(360deg); }
 }
 
-// Policy name styling with priority indicators
-.policy-name {
-  strong {
-    color: #000000;
+// Data Grid Styling
+.dx-datagrid {
+  border-radius: 8px;
+  overflow: hidden;
+  
+  .dx-datagrid-headers {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
   }
   
-  &.high-priority strong {
-    color: #000000;
-  }
-  
-  &.medium-priority strong {
-    color: #000000;
-  }
-  
-  &.normal-priority strong {
-    color: #000000;
+  .dx-datagrid-rowsview {
+    .dx-row {
+      &:hover {
+        background-color: #f8f9fa;
+      }
+      
+      &.dx-row-alt {
+        background-color: #fdfdfd;
+      }
+    }
   }
 }
 
@@ -119,11 +108,13 @@
 .count-badge {
   display: inline-block;
   padding: 4px 8px;
-  border-radius: 12px;
+  border-radius: 50%;
   font-size: 12px;
   font-weight: 600;
   text-align: center;
   min-width: 24px;
+  height: 24px;
+  line-height: 16px;
   
   &.acknowledged {
     background: #d4edda;
@@ -150,26 +141,12 @@
 .rate-display {
   display: flex;
   align-items: center;
-  gap: 8px;
-  
-  .rate-bar {
-    flex: 1;
-    height: 8px;
-    background: #e9ecef;
-    border-radius: 4px;
-    overflow: hidden;
-    
-    .rate-fill {
-      height: 100%;
-      transition: width 0.3s ease;
-    }
-  }
+  justify-content: center;
   
   .rate-text {
     font-size: 12px;
     font-weight: 600;
-    min-width: 35px;
-    text-align: right;
+    text-align: center;
   }
 }
 
@@ -198,63 +175,69 @@
   }
 }
 
+// Custom cell styling
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .status-text {
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+}
+
 // Actions cell styling
 .actions-cell {
   display: flex;
   gap: 4px;
-  justify-content: center;
+  align-items: center;
   
-  .details-btn {
-    color: #2d6cdf !important;
-  }
-  
-  .notify-btn {
-    color: #fd7e14 !important;
+  .dx-button {
+    min-width: 32px;
+    height: 32px;
   }
 }
 
 // Notification form styling
 .notification-form {
-  padding: 16px;
+  padding: 20px;
   
   .policy-info {
-    margin-bottom: 24px;
-    padding: 16px;
+    margin-bottom: 16px;
+    padding: 12px;
     background: #f8f9fa;
     border-radius: 6px;
-    border-left: 4px solid #2d6cdf;
+    border-left: 4px solid #6c757d;
     
     h3 {
-      color: #2d6cdf;
-      margin: 0 0 8px 0;
-      font-size: 18px;
+      color: #333;
+      margin: 0 0 4px 0;
+      font-size: 16px;
     }
     
     p {
       color: #6c757d;
       margin: 0;
-      line-height: 1.5;
+      line-height: 1.4;
+      font-size: 14px;
     }
   }
   
   .notification-info {
-    margin: 24px 0;
-    padding: 16px;
-    background: #e7f3ff;
+    margin: 16px 0;
+    padding: 12px;
+    background: #f8f9fa;
     border-radius: 6px;
-    border-left: 4px solid #0066cc;
+    border-left: 4px solid #6c757d;
     
     p {
-      margin: 0 0 8px 0;
+      margin: 0;
       font-size: 14px;
       color: #495057;
       
-      &:last-child {
-        margin-bottom: 0;
-      }
-      
       strong {
-        color: #0066cc;
+        color: #333;
       }
     }
   }
@@ -265,6 +248,7 @@
     gap: 12px;
     padding-top: 16px;
     border-top: 1px solid #dee2e6;
+    margin-top: 16px;
   }
 }
 
@@ -284,16 +268,17 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      gap: 16px;
       
       .card-icon {
         font-size: 32px;
-        margin-right: 16px;
         width: 48px;
         height: 48px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 50%;
+        flex-shrink: 0;
       }
       
       .card-content {
@@ -306,7 +291,7 @@
         }
         
         .card-label {
-          font-size: 14px;
+          font-size: 12px;
           color: #6c757d;
           text-transform: uppercase;
           font-weight: 500;
@@ -433,67 +418,64 @@
 }
 
 // Responsive design
+@media (max-width: 1200px) {
+  .policy-acknowledgments-container {
+    padding: 15px;
+    
+    .content-section {
+      padding: 15px;
+    }
+  }
+  
+  .dx-datagrid {
+    font-size: 14px;
+    
+    .dx-datagrid-headers {
+      font-size: 13px;
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .policy-acknowledgments-container {
-    padding: 16px;
+    padding: 10px;
     
     .page-header {
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 24px;
-      
       h2 {
         font-size: 24px;
       }
       
-      .header-actions {
-        align-self: stretch;
-        
-        button {
-          flex: 1;
-        }
+      .subtitle {
+        font-size: 14px;
       }
+    }
+    
+    .content-section {
+      padding: 10px;
     }
   }
   
-  .notification-form {
-    padding: 12px;
-    
-    .policy-info h3 {
-      font-size: 16px;
-    }
-    
-    .popup-actions {
-      flex-direction: column;
-      
-      button {
-        width: 100%;
-      }
+  .dx-datagrid {
+    .dx-datagrid-rowsview .dx-row > td {
+      padding: 8px 4px;
     }
   }
   
-  .details-content {
-    padding: 12px;
+  .actions-cell {
+    flex-direction: column;
+    gap: 2px;
     
-    .summary-cards {
-      grid-template-columns: 1fr;
-      gap: 12px;
-      margin-bottom: 24px;
-      
-      .summary-card {
-        padding: 16px;
-        
-        .card-icon {
-          font-size: 24px;
-          width: 40px;
-          height: 40px;
-          margin-right: 12px;
-        }
-        
-        .card-number {
-          font-size: 20px;
-        }
-      }
+    .dx-button {
+      min-width: 28px;
+      height: 28px;
+    }
+  }
+  
+  .popup-actions {
+    flex-direction: column;
+    
+    .dx-button {
+      width: 100%;
     }
   }
 }

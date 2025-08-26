@@ -307,12 +307,11 @@
         </dx-button>
         
         <dx-button
-          text="Sign"
+          [text]="signing ? 'Signing...' : 'Sign'"
           type="success"
-          icon="check"
+          [icon]="signing ? '' : 'check'"
           [disabled]="signing"
           (onClick)="acknowledgePolicy()">
-          <dx-load-indicator *ngIf="signing" [visible]="true"></dx-load-indicator>
         </dx-button>
       </div>
     </div>
