@@ -6,7 +6,8 @@ services:
       context: ./backend
     container_name: leavemng-backend
     env_file:
-      - ./backend/.env.prod
+      # Development environment
+      - ./backend/.env.dev
       # Production environment (commented out for dev)
       # - ./backend/.env.prod
     expose:
