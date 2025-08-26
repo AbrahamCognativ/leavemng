@@ -325,11 +325,11 @@ export class PoliciesComponent implements OnInit {
   // File uploader configuration
   fileUploaderOptions = {
     multiple: false,
-    accept: '.pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png',
+    accept: '.pdf',
     uploadMode: 'useButtons' as any,
     showFileList: true,
-    labelText: 'Drop a file here or click to browse...',
-    selectButtonText: 'Select File',
+    labelText: 'Drop a PDF file here or click to browse...',
+    selectButtonText: 'Select PDF File',
     uploadButtonText: 'Upload'
   };
 }
