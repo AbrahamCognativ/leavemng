@@ -2382,6 +2382,7 @@
   border-radius: 4px;
   background-color: #0f6cbd;
   color: #fff;
+  margin: 2px;
 }
 .dx-button.dx-button-default .dx-icon {
   color: #fff;
@@ -2432,6 +2433,7 @@
   border-radius: 4px;
   background-color: #d13438;
   color: #fff;
+  margin: 2px;
 }
 .dx-button.dx-button-danger .dx-icon {
   color: #fff;

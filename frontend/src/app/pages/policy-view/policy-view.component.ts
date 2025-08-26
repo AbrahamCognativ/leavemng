@@ -206,10 +206,9 @@ export class PolicyViewComponent implements OnInit, OnDestroy {
     
     // Create a blob URL for the PDF to handle authentication
     try {
-      const response = await fetch(`${this.policyService['API_URL']}/policies/${this.policyId}/download?inline=true`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('user_token')}`
-        }
+      const token = localStorage.getItem('user_token');
+      const response = await fetch(`${this.policyService['API_URL']}/policies/${this.policyId}/download?inline=true&token=${encodeURIComponent(token || '')}`, {
+        // No Authorization header needed since we're using token parameter
       });
       
       if (!response.ok) {
@@ -230,10 +229,9 @@ export class PolicyViewComponent implements OnInit, OnDestroy {
     
     this.contentLoading = true;
     try {
-      const response = await fetch(`${this.policyService['API_URL']}/policies/${this.policyId}/content`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('user_token')}`
-        }
+      const token = localStorage.getItem('user_token');
+      const response = await fetch(`${this.policyService['API_URL']}/policies/${this.policyId}/content?token=${encodeURIComponent(token || '')}`, {
+        // No Authorization header needed since we're using token parameter
       });
       
       if (!response.ok) {

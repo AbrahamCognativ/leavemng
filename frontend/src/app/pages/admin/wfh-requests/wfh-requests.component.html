@@ -4,128 +4,58 @@
     <p class="subtitle">Manage and approve work from home requests</p>
   </div>
 
+  <!-- Status Filter Buttons -->
+  <div class="filter-section">
+    <div class="filter-buttons">
+      <dx-button
+        [text]="'All (' + getTotalCount() + ')'"
+        [type]="selectedFilter === 'all' ? 'default' : 'normal'"
+        stylingMode="contained"
+        (onClick)="setFilter('all')">
+      </dx-button>
+      <dx-button
+        [text]="'Pending (' + getStatusCount('pending') + ')'"
+        [type]="selectedFilter === 'pending' ? 'default' : 'normal'"
+        stylingMode="contained"
+        [elementAttr]="{ class: 'filter-pending' }"
+        (onClick)="setFilter('pending')">
+      </dx-button>
+      <dx-button
+        [text]="'Approved (' + getStatusCount('approved') + ')'"
+        [type]="selectedFilter === 'approved' ? 'default' : 'normal'"
+        stylingMode="contained"
+        [elementAttr]="{ class: 'filter-approved' }"
+        (onClick)="setFilter('approved')">
+      </dx-button>
+      <dx-button
+        [text]="'Rejected (' + getStatusCount('rejected') + ')'"
+        [type]="selectedFilter === 'rejected' ? 'default' : 'normal'"
+        stylingMode="contained"
+        [elementAttr]="{ class: 'filter-rejected' }"
+        (onClick)="setFilter('rejected')">
+      </dx-button>
+    </div>
+  </div>
+
   <div class="content-section">
     <dx-data-grid
-      [dataSource]="wfhRequests"
+      [dataSource]="filteredWfhRequests"
       [showBorders]="true"
-      [rowAlternationEnabled]="true"
       [columnAutoWidth]="true"
-      [allowColumnReordering]="true"
-      [allowColumnResizing]="true"
-      [showColumnLines]="true"
-      [showRowLines]="true"
-      [hoverStateEnabled]="true"
-      [loadPanel]="{ enabled: true, text: 'Loading WFH requests...' }"
-      [paging]="{ pageSize: 20 }"
-      [pager]="{ 
-        showPageSizeSelector: true, 
-        allowedPageSizes: [10, 20, 50, 100],
-        showInfo: true,
-        showNavigationButtons: true
-      }"
-      [searchPanel]="{ visible: true, placeholder: 'Search WFH requests...' }"
-      [headerFilter]="{ visible: true }"
-      [filterRow]="{ visible: true }"
-      [columnChooser]="{ enabled: true }"
-      [export]="{ enabled: true }">
+      (onRowClick)="viewDetails($event)">
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20]"
+        [showInfo]="true">
+      </dxo-pager>
 
-      <!-- Employee Name Column -->
-      <dxi-column 
-        dataField="employee_name" 
-        caption="Employee"
-        [width]="180"
-        [allowSorting]="true"
-        [allowFiltering]="true">
-      </dxi-column>
-
-      <!-- Employee Email Column -->
-      <dxi-column 
-        dataField="employee_email" 
-        caption="Email"
-        [width]="200"
-        [allowSorting]="true"
-        [allowFiltering]="true">
-      </dxi-column>
-
-      <!-- Start Date Column -->
-      <dxi-column 
-        dataField="start_date" 
-        caption="Start Date"
-        dataType="date"
-        [width]="120"
-        [allowSorting]="true"
-        [allowFiltering]="true"
-        format="dd/MM/yyyy">
-      </dxi-column>
-
-      <!-- End Date Column -->
-      <dxi-column 
-        dataField="end_date" 
-        caption="End Date"
-        dataType="date"
-        [width]="120"
-        [allowSorting]="true"
-        [allowFiltering]="true"
-        format="dd/MM/yyyy">
-      </dxi-column>
-
-      <!-- Working Days Column -->
-      <dxi-column 
-        caption="Working Days"
-        [width]="100"
-        [allowSorting]="false"
-        [allowFiltering]="false"
-        cellTemplate="workingDaysTemplate">
-      </dxi-column>
-
-      <!-- Status Column -->
-      <dxi-column 
-        dataField="status" 
-        caption="Status"
-        [width]="120"
-        [allowSorting]="true"
-        [allowFiltering]="true"
-        cellTemplate="statusTemplate">
-      </dxi-column>
-
-      <!-- Applied Date Column -->
-      <dxi-column 
-        dataField="applied_at" 
-        caption="Applied"
-        dataType="datetime"
-        [width]="140"
-        [allowSorting]="true"
-        [allowFiltering]="true"
-        format="dd/MM/yyyy HH:mm">
-      </dxi-column>
-
-      <!-- Reason Column -->
-      <dxi-column
-        dataField="reason"
-        caption="Reason"
-        [width]="200"
-        [allowSorting]="false"
-        [allowFiltering]="true"
-        cellTemplate="reasonTemplate">
-      </dxi-column>
-
-      <!-- Approved By Column -->
-      <dxi-column
-        dataField="approver_name"
-        caption="Approved By"
-        [width]="150"
-        [allowSorting]="true"
-        [allowFiltering]="true">
-      </dxi-column>
-
-      <!-- Actions Column -->
-      <dxi-column 
-        caption="Actions"
-        [width]="120"
-        [allowSorting]="false"
-        [allowFiltering]="false"
-        cellTemplate="actionsTemplate">
-      </dxi-column>
+      <dxi-column dataField="employee_name" caption="Employee"></dxi-column>
+      <dxi-column dataField="start_date" caption="Start Date" dataType="date" format="dd/MM/yyyy"></dxi-column>
+      <dxi-column dataField="end_date" caption="End Date" dataType="date" format="dd/MM/yyyy"></dxi-column>
+      <dxi-column caption="Working Days" cellTemplate="workingDaysTemplate"></dxi-column>
+      <dxi-column dataField="status" caption="Status" cellTemplate="statusTemplate"></dxi-column>
+      <dxi-column caption="Actions" cellTemplate="actionsTemplate"></dxi-column>
 
       <!-- Working Days Template -->
       <div *dxTemplate="let data of 'workingDaysTemplate'">

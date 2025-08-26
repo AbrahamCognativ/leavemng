@@ -4,11 +4,11 @@
   margin: 0 auto;
 
   .page-header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 30px;
     
     h2 {
-      color: #2c5aa0;
+      color: #333;
       font-size: 28px;
       font-weight: 600;
       margin-bottom: 8px;
@@ -27,6 +27,86 @@
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border: 1px solid #e9ecef;
+  }
+}
+
+// Filter section styling
+.filter-section {
+  margin-bottom: 20px;
+  
+  .filter-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    
+    .dx-button {
+      min-width: 100px;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      
+      &.dx-button-default {
+        background-color: #2c5aa0;
+        border-color: #2c5aa0;
+        color: white;
+        
+        &:hover {
+          background-color: #1e3d6f;
+          border-color: #1e3d6f;
+        }
+      }
+      
+      &.dx-button-normal {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+        color: #6c757d;
+        
+        &:hover {
+          background-color: #e9ecef;
+          border-color: #adb5bd;
+          color: #495057;
+        }
+      }
+      
+      &.filter-pending {
+        &.dx-button-default {
+          background-color: #fff3cd;
+          border-color: #ffeaa7;
+          color: #856404;
+          
+          &:hover {
+            background-color: #ffeaa7;
+            border-color: #fdd835;
+          }
+        }
+      }
+      
+      &.filter-approved {
+        &.dx-button-default {
+          background-color: #d4edda;
+          border-color: #c3e6cb;
+          color: #155724;
+          
+          &:hover {
+            background-color: #c3e6cb;
+            border-color: #a3d9a4;
+          }
+        }
+      }
+      
+      &.filter-rejected {
+        &.dx-button-default {
+          background-color: #f8d7da;
+          border-color: #f5c6cb;
+          color: #721c24;
+          
+          &:hover {
+            background-color: #f5c6cb;
+            border-color: #f1b0b7;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -138,16 +218,18 @@
     
     .popup-actions {
       display: flex;
-      gap: 12px;
+      gap: 20px;
       justify-content: flex-end;
-      margin-top: 24px;
-      padding-top: 20px;
+      margin-top: 30px;
+      padding-top: 24px;
       border-top: 1px solid #e9ecef;
       
       .dx-button {
-        min-width: 100px;
+        min-width: 120px;
+        height: 40px;
         border-radius: 6px;
         font-weight: 500;
+        font-size: 14px;
         
         &.dx-button-default {
           background-color: #28a745;
@@ -241,6 +323,17 @@
       
       .subtitle {
         font-size: 14px;
+      }
+    }
+    
+    .filter-section {
+      .filter-buttons {
+        justify-content: center;
+        
+        .dx-button {
+          min-width: 80px;
+          font-size: 12px;
+        }
       }
     }
     

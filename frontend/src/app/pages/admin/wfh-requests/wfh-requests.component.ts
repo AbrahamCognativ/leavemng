@@ -5,7 +5,7 @@ import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxToastModule } from 'devextreme-angular/ui/toast';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxFormModule } from 'devextreme-angular/ui/form';
-import { DxiItemModule, DxoLabelModule, DxiColumnModule } from 'devextreme-angular/ui/nested';
+import { DxiItemModule, DxoLabelModule, DxiColumnModule, DxoPagingModule, DxoPagerModule } from 'devextreme-angular/ui/nested';
 import { WFHService } from '../../../shared/services/wfh.service';
 import { AuthService } from '../../../shared/services/auth.service';
 
@@ -23,11 +23,15 @@ import { AuthService } from '../../../shared/services/auth.service';
     DxFormModule,
     DxiItemModule,
     DxoLabelModule,
-    DxiColumnModule
+    DxiColumnModule,
+    DxoPagingModule,
+    DxoPagerModule
   ]
 })
 export class WFHRequestsComponent implements OnInit {
   wfhRequests: any[] = [];
+  filteredWfhRequests: any[] = [];
+  selectedFilter: string = 'all';
   loading = false;
   toastVisible = false;
   toastMessage = '';
@@ -71,11 +75,37 @@ export class WFHRequestsComponent implements OnInit {
     this.loading = true;
     try {
       this.wfhRequests = await this.wfhService.getWFHRequests();
+      this.applyFilter();
     } catch (error) {
       this.showToast('Error loading WFH requests', 'error');
     } finally {
       this.loading = false;
     }
+  }
+
+  setFilter(filter: string): void {
+    this.selectedFilter = filter;
+    this.applyFilter();
+  }
+
+  applyFilter(): void {
+    if (this.selectedFilter === 'all') {
+      this.filteredWfhRequests = [...this.wfhRequests];
+    } else {
+      this.filteredWfhRequests = this.wfhRequests.filter(request =>
+        request.status?.toLowerCase() === this.selectedFilter.toLowerCase()
+      );
+    }
+  }
+
+  getTotalCount(): number {
+    return this.wfhRequests.length;
+  }
+
+  getStatusCount(status: string): number {
+    return this.wfhRequests.filter(request =>
+      request.status?.toLowerCase() === status.toLowerCase()
+    ).length;
   }
 
   showToast(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {
@@ -163,7 +193,7 @@ export class WFHRequestsComponent implements OnInit {
     try {
       await this.wfhService.approveWFHRequest(request.id);
       this.showToast('WFH request approved successfully', 'success');
-      await this.loadWFHRequests();
+      await this.loadWFHRequests(); // This will also reapply the filter
     } catch (error: any) {
       let errorMessage = 'Error approving WFH request';
       if (error?.error?.detail) {
@@ -182,7 +212,7 @@ export class WFHRequestsComponent implements OnInit {
     try {
       await this.wfhService.rejectWFHRequest(request.id);
       this.showToast('WFH request rejected successfully', 'success');
-      await this.loadWFHRequests();
+      await this.loadWFHRequests(); // This will also reapply the filter
     } catch (error: any) {
       let errorMessage = 'Error rejecting WFH request';
       if (error?.error?.detail) {
@@ -192,7 +222,8 @@ export class WFHRequestsComponent implements OnInit {
     }
   }
 
-  viewDetails(request: any): void {
+  viewDetails(event: any): void {
+    const request = event.data;
     this.selectedRequest = {
       ...request,
       working_days: this.calculateDays(request.start_date, request.end_date)

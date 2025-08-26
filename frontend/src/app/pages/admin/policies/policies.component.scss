@@ -1,65 +1,52 @@
 .policies-container {
   padding: 20px;
-  background-color: #f8f9fa;
-  min-height: 100vh;
-}
+  max-width: 1400px;
+  margin: 0 auto;
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 30px;
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-  h2 {
-    margin: 0;
-    color: #333;
-    font-size: 28px;
-    font-weight: 600;
-  }
-
-  .subtitle {
-    margin: 5px 0 0 0;
-    color: #666;
-    font-size: 14px;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 10px;
-  }
-}
-
-.content-section {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-// Data grid customizations
-:host ::ng-deep {
-  .dx-datagrid {
-    border: none;
+  .page-header {
+    text-align: left;
+    margin-bottom: 30px;
     
-    .dx-datagrid-headers {
-      background-color: #f8f9fa;
-      border-bottom: 2px solid #dee2e6;
-      
-      .dx-header-row {
-        background-color: #f8f9fa;
-        
-        td {
-          border-right: 1px solid #dee2e6;
-          font-weight: 600;
-          color: #495057;
-        }
-      }
+    h2 {
+      color: #333;
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
     }
     
+    .subtitle {
+      color: #6c757d;
+      font-size: 16px;
+      margin: 0 0 20px 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+  }
+
+  .content-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+  }
+}
+
+// Data Grid Styling
+.dx-datagrid {
+  border-radius: 8px;
+  overflow: hidden;
+  
+  .dx-datagrid-headers {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .dx-datagrid-rowsview {
     .dx-row {
       &:hover {
         background-color: #f8f9fa;

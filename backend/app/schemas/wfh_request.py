@@ -46,5 +46,7 @@ class WFHRequestRead(WFHRequestBase):
     comments: Optional[str] = None
     approver_name: Optional[str] = None  # Add approver name field
     working_days: Optional[int] = None  # Add working days field
+    employee_name: Optional[str] = None  # Add employee name field
+    employee_email: Optional[str] = None  # Add employee email field
 
     model_config = {"from_attributes": True}

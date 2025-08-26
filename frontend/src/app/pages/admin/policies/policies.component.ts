@@ -9,7 +9,7 @@ import { DxFileUploaderModule } from 'devextreme-angular/ui/file-uploader';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
-import { DxiItemModule, DxoLabelModule, DxiColumnModule } from 'devextreme-angular/ui/nested';
+import { DxiItemModule, DxoLabelModule, DxiColumnModule, DxoPagingModule, DxoPagerModule } from 'devextreme-angular/ui/nested';
 import { PolicyService, Policy, PolicyCreate, PolicyUpdate } from '../../../shared/services/policy.service';
 import { AuthService } from '../../../shared/services/auth.service';
 import { OrgUnitService } from '../../../shared/services/org-unit.service';
@@ -34,6 +34,8 @@ import { DocumentViewerComponent } from '../../../shared/components/document-vie
     DxiItemModule,
     DxoLabelModule,
     DxiColumnModule,
+    DxoPagingModule,
+    DxoPagerModule,
     DocumentViewerComponent
   ]
 })

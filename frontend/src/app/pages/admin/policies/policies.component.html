@@ -17,93 +17,19 @@
     <dx-data-grid
       [dataSource]="policies"
       [showBorders]="true"
-      [rowAlternationEnabled]="true"
-      [columnAutoWidth]="true"
-      [allowColumnReordering]="true"
-      [allowColumnResizing]="true"
-      [showColumnLines]="true"
-      [showRowLines]="true"
-      [hoverStateEnabled]="true"
-      [loadPanel]="{ enabled: true, text: 'Loading policies...' }"
-      [paging]="{ pageSize: 20 }"
-      [pager]="{ 
-        showPageSizeSelector: true, 
-        allowedPageSizes: [10, 20, 50, 100],
-        showInfo: true,
-        showNavigationButtons: true
-      }"
-      [searchPanel]="{ visible: true, placeholder: 'Search policies...' }"
-      [headerFilter]="{ visible: true }"
-      [filterRow]="{ visible: true }"
-      [columnChooser]="{ enabled: true }"
-      [export]="{ enabled: true }">
-
-      <!-- Policy Name Column -->
-      <dxi-column 
-        dataField="name" 
-        caption="Policy Name"
-        [width]="250"
-        [allowSorting]="true"
-        [allowFiltering]="true">
-      </dxi-column>
-
-      <!-- Description Column -->
-      <dxi-column 
-        dataField="description" 
-        caption="Description"
-        [width]="300"
-        [allowSorting]="false"
-        [allowFiltering]="true"
-        cellTemplate="descriptionTemplate">
-      </dxi-column>
-
-      <!-- File Info Column -->
-      <dxi-column 
-        caption="File"
-        [width]="200"
-        [allowSorting]="false"
-        [allowFiltering]="false"
-        cellTemplate="fileTemplate">
-      </dxi-column>
-
-      <!-- Organization Column -->
-      <dxi-column 
-        dataField="org_unit_name" 
-        caption="Organization"
-        [width]="180"
-        [allowSorting]="true"
-        [allowFiltering]="true"
-        cellTemplate="orgTemplate">
-      </dxi-column>
-
-      <!-- Created By Column -->
-      <dxi-column 
-        dataField="creator_name" 
-        caption="Created By"
-        [width]="150"
-        [allowSorting]="true"
-        [allowFiltering]="true">
-      </dxi-column>
-
-      <!-- Created Date Column -->
-      <dxi-column 
-        dataField="created_at" 
-        caption="Created"
-        dataType="datetime"
-        [width]="160"
-        [allowSorting]="true"
-        [allowFiltering]="true"
-        format="dd/MM/yyyy HH:mm">
-      </dxi-column>
-
-      <!-- Actions Column -->
-      <dxi-column 
-        caption="Actions"
-        [width]="150"
-        [allowSorting]="false"
-        [allowFiltering]="false"
-        cellTemplate="actionsTemplate">
-      </dxi-column>
+      [columnAutoWidth]="true">
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20]"
+        [showInfo]="true">
+      </dxo-pager>
+      
+      <dxi-column dataField="name" caption="Policy Name"></dxi-column>
+      <dxi-column dataField="description" caption="Description" cellTemplate="descriptionTemplate"></dxi-column>
+      <dxi-column dataField="file_name" caption="File" cellTemplate="fileTemplate"></dxi-column>
+      <dxi-column dataField="created_at" caption="Created" dataType="date" format="dd/MM/yyyy"></dxi-column>
+      <dxi-column caption="Actions" cellTemplate="actionsTemplate"></dxi-column>
 
       <!-- Description Template -->
       <div *dxTemplate="let data of 'descriptionTemplate'">

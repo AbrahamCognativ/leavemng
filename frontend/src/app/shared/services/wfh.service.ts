@@ -29,28 +29,16 @@ export class WFHService {
 
   constructor(private http: HttpClient) {}
 
-  // Get all WFH requests with enriched user data
+  // Get all WFH requests
   async getWFHRequests(): Promise<any[]> {
     try {
-      // Get all WFH requests
       const wfhRequests = await this.http.get<any[]>(`${this.apiUrl}/wfh`)
         .pipe(
           retry(1),
           catchError(this.handleError)
         ).toPromise() as any[];
 
-      if (!wfhRequests) return [];
-
-      // Only refresh user cache if it's empty or expired
-      const now = Date.now();
-      if (this.userCache.size === 0 || (now - this.lastFetchTime) > this.cacheExpiry) {
-        await this.refreshUserCache(wfhRequests);
-        this.lastFetchTime = now;
-      }
-
-      // Enrich WFH requests with cached user details
-      return this.enrichWFHRequests(wfhRequests);
-
+      return wfhRequests || [];
     } catch (error) {
       return [];
     }
@@ -70,25 +58,10 @@ export class WFHService {
       }
       
       // Filter for approved WFH requests only
-      const approvedWFH = wfhRequests.filter(request => {
+      return wfhRequests.filter(request => {
         const isApproved = request.status && request.status.toLowerCase() === 'approved';
         return isApproved;
       });
-      
-      if (!approvedWFH.length) {
-        return [];
-      }
-
-      // Only refresh user cache if it's empty or expired
-      const now = Date.now();
-      if (this.userCache.size === 0 || (now - this.lastFetchTime) > this.cacheExpiry) {
-        await this.refreshUserCache(approvedWFH);
-        this.lastFetchTime = now;
-      }
-
-      // Enrich WFH requests with cached user details
-      const enrichedWFH = this.enrichWFHRequests(approvedWFH);
-      return enrichedWFH;
 
     } catch (error) {
       return [];

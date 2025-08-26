@@ -333,7 +333,7 @@ def download_policy_file(
     policy_id: uuid.UUID,
     inline: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: UserInToken = Depends(get_current_user_from_token_param)
 ):
     """Download policy file - accessible to all authenticated users"""
     
@@ -392,7 +392,7 @@ def download_policy_file(
 def preview_policy_file(
     policy_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: UserInToken = Depends(get_current_user_from_token_param)
 ):
     """Generate and serve a PDF preview of the policy file - supports DOCX to PDF conversion"""
     
@@ -515,7 +515,7 @@ def preview_policy_file(
 def get_policy_content(
     policy_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: UserInToken = Depends(get_current_user_from_token_param)
 ):
     """Extract and return text content from policy file"""
     

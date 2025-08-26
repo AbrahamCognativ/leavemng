@@ -13,8 +13,17 @@ router = APIRouter()
 
 
 def build_wfh_response(wfh_request: WFHRequest, db: Session) -> dict:
-    """Build WFH response with approver name and working days populated"""
+    """Build WFH response with approver name, employee info, and working days populated"""
     response_data = WFHRequestRead.model_validate(wfh_request).model_dump()
+    
+    # Add employee information
+    employee = db.query(User).filter(User.id == wfh_request.user_id).first()
+    if employee:
+        response_data['employee_name'] = employee.name
+        response_data['employee_email'] = employee.email
+    else:
+        response_data['employee_name'] = 'Unknown User'
+        response_data['employee_email'] = 'unknown@example.com'
     
     # Add approver name if decided_by is set
     if wfh_request.decided_by:
