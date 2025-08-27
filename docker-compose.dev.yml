@@ -37,7 +37,7 @@ services:
     image: nginx:alpine
     container_name: leavemng-proxy
     ports:
-      - "80:80"
+      - "8080:80"
       # SSL port commented out for development (no SSL cert)
       # - "443:443"
     volumes:
