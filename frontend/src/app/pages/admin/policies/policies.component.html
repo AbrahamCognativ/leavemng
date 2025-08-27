@@ -14,7 +14,15 @@
   </div>
 
   <div class="content-section">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-container">
+      <dx-load-indicator [visible]="true"></dx-load-indicator>
+      <p>Loading policies...</p>
+    </div>
+
+    <!-- Data Grid -->
     <dx-data-grid
+      *ngIf="!loading"
       [dataSource]="policies"
       [showBorders]="true"
       [columnAutoWidth]="true">
@@ -76,6 +84,15 @@
       </div>
 
     </dx-data-grid>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && policies.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <i class="dx-icon-doc"></i>
+      </div>
+      <h3>No Policies Found</h3>
+      <p>There are currently no policies available.</p>
+    </div>
   </div>
 </div>
 
@@ -151,8 +168,9 @@
           (onClick)="closeAddEditPopup()">
         </dx-button>
         <dx-button
-          [text]="isEditMode ? 'Update Policy' : 'Create Policy'"
+          [text]="saving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Policy' : 'Create Policy')"
           type="default"
+          [disabled]="saving"
           (onClick)="savePolicy()">
         </dx-button>
       </div>

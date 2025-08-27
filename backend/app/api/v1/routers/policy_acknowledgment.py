@@ -388,6 +388,9 @@ def get_policy_acknowledgments(
 def send_policy_notification_email(to_email: str, to_name: str, policy: Policy, deadline: datetime):
     """Send policy notification email to user"""
     
+    from app.settings import get_settings
+    settings = get_settings()
+    
     subject = f"New Policy Requires Your Acknowledgment: {policy.name}"
     
     # Format deadline
@@ -433,7 +436,7 @@ Leave Management System Team
           Please log into the Leave Management System to read and acknowledge this policy within 5 days.
         </p>
         
-        <a href='#' style='display: inline-block; margin: 24px 0 8px 0; padding: 12px 32px; background: #2d6cdf; color: #fff; border-radius: 4px; text-decoration: none; font-size: 16px; font-weight: bold;'>
+        <a href='{settings.SITE_URL}/#/policy/{policy.id}' style='display: inline-block; margin: 24px 0 8px 0; padding: 12px 32px; background: #2d6cdf; color: #fff; border-radius: 4px; text-decoration: none; font-size: 16px; font-weight: bold;'>
           View Policy
         </a>
         

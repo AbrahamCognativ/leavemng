@@ -99,6 +99,15 @@ test-output/
 # Ignore uploads folder and its contents (images, documents, etc.)
 app/api/uploads/
 
+# Ignore specific policy files
+files/
+files/
+files/
+
+# Ignore profile images and uploads folders
+files/profile_images/
+backend/app/api/uploads/
+
 # Common Python ignores
 __pycache__/
 *.py[cod]

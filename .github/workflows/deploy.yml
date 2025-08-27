@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [ Development_Main ]
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -32,7 +32,7 @@ jobs:
           sudo docker rmi leavemng-backend leavemng-frontend || true
           
           # Start containers using Docker Compose
-          sudo docker compose up -d --build --force-recreate
+          sudo docker compose -f docker-compose.yml up -d --build --force-recreate
           
           # Wait for containers to become healthy
           echo "Waiting for containers to become healthy..."

@@ -9,6 +9,7 @@ import { DxFileUploaderModule } from 'devextreme-angular/ui/file-uploader';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
+import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import { DxiItemModule, DxoLabelModule, DxiColumnModule, DxoPagingModule, DxoPagerModule } from 'devextreme-angular/ui/nested';
 import { PolicyService, Policy, PolicyCreate, PolicyUpdate } from '../../../shared/services/policy.service';
 import { AuthService } from '../../../shared/services/auth.service';
@@ -31,6 +32,7 @@ import { DocumentViewerComponent } from '../../../shared/components/document-vie
     DxSelectBoxModule,
     DxTextAreaModule,
     DxTextBoxModule,
+    DxLoadIndicatorModule,
     DxiItemModule,
     DxoLabelModule,
     DxiColumnModule,
@@ -43,6 +45,7 @@ export class PoliciesComponent implements OnInit {
   policies: Policy[] = [];
   orgUnits: any[] = [];
   loading = false;
+  saving = false;
   toastVisible = false;
   toastMessage = '';
   toastType: 'success' | 'error' | 'info' | 'warning' = 'info';
@@ -206,6 +209,7 @@ export class PoliciesComponent implements OnInit {
       return;
     }
 
+    this.saving = true;
     try {
       if (this.isEditMode && this.selectedPolicy) {
         // Update existing policy
@@ -237,6 +241,8 @@ export class PoliciesComponent implements OnInit {
         errorMessage = error.error.detail;
       }
       this.showToast(errorMessage, 'error');
+    } finally {
+      this.saving = false;
     }
   }
 
