@@ -70,22 +70,21 @@ def create_leave_request(
             status_code=400,
             detail="End date must be the same as or after start date.")
 
-    # Validate that annual leave is applied at least 3 days in advance
-    taken = {}
+    # Calculate total days for all leave types (weekdays only)
+    total_days = 0
+    for n in range(int((req.end_date - req.start_date).days) + 1):
+        day = req.start_date + timedelta(n)
+        if day.weekday() < 5:
+            total_days += 1
+    req.total_days = total_days
 
+    # Validate that annual leave is applied at least 3 days in advance
     if leave_type.code.value == 'annual':
         start_date = req.start_date
         if (start_date - date.today()) < timedelta(days=3):
             raise HTTPException(
                 status_code=400,
                 detail="Annual leave must be applied at least 3 days in advance")
-
-        total_days = 0
-        for n in range(int((req.end_date - req.start_date).days)):
-            day = req.start_date + timedelta(n)
-            if day.weekday() < 5:
-                total_days += 1
-        req.total_days = total_days
 
     elif leave_type.code.value == 'maternity':
         if current_user.gender != 'female':
