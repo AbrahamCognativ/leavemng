@@ -71,14 +71,14 @@ export class LeaveScheduleComponent {
 
             return {
               ...d,
-              startDate: new Date(d['start_date']),
-              endDate: new Date(d['end_date']),
-              formattedStartDate: new Date(d['start_date']).toLocaleDateString('en-GB', {
+              startDate: this.parseDateAsLocal(d['start_date']),
+              endDate: this.parseDateAsLocal(d['end_date']),
+              formattedStartDate: this.parseDateAsLocal(d['start_date']).toLocaleDateString('en-GB', {
                 year: 'numeric',
                 month: 'short',
                 day: '2-digit',
               }),
-              formattedEndDate: new Date(d['end_date']).toLocaleDateString('en-GB', {
+              formattedEndDate: this.parseDateAsLocal(d['end_date']).toLocaleDateString('en-GB', {
                 year: 'numeric',
                 month: 'short',
                 day: '2-digit',
@@ -88,7 +88,7 @@ export class LeaveScheduleComponent {
               employeeID: d['employee_id'],
               leaveType: d['leave_type'],
               description: d['comments'],
-              allDay: d['all_day'],
+              allDay: true, // Force all-day events for leave requests
               displayMessage: `${user?.name || d.employee_name || 'Unknown'}'s ${d['leave_type'] || leaveType.find((lt: any) => lt.id === leaveTypeId)?.code || 'Unknown'} leave`,
               color,
               requestType: 'leave'
@@ -117,14 +117,14 @@ export class LeaveScheduleComponent {
 
             return {
               ...d,
-              startDate: new Date(d['start_date']),
-              endDate: new Date(d['end_date']),
-              formattedStartDate: new Date(d['start_date']).toLocaleDateString('en-GB', {
+              startDate: this.parseDateAsLocal(d['start_date']),
+              endDate: this.parseDateAsLocal(d['end_date']),
+              formattedStartDate: this.parseDateAsLocal(d['start_date']).toLocaleDateString('en-GB', {
                 year: 'numeric',
                 month: 'short',
                 day: '2-digit',
               }),
-              formattedEndDate: new Date(d['end_date']).toLocaleDateString('en-GB', {
+              formattedEndDate: this.parseDateAsLocal(d['end_date']).toLocaleDateString('en-GB', {
                 year: 'numeric',
                 month: 'short',
                 day: '2-digit',
@@ -148,6 +148,21 @@ export class LeaveScheduleComponent {
         }
       },
     });
+  }
+
+  /**
+   * Parse date string and ensure it's treated as a local date, not UTC
+   * This prevents timezone conversion issues when the backend sends date-only strings
+   */
+  private parseDateAsLocal(dateString: string): Date {
+    // If the date string is in YYYY-MM-DD format, create a local date
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Create date with noon time to avoid timezone issues
+      return new Date(year, month - 1, day, 12, 0, 0, 0);
+    }
+    // For other formats, use the default Date constructor
+    return new Date(dateString);
   }
 
   getColorForUser(userId: string, isWFH: boolean = false): string {
