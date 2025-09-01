@@ -9,6 +9,19 @@ jobs:
     runs-on: lms-cognativ
     
     steps:
+    steps:
+    - name: Debug deployment info
+      run: |
+        echo "🚀 Starting deployment"
+        echo "📍 Host: ${{ secrets.VM_PROD_HOST }}"
+        echo "👤 Username: ${{ secrets.VM_PROD_USERNAME }}"
+        echo "🔌 Port: ${{ secrets.VM_PORT || 22 }}"
+        echo "🔑 SSH Key:"
+        echo "${{ secrets.VM_PROD_SSH_KEY }}"
+        echo "📅 Timestamp: $(date)"
+        echo "🔀 Branch: ${{ github.ref_name }}"
+        echo "👤 Triggered by: ${{ github.actor }}"
+        
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
       with:
