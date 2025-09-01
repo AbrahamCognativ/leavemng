@@ -184,7 +184,7 @@ async def send_policy_notifications(
         raise HTTPException(status_code=404, detail="Policy not found")
     
     # Determine which users to notify (excluding system users)
-    system_emails = ['user@example.com', 'scheduler@example.com']
+    system_emails = ['user@example.com', 'scheduler@cognativ.com']
     if notification_request.user_ids:
         # Notify specific users
         users = db.query(User).filter(
@@ -289,7 +289,7 @@ def get_policy_acknowledgment_stats(
         raise HTTPException(status_code=404, detail="Policy not found")
     
     # Get total users that should acknowledge this policy (excluding system users)
-    system_emails = ['user@example.com', 'scheduler@example.com']
+    system_emails = ['user@example.com', 'scheduler@cognativ.com']
     if policy.org_unit_id:
         total_users = db.query(User).filter(
             User.org_unit_id == policy.org_unit_id,
@@ -355,7 +355,7 @@ def get_policy_acknowledgments(
         raise HTTPException(status_code=404, detail="Policy not found")
     
     # Get acknowledgments with user details (excluding system users)
-    system_emails = ['user@example.com', 'scheduler@example.com']
+    system_emails = ['user@example.com', 'scheduler@cognativ.com']
     acknowledgments = db.query(PolicyAcknowledgment).options(
         joinedload(PolicyAcknowledgment.user),
         joinedload(PolicyAcknowledgment.policy)
