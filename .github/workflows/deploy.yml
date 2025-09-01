@@ -16,6 +16,7 @@ jobs:
         username: ${{ secrets.VM_PROD_USERNAME }}
         key: ${{ secrets.VM_PROD_SSH_KEY }}
         port: ${{ secrets.VM_PORT || 22 }}
+        debug: true
         script: |
           # Navigate to project directory
           cd /var/www/leavemng
