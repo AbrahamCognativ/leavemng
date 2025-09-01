@@ -134,7 +134,7 @@ async def create_policy(
         from app.models.policy_acknowledgment import PolicyAcknowledgment
         
         # Get all users that should be notified (excluding system users)
-        system_emails = ['user@example.com', 'scheduler@example.com']
+        system_emails = ['user@example.com', 'scheduler@cognativ.com']
         if org_unit_uuid:
             users = db.query(User).filter(
                 User.org_unit_id == org_unit_uuid,
