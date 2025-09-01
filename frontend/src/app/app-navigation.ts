@@ -81,6 +81,12 @@ export const getNavigationItems = (authService: AuthService) => [
           path: '/admin/policies',
         }
       ] : []),
+      ...(authService.isAdmin || authService.isHR || authService.isManager ? [
+        {
+          text: 'User Documents',
+          path: '/admin/user-documents',
+        }
+      ] : []),
       {
         text: 'Audit Logs',
         path: '/admin/audit-logs',
@@ -91,6 +97,11 @@ export const getNavigationItems = (authService: AuthService) => [
     text: 'Policies',
     path: '/policies',
     icon: 'doc'
+  },
+  {
+    text: 'Docs',
+    path: '/docs',
+    icon: 'folder'
   },
   {
     text: 'Profile',

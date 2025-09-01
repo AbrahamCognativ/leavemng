@@ -18,7 +18,8 @@ import { UserStateService } from './shared/services/user-state.service';
 import {DxiItemModule, DxiSeriesModule} from 'devextreme-angular/ui/nested';
 import {DashboardModule} from './pages/dashboard/dashboard.component';
 import {AuthInterceptor} from './shared/services/authinceptor.service';
-import { configureDevExtreme } from './shared/config/devextreme.config'
+import { configureDevExtreme } from './shared/config/devextreme.config';
+import { DocsComponent } from './pages/docs/docs.component';
 
 // Configure DevExtreme license
 configureDevExtreme();
@@ -51,7 +52,8 @@ configureDevExtreme();
     UnauthenticatedContentModule,
     AppRoutingModule,
     DxLoadIndicatorModule,
-    DxiItemModule
+    DxiItemModule,
+    DocsComponent
   ],
   providers: [
     {provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true},

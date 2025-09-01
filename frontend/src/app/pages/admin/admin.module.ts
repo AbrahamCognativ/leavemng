@@ -17,6 +17,7 @@ import { LeavesComponent } from './leaves/leaves.component';
 import { WFHRequestsComponent } from './wfh-requests/wfh-requests.component';
 import { PoliciesComponent } from './policies/policies.component';
 import { PolicyAcknowledmentsComponent } from './policy-acknowledgments/policy-acknowledgments.component';
+import { UserDocumentsComponent } from './user-documents/user-documents.component';
 import { AuthService } from '../../shared/services';
 import { Router, CanActivate } from '@angular/router';
 import { Injectable } from '@angular/core';
@@ -88,6 +89,11 @@ const routes: Routes = [
     canActivate: [AdminGuard]
   },
   {
+    path: 'user-documents',
+    component: UserDocumentsComponent,
+    canActivate: [AdminGuard]
+  },
+  {
     path: 'audit-logs',
     component: AuditLogsComponent,
     canActivate: [AdminGuard]
@@ -112,6 +118,7 @@ const routes: Routes = [
     WFHRequestsComponent,
     PoliciesComponent,
     PolicyAcknowledmentsComponent,
+    UserDocumentsComponent,
     AuditLogsComponent
   ],
   providers: [AdminGuard]

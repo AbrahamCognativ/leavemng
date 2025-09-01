@@ -1,0 +1,105 @@
+<div class="docs-container">
+  <div class="page-header">
+    <h2>My Documents</h2>
+    <p class="subtitle">View and download your personal documents</p>
+    <div class="header-actions">
+      <dx-button
+        *ngIf="canManageDocuments()"
+        text="Manage Documents"
+        type="default"
+        icon="preferences"
+        (onClick)="navigateToManageDocuments()">
+      </dx-button>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-container">
+      <dx-load-indicator [visible]="true"></dx-load-indicator>
+      <p>Loading documents...</p>
+    </div>
+
+    <!-- Data Grid -->
+    <dx-data-grid
+      *ngIf="!loading"
+      [dataSource]="filteredDocuments"
+      [showBorders]="true"
+      [columnAutoWidth]="true">
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20]"
+        [showInfo]="true">
+      </dxo-pager>
+      <dxo-search-panel [visible]="true" [width]="240" placeholder="Search documents..."></dxo-search-panel>
+      <dxo-header-filter [visible]="true"></dxo-header-filter>
+      <dxo-filter-row [visible]="true"></dxo-filter-row>
+      <dxo-export [enabled]="true" fileName="my-documents"></dxo-export>
+      
+      <dxi-column dataField="name" caption="Document Name"></dxi-column>
+      <dxi-column dataField="description" caption="Description" cellTemplate="descriptionTemplate"></dxi-column>
+      <dxi-column caption="File" cellTemplate="fileTemplate"></dxi-column>
+      <dxi-column dataField="created_at" caption="Uploaded" dataType="date" format="dd/MM/yyyy"></dxi-column>
+      <dxi-column dataField="creator_name" caption="Uploaded By"></dxi-column>
+      <dxi-column caption="Actions" cellTemplate="actionsTemplate"></dxi-column>
+
+      <!-- Description Template -->
+      <div *dxTemplate="let data of 'descriptionTemplate'">
+        <span class="description-text"
+              [title]="data.value || 'No description'">
+          {{ (data.value || 'No description') | slice:0:50 }}
+          <span *ngIf="data.value && data.value.length > 50">...</span>
+        </span>
+      </div>
+
+      <!-- File Template -->
+      <div *dxTemplate="let data of 'fileTemplate'">
+        <div class="file-info">
+          <div class="file-details">
+            <span class="file-type">{{ data.data.file_type?.toUpperCase() || 'PDF' }}</span>
+            <span class="file-size" *ngIf="data.data.file_size">{{ data.data.file_size }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Template -->
+      <div *dxTemplate="let data of 'actionsTemplate'">
+        <div class="actions-cell">
+          <dx-button
+            icon="eyeopen"
+            hint="View Document"
+            stylingMode="text"
+            (onClick)="viewDocument(data.data)">
+          </dx-button>
+          
+          <dx-button
+            icon="download"
+            hint="Download"
+            stylingMode="text"
+            (onClick)="downloadDocument(data.data)">
+          </dx-button>
+        </div>
+      </div>
+
+    </dx-data-grid>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && filteredDocuments.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <i class="dx-icon-doc"></i>
+      </div>
+      <h3>No Documents Found</h3>
+      <p>You don't have any documents yet. Documents uploaded by administrators will appear here.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Document Viewer -->
+<app-document-viewer
+  [visible]="documentViewerVisible"
+  [documentUrl]="currentDocumentUrl"
+  [documentName]="currentDocumentName"
+  [fileType]="currentDocumentType"
+  (onPopupHiding)="closeDocumentViewer()">
+</app-document-viewer>

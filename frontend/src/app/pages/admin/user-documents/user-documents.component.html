@@ -1,0 +1,272 @@
+<div class="user-documents-container">
+  <div class="page-header">
+    <h2>User Documents</h2>
+    <p class="subtitle">Manage documents for users</p>
+    <div class="header-actions">
+      <dx-button
+        text="Upload Document"
+        type="default"
+        icon="plus"
+        (onClick)="openUploadPopup()">
+      </dx-button>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-container">
+      <dx-load-indicator [visible]="true"></dx-load-indicator>
+      <p>Loading users...</p>
+    </div>
+
+    <!-- Users Grid -->
+    <dx-data-grid
+      *ngIf="!loading"
+      [dataSource]="users"
+      [showBorders]="true"
+      [columnAutoWidth]="true">
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20]"
+        [showInfo]="true">
+      </dxo-pager>
+      
+      <dxi-column caption="Name" cellTemplate="nameTemplate"></dxi-column>
+      <dxi-column dataField="email" caption="Email"></dxi-column>
+      <dxi-column caption="Role" cellTemplate="roleTemplate"></dxi-column>
+      <dxi-column caption="Documents" cellTemplate="documentsTemplate"></dxi-column>
+      <dxi-column caption="Actions" cellTemplate="actionsTemplate"></dxi-column>
+
+      <!-- Name Template -->
+      <div *dxTemplate="let data of 'nameTemplate'">
+        <span class="user-name">
+          {{ data.data.name || (data.data.first_name + ' ' + data.data.last_name) }}
+        </span>
+      </div>
+
+      <!-- Role Template -->
+      <div *dxTemplate="let data of 'roleTemplate'">
+        <span class="user-role">
+          {{ data.data.role_band || data.data.role_title || data.data.role || 'Employee' }}
+        </span>
+      </div>
+
+      <!-- Documents Count Template -->
+      <div *dxTemplate="let data of 'documentsTemplate'">
+        <span class="document-count">
+          {{ getUserDocumentCount(data.data.id) }} documents
+        </span>
+      </div>
+
+      <!-- Actions Template -->
+      <div *dxTemplate="let data of 'actionsTemplate'">
+        <div class="actions-cell">
+          <dx-button
+            icon="plus"
+            hint="Upload Document"
+            stylingMode="text"
+            (onClick)="openUploadPopupForUser(data.data)">
+          </dx-button>
+          
+          <dx-button
+            icon="folder"
+            hint="View Documents"
+            stylingMode="text"
+            (onClick)="viewUserDocuments(data.data)">
+          </dx-button>
+        </div>
+      </div>
+
+    </dx-data-grid>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && users.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <i class="dx-icon-user"></i>
+      </div>
+      <h3>No Users Found</h3>
+      <p>There are currently no users available.</p>
+    </div>
+  </div>
+</div>
+
+<!-- User Documents Popup -->
+<dx-popup
+  [visible]="userDocumentsPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="1000"
+  [height]="600"
+  [title]="selectedUser ? 'Documents for ' + selectedUser.first_name + ' ' + selectedUser.last_name : 'User Documents'"
+  (onHiding)="closeUserDocumentsPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="user-documents-content">
+      <!-- Loading State -->
+      <div *ngIf="loadingDocuments" class="loading-container">
+        <dx-load-indicator [visible]="true"></dx-load-indicator>
+        <p>Loading documents...</p>
+      </div>
+
+      <!-- Documents Grid -->
+      <dx-data-grid
+        *ngIf="!loadingDocuments"
+        [dataSource]="userDocuments"
+        [showBorders]="true"
+        [columnAutoWidth]="true">
+        <dxo-paging [pageSize]="10"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
+        <dxo-search-panel [visible]="true" [width]="240" placeholder="Search documents..."></dxo-search-panel>
+        <dxo-header-filter [visible]="true"></dxo-header-filter>
+        <dxo-filter-row [visible]="true"></dxo-filter-row>
+        <dxo-export [enabled]="true" fileName="user-documents"></dxo-export>
+        
+        <dxi-column dataField="name" caption="Document Title"></dxi-column>
+        <dxi-column dataField="description" caption="Description" cellTemplate="descriptionTemplate"></dxi-column>
+        <dxi-column caption="File" cellTemplate="fileTemplate"></dxi-column>
+        <dxi-column dataField="created_at" caption="Uploaded" dataType="date" format="dd/MM/yyyy HH:mm"></dxi-column>
+        <dxi-column dataField="creator_name" caption="Uploaded By"></dxi-column>
+        <dxi-column caption="Actions" cellTemplate="documentActionsTemplate"></dxi-column>
+
+        <!-- Description Template -->
+        <div *dxTemplate="let data of 'descriptionTemplate'">
+          <span class="description-text"
+                [title]="data.value || 'No description'">
+            {{ (data.value || 'No description') | slice:0:50 }}
+            <span *ngIf="data.value && data.value.length > 50">...</span>
+          </span>
+        </div>
+
+        <!-- File Template -->
+        <div *dxTemplate="let data of 'fileTemplate'">
+          <div class="file-info">
+            <div class="file-details">
+              <span class="file-type">{{ data.data.file_type?.toUpperCase() || 'PDF' }}</span>
+              <span class="file-size" *ngIf="data.data.file_size">{{ formatFileSize(data.data.file_size) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Actions Template -->
+        <div *dxTemplate="let data of 'documentActionsTemplate'">
+          <div class="actions-cell">
+            <dx-button
+              icon="eyeopen"
+              hint="View Document"
+              stylingMode="text"
+              (onClick)="viewDocument(data.data)">
+            </dx-button>
+            
+            <dx-button
+              icon="download"
+              hint="Download"
+              stylingMode="text"
+              (onClick)="downloadDocument(data.data)">
+            </dx-button>
+            
+            <dx-button
+              icon="trash"
+              hint="Delete"
+              stylingMode="text"
+              (onClick)="deleteDocument(data.data)">
+            </dx-button>
+          </div>
+        </div>
+
+      </dx-data-grid>
+
+      <!-- Empty State for Documents -->
+      <div *ngIf="!loadingDocuments && userDocuments.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="dx-icon-doc"></i>
+        </div>
+        <h3>No Documents Found</h3>
+        <p>This user has no documents uploaded yet.</p>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Upload Document Popup -->
+<dx-popup
+  [visible]="uploadPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="600"
+  [height]="500"
+  [title]="'Upload Document'"
+  (onHiding)="closeUploadPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="upload-form">
+      <dx-form [formData]="formData" [colCount]="1">
+        
+        <dxi-item dataField="user_id" editorType="dxSelectBox" [isRequired]="true"
+                  [editorOptions]="{
+                    dataSource: users,
+                    displayExpr: 'display_name',
+                    valueExpr: 'id',
+                    placeholder: 'Select user',
+                    searchEnabled: true
+                  }">
+          <dxo-label text="User"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="title" [isRequired]="true">
+          <dxo-label text="Document Title"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="description" editorType="dxTextArea">
+          <dxo-label text="Description"></dxo-label>
+        </dxi-item>
+        
+      </dx-form>
+      
+      <!-- File Upload Section -->
+      <div class="file-upload-section">
+        <label class="upload-label">Document File *</label>
+        <dx-file-uploader
+          [multiple]="false"
+          [accept]="fileUploaderOptions.accept"
+          [uploadMode]="fileUploaderOptions.uploadMode"
+          [showFileList]="fileUploaderOptions.showFileList"
+          [labelText]="fileUploaderOptions.labelText"
+          [selectButtonText]="fileUploaderOptions.selectButtonText"
+          (onValueChanged)="onFileSelected($event)">
+        </dx-file-uploader>
+        <div class="upload-help">
+          Supported format: PDF only
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          (onClick)="closeUploadPopup()">
+        </dx-button>
+        <dx-button
+          [text]="uploading ? 'Uploading...' : 'Upload Document'"
+          type="default"
+          [disabled]="uploading"
+          (onClick)="uploadDocument()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Document Viewer -->
+<app-document-viewer
+  [visible]="documentViewerVisible"
+  [documentUrl]="currentDocumentUrl"
+  [documentName]="currentDocumentName"
+  [fileType]="currentDocumentType"
+  (onPopupHiding)="closeDocumentViewer()">
+</app-document-viewer>

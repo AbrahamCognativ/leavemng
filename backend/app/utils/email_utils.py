@@ -552,3 +552,27 @@ def send_leave_auto_reject_notification(
     body = f"Hello,\n\nYour leave request has been Auto-{status}.\n\nDetails:\n{leave_details}\n\nBest Regards."
     send_email_background(subject, body, [to_email], html=html)
 
+
+
+
+def send_email_with_attachment(
+        subject: str,
+        body: str,
+        recipients: list[str],
+        html: Optional[str] = None,
+        attachment_path: str = None,
+        attachment_name: str = None):
+    """
+    Send an email with a single attachment using the existing send_email_background function
+    """
+    attachments = None
+    if attachment_path and attachment_name and os.path.exists(attachment_path):
+        attachments = [(attachment_path, attachment_name)]
+    
+    send_email_background(
+        subject=subject,
+        body=body,
+        to_emails=recipients,
+        html=html,
+        attachments=attachments
+    )

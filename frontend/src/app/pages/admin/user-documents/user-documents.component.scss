@@ -1,0 +1,308 @@
+.user-documents-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .page-header {
+    text-align: left;
+    margin-bottom: 30px;
+    
+    h2 {
+      color: #333;
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .subtitle {
+      color: #6c757d;
+      font-size: 16px;
+      margin: 0 0 20px 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+  }
+
+  .content-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  // Loading state
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    
+    p {
+      margin-top: 16px;
+      color: #6c757d;
+      font-size: 16px;
+    }
+  }
+
+  // Empty state
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    
+    .empty-icon {
+      font-size: 48px;
+      color: #dee2e6;
+      margin-bottom: 24px;
+      
+      i {
+        font-size: 48px;
+      }
+    }
+    
+    h3 {
+      color: #495057;
+      margin: 0 0 12px 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    p {
+      color: #6c757d;
+      margin: 0;
+      font-size: 16px;
+      max-width: 400px;
+      line-height: 1.5;
+    }
+  }
+}
+
+// Data Grid Styling
+.dx-datagrid {
+  border-radius: 8px;
+  overflow: hidden;
+  
+  .dx-datagrid-headers {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .dx-datagrid-rowsview {
+    .dx-row {
+      &:hover {
+        background-color: #f8f9fa;
+      }
+      
+      &.dx-row-alt {
+        background-color: #fdfdfd;
+      }
+    }
+  }
+}
+
+// User name styling
+.user-name {
+  color: #333;
+  font-weight: 600;
+}
+
+// User role styling
+.user-role {
+  color: #495057;
+  font-weight: 500;
+  padding: 4px 8px;
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+// Document count styling
+.document-count {
+  color: #495057;
+  font-weight: 500;
+  padding: 4px 8px;
+  background-color: #e9ecef;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+// File info styling
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .file-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    
+    i {
+      font-size: 16px;
+    }
+    
+    .file-name-text {
+      font-weight: 500;
+      color: #333;
+    }
+  }
+
+  .file-details {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    
+    .file-type {
+      background-color: #e9ecef;
+      color: #495057;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+    
+    .file-size {
+      color: #6c757d;
+    }
+  }
+}
+
+// Description styling
+.description-text {
+  color: #666;
+  line-height: 1.4;
+}
+
+// Actions styling
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  
+  .dx-button {
+    min-width: 32px;
+    height: 32px;
+  }
+}
+
+// Popup styling
+.user-documents-content {
+  padding: 20px;
+}
+
+.upload-form {
+  padding: 20px;
+
+  .dx-form {
+    margin-bottom: 20px;
+  }
+}
+
+.file-upload-section {
+  margin: 20px 0;
+  
+  .upload-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .upload-help {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #6c757d;
+  }
+}
+
+.popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .user-documents-container {
+    padding: 15px;
+    
+    .content-section {
+      padding: 15px;
+    }
+  }
+  
+  .dx-datagrid {
+    font-size: 14px;
+    
+    .dx-datagrid-headers {
+      font-size: 13px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .user-documents-container {
+    padding: 10px;
+    
+    .page-header {
+      h2 {
+        font-size: 24px;
+      }
+      
+      .subtitle {
+        font-size: 14px;
+      }
+    }
+    
+    .content-section {
+      padding: 10px;
+    }
+  }
+  
+  .dx-datagrid {
+    .dx-datagrid-rowsview .dx-row > td {
+      padding: 8px 4px;
+    }
+  }
+  
+  .actions-cell {
+    flex-direction: column;
+    gap: 2px;
+    
+    .dx-button {
+      min-width: 28px;
+      height: 28px;
+    }
+  }
+  
+  .popup-actions {
+    flex-direction: column;
+    
+    .dx-button {
+      width: 100%;
+    }
+  }
+  
+  :host ::ng-deep {
+    .dx-popup-content {
+      padding: 10px;
+    }
+  }
+  
+  .upload-form {
+    padding: 10px;
+  }
+}
