@@ -24,7 +24,7 @@ class PolicyAcknowledgment(Base):
     )
     
     # Acknowledgment details
-    acknowledged_at = Column(DateTime(timezone=True), server_default=func.now())
+    acknowledged_at = Column(DateTime(timezone=True), server_default=func.now())  # pylint: disable=not-callable
     ip_address = Column(String, nullable=True)  # For audit trail
     user_agent = Column(Text, nullable=True)    # For audit trail
     
@@ -42,8 +42,8 @@ class PolicyAcknowledgment(Base):
     acknowledgment_deadline = Column(DateTime(timezone=True), nullable=True)  # 5 days from notification
     
     # Audit fields
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # pylint: disable=not-callable
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())  # pylint: disable=not-callable
     
     # Relationships
     policy = relationship("Policy", backref="acknowledgments")

@@ -1,8 +1,8 @@
-name: Deploy
+name: Deploy-Dev
 
 on:
   push:
-    branches: [ main ]
+    branches: [ Development_Main ]
 
 jobs:
   deploy:
@@ -12,17 +12,17 @@ jobs:
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.VM_PROD_HOST }}
-        username: ${{ secrets.VM_PROD_USERNAME }}
-        key: ${{ secrets.VM_PROD_SSH_KEY }}
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USERNAME }}
+        key: ${{ secrets.VM_SSH_KEY }}
         port: ${{ secrets.VM_PORT || 22 }}
         script: |
           # Navigate to project directory
-          cd /var/www/leavemng
+          cd /leavemng
           
           # Pull latest code
           echo "Pulling latest code..."
-          git pull origin main
+          git pull origin Development_Main
           
           # Stop and remove containers
           docker stop leavemng-backend leavemng-frontend || true
@@ -32,7 +32,7 @@ jobs:
           docker rmi leavemng-backend leavemng-frontend || true
           
           # Start containers using Docker Compose
-          docker compose -f docker-compose.yml up -d --build --force-recreate
+          docker compose -f docker-compose.dev.yml up -d --build --force-recreate
           
           # Wait for containers to become healthy
           echo "Waiting for containers to become healthy..."

@@ -849,7 +849,7 @@ Leave Management System Team
             time.sleep(60)  # Wait 1 minute before cleanup
             try:
                 os.unlink(temp_path)
-            except:
+            except OSError:
                 pass
         
         threading.Thread(target=cleanup).start()

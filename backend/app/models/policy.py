@@ -35,8 +35,8 @@ class Policy(Base):
         ForeignKey("users.id"),
         nullable=True
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # pylint: disable=not-callable
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())  # pylint: disable=not-callable
     
     # Soft delete
     is_active = Column(Boolean, default=True, nullable=False)
