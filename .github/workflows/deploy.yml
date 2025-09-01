@@ -12,9 +12,9 @@ jobs:
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USERNAME }}
-        key: ${{ secrets.VM_SSH_KEY }}
+        host: ${{ secrets.VM_PROD_HOST }}
+        username: ${{ secrets.VM_PROD_USERNAME }}
+        key: ${{ secrets.VM_PROD_SSH_KEY }}
         port: ${{ secrets.VM_PORT || 22 }}
         script: |
           # Navigate to project directory
