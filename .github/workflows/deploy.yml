@@ -8,20 +8,7 @@ jobs:
   deploy:
     runs-on: lms-cognativ
     
-    steps:
-    steps:
-    - name: Debug deployment info
-      run: |
-        echo "🚀 Starting deployment"
-        echo "📍 Host: ${{ secrets.VM_PROD_HOST }}"
-        echo "👤 Username: ${{ secrets.VM_PROD_USERNAME }}"
-        echo "🔌 Port: ${{ secrets.VM_PORT || 22 }}"
-        echo "🔑 SSH Key:"
-        echo "${{ secrets.VM_PROD_SSH_KEY }}"
-        echo "📅 Timestamp: $(date)"
-        echo "🔀 Branch: ${{ github.ref_name }}"
-        echo "👤 Triggered by: ${{ github.actor }}"
-        
+    steps:   
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -39,14 +26,14 @@ jobs:
           git pull origin main
           
           # Stop and remove containers
-          sudo docker stop leavemng-backend leavemng-frontend || true
-          sudo docker rm leavemng-backend leavemng-frontend || true
+          docker stop leavemng-backend leavemng-frontend || true
+          docker rm leavemng-backend leavemng-frontend || true
           
           # Remove old images
-          sudo docker rmi leavemng-backend leavemng-frontend || true
+          docker rmi leavemng-backend leavemng-frontend || true
           
           # Start containers using Docker Compose
-          sudo docker compose -f docker-compose.yml up -d --build --force-recreate
+          docker compose -f docker-compose.yml up -d --build --force-recreate
           
           # Wait for containers to become healthy
           echo "Waiting for containers to become healthy..."
@@ -54,14 +41,14 @@ jobs:
           
           # Verify deployment
           echo "Verifying deployment..."
-          sudo docker ps
+          docker ps
           
           # Check if containers are healthy
-          if sudo docker ps | grep -q "leavemng-backend.*Up" && sudo docker ps | grep -q "leavemng-frontend.*Up"; then
+          if docker ps | grep -q "leavemng-backend.*Up" && docker ps | grep -q "leavemng-frontend.*Up"; then
             echo "✅ Deployment successful!"
           else
             echo "❌ Deployment failed - containers not running properly"
-            sudo docker logs leavemng-backend --tail 50
-            sudo docker logs leavemng-frontend --tail 50
+            docker logs leavemng-backend --tail 50
+            docker logs leavemng-frontend --tail 50
             exit 1
           fi
