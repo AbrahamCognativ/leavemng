@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: lms-cognativ
     
     steps:
     - name: Deploy to VM
