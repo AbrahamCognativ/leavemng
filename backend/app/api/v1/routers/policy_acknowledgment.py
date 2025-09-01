@@ -302,23 +302,26 @@ def get_policy_acknowledgment_stats(
             ~User.email.in_(system_emails)
         ).count()
     
-    # Get acknowledgment counts
-    acknowledged_count = db.query(PolicyAcknowledgment).filter(
+    # Get acknowledgment counts (excluding system users)
+    acknowledged_count = db.query(PolicyAcknowledgment).join(User).filter(
         PolicyAcknowledgment.policy_id == policy_id,
-        PolicyAcknowledgment.is_acknowledged == True
+        PolicyAcknowledgment.is_acknowledged == True,
+        ~User.email.in_(system_emails)
     ).count()
     
-    pending_count = db.query(PolicyAcknowledgment).filter(
-        PolicyAcknowledgment.policy_id == policy_id,
-        PolicyAcknowledgment.is_acknowledged == False
-    ).count()
-    
-    # Get overdue count
-    now = datetime.now(timezone.utc)
-    overdue_count = db.query(PolicyAcknowledgment).filter(
+    pending_count = db.query(PolicyAcknowledgment).join(User).filter(
         PolicyAcknowledgment.policy_id == policy_id,
         PolicyAcknowledgment.is_acknowledged == False,
-        PolicyAcknowledgment.acknowledgment_deadline < now
+        ~User.email.in_(system_emails)
+    ).count()
+    
+    # Get overdue count (excluding system users)
+    now = datetime.now(timezone.utc)
+    overdue_count = db.query(PolicyAcknowledgment).join(User).filter(
+        PolicyAcknowledgment.policy_id == policy_id,
+        PolicyAcknowledgment.is_acknowledged == False,
+        PolicyAcknowledgment.acknowledgment_deadline < now,
+        ~User.email.in_(system_emails)
     ).count()
     
     # Calculate acknowledgment rate
