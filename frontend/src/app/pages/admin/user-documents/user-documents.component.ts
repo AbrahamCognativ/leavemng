@@ -113,9 +113,19 @@ export class UserDocumentsComponent implements OnInit {
       this.users = await new Promise((resolve, reject) => {
         usersObservable.subscribe({
           next: (data) => {
+            // Define system user emails to exclude
+            const systemUserEmails = [
+              'scheduler@cognativ.com',
+              'user@example.com'
+            ];
+            
             // Filter out system users and add display_name
             const filteredUsers = data
-              .filter((user: any) => !user.email?.includes('system'))
+              .filter((user: any) => {
+                // Exclude users with emails containing 'system' or specific system user emails
+                return !user.email?.includes('system') &&
+                       !systemUserEmails.includes(user.email?.toLowerCase());
+              })
               .map((user: any) => ({
                 ...user,
                 display_name: `${user.name || (user.first_name + ' ' + user.last_name)} (${user.email})`

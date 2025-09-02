@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 from datetime import date, datetime
 from enum import Enum
@@ -19,7 +19,7 @@ class WFHRequestBase(BaseModel):
 
 
 class WFHRequestCreate(WFHRequestBase):
-    pass
+    reason: str = Field(..., min_length=40, description="Reason must be at least 40 characters long")
 
 
 class WFHRequestUpdate(WFHRequestBase):
@@ -32,7 +32,7 @@ class WFHRequestUpdate(WFHRequestBase):
 
 
 class WFHRequestPartialUpdate(BaseModel):
-    reason: Optional[str] = None
+    reason: Optional[str] = Field(None, min_length=40, description="Reason must be at least 40 characters long")
     comments: Optional[str] = None
 
 

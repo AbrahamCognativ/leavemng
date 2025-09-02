@@ -82,8 +82,9 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
                 or request.url.path.startswith("/redoc")
                 or request.url.path.startswith("/api/v1/auth/reset-password-invite")
                 or request.url.path.startswith("/api/v1/auth/forgot-password")
-                or request.url.path.startswith("/api/v1/policies/") and (request.url.path.endswith("/download") or request.url.path.endswith("/preview"))
+                or (request.url.path.startswith("/api/v1/policies/") and (request.url.path.endswith("/download") or request.url.path.endswith("/preview")))
                 or request.url.path.startswith("/api/v1/user-documents/") and (request.url.path.endswith("/download") or request.url.path.endswith("/preview"))
+                or request.url.path.startswith("/api/v1/actions/action/")
                 ):
             return await call_next(request)
         # Only require token for API routes
@@ -114,7 +115,8 @@ def include_routers():
         "policy",
         "policy_acknowledgment",
         "user_documents",
-        "audit_logs"]
+        "audit_logs",
+        "actions"]
     for m in modules:
         router = import_module(f"app.api.v1.routers.{m}")
         # Use kebab-case for leave-policy and leave-types

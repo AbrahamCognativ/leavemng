@@ -6,6 +6,12 @@ import sys
 import os
 from logging.config import fileConfig
 
+# Import all models to ensure they're registered with SQLAlchemy
+from app.models.user import User
+from app.models.wfh_request import WFHRequest
+from app.models.action_token import ActionToken
+from app.models.password_reset_invite_token import PasswordResetInviteToken
+
 from dotenv import load_dotenv
 # Load .env.prod if it exists
 load_dotenv(
