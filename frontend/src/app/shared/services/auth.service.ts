@@ -3,6 +3,7 @@ import { CanActivate, Router, ActivatedRouteSnapshot } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import {catchError, firstValueFrom, map, of} from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { UserbackService } from './userback.service';
 
 export interface IUser {
   id: string;
@@ -96,7 +97,11 @@ export class AuthService {
     }
   }
 
-  constructor(private router: Router, private http: HttpClient,) {
+  constructor(
+    private router: Router,
+    private http: HttpClient,
+    private userbackService: UserbackService
+  ) {
     const storedUser = localStorage.getItem('current_user');
     if (storedUser) {
       this._user = JSON.parse(storedUser);
@@ -133,6 +138,9 @@ export class AuthService {
       this._user = response.user;
       localStorage.setItem('current_user', JSON.stringify(response.user));
       localStorage.setItem('user_token', response.access_token);
+
+      // Update Userback with user information
+      this.userbackService.updateUser(response.user);
 
       // Check if user should be redirected to profile (for password reset flow)
       const shouldRedirectToProfile = localStorage.getItem('redirect_to_profile_after_login');
@@ -227,6 +235,9 @@ export class AuthService {
   }
 
   async logOut() {
+    // Clear Userback user information
+    this.userbackService.clearUser();
+    
     this._user = null;
     localStorage.removeItem('current_user');
     localStorage.removeItem('user_token');
