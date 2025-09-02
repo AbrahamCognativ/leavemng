@@ -354,15 +354,17 @@ def send_leave_auto_approval_notification(
     send_email_background(subject, body, [to_email], html=html)
 
 
-def send_wfh_request_notification(
+def send_wfh_request_notification_with_tokens(
         to_email: str,
         requester_name: str,
         wfh_details: dict,
         request: Request,
         request_id: int = None,
-        requestor_email: str = None):
+        requestor_email: str = None,
+        approve_token: str = None,
+        reject_token: str = None):
     """
-    Send a WFH request notification with approve/reject links and a table of WFH details.
+    Send a WFH request notification with secure approve/reject token links.
     wfh_details should be a dict with keys/values for the table.
     Also sends a confirmation email to the WFH requestor if requestor_email is provided.
     """
@@ -373,31 +375,94 @@ def send_wfh_request_notification(
     # HTML Table for WFH details
     if isinstance(wfh_details, dict):
         table_rows = ''.join(
-            f'<tr><td style=\"padding:4px 8px;border:1px solid #ddd;\"><b>{k}</b></td><td style=\"padding:4px 8px;border:1px solid #ddd;\">{v}</td></tr>' for k,
+            f'<tr><td style=\"padding:8px 12px;border:1px solid #ddd;background:#f8f9fa;\"><b>{k}</b></td><td style=\"padding:8px 12px;border:1px solid #ddd;\">{v}</td></tr>' for k,
             v in wfh_details.items())
-        details_table = f'<table style=\"border-collapse:collapse;margin:12px 0;\">{table_rows}</table>'
+        details_table = f'<table style=\"border-collapse:collapse;margin:16px 0;width:100%;\">{table_rows}</table>'
     else:
         details_table = f'<pre>{wfh_details}</pre>'
 
-    # Approve/Reject links (PATCH endpoints, shown as buttons)
+    # Secure Approve/Reject links using tokens
     approve_url = reject_url = "#"
-    if request_id:
+    if approve_token and reject_token:
         settings = get_settings()
-        base_url = settings.REGISTER_URL.rstrip('/')
-        approve_url = f"{base_url}/api/v1/wfh/{request_id}/approve"
-        reject_url = f"{base_url}/api/v1/wfh/{request_id}/reject"
-    approve_btn = f'<a href="{approve_url}" style="background:#28a745;color:#fff;padding:8px 16px;text-decoration:none;border-radius:4px;margin-right:8px;">Approve</a>'
-    reject_btn = f'<a href="{reject_url}" style="background:#dc3545;color:#fff;padding:8px 16px;text-decoration:none;border-radius:4px;">Reject</a>'
+        base_url = settings.SITE_URL.rstrip('/')
+        approve_url = f"{base_url}/api/v1/actions/action/{approve_token}"
+        reject_url = f"{base_url}/api/v1/actions/action/{reject_token}"
+
+    # Enhanced button styling for better email client compatibility
+    approve_btn = f'''
+    <a href="{approve_url}" style="
+        display: inline-block;
+        background: #28a745;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        margin: 8px 8px 8px 0;
+        font-weight: bold;
+        font-size: 14px;
+        border: 2px solid #28a745;
+        text-align: center;
+        min-width: 100px;
+    ">✓ APPROVE</a>'''
+    
+    reject_btn = f'''
+    <a href="{reject_url}" style="
+        display: inline-block;
+        background: #dc3545;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        margin: 8px 0;
+        font-weight: bold;
+        font-size: 14px;
+        border: 2px solid #dc3545;
+        text-align: center;
+        min-width: 100px;
+    ">✗ REJECT</a>'''
 
     html = f'''
-    <div style="font-family:sans-serif;max-width:600px;">
-        <p>Hello,</p>
-        <p><b>{requester_name}</b> has submitted a work from home request. Please review the details below:</p>
-        {details_table}
-        <p>{approve_btn}{reject_btn}</p>
-        <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
-    </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>WFH Request - {requester_name}</title>
+    </head>
+    <body style="margin: 0; padding: 0; background: #f5f5f5; font-family: Arial, sans-serif;">
+        <div style="max-width: 500px; margin: 10px auto; background: #ffffff; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: #2d6cdf; color: white; padding: 16px; text-align: center; border-radius: 6px 6px 0 0;">
+                <h2 style="margin: 0; font-size: 18px;">🏠 WFH Request</h2>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 20px;">
+                <p style="margin: 0 0 12px 0; color: #333;">
+                    <strong>{requester_name}</strong> requests work from home approval:
+                </p>
+                
+                <!-- Compact Details -->
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin: 12px 0; font-size: 14px;">
+                    {details_table}
+                </div>
+                
+                <!-- Action Buttons - Prominent Position -->
+                <div style="text-align: center; margin: 20px 0;">
+                    {approve_btn}
+                    {reject_btn}
+                </div>
+                
+                <p style="font-size: 11px; color: #6c757d; text-align: center; margin: 12px 0 0 0;">
+                    Links expire in 72 hours • Single use only
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
     '''
+    
     send_email(subject, plain_body, [to_email], request=request, html=html)
 
     # Send confirmation to WFH requestor
@@ -408,6 +473,137 @@ def send_wfh_request_notification(
         <div style="font-family:sans-serif;max-width:600px;">
             <p>Hello {requester_name},</p>
             <p>Your work from home request has been <b>submitted for review</b>. You will be notified once it is approved or rejected.</p>
+            {details_table}
+            <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
+        </div>
+        '''
+        send_email(
+            confirm_subject,
+            confirm_body,
+            [requestor_email],
+            request=request,
+            html=confirm_html)
+
+
+def send_leave_request_notification_with_tokens(
+        to_email: str,
+        requester_name: str,
+        leave_details: dict,
+        request: Request,
+        request_id: int = None,
+        requestor_email: str = None,
+        approve_token: str = None,
+        reject_token: str = None):
+    """
+    Send a leave request notification with secure approve/reject token links.
+    leave_details should be a dict with keys/values for the table.
+    Also sends a confirmation email to the leave requestor if requestor_email is provided.
+    """
+    subject = f"New Leave Request Submitted - {requester_name}"
+    # Fallback for plain text body
+    plain_body = f"Hello,\n\n{requester_name} has submitted a leave request.\nDetails: {leave_details}\n\nPlease review and approve or reject the request."
+
+    # HTML Table for leave details
+    if isinstance(leave_details, dict):
+        table_rows = ''.join(
+            f'<tr><td style=\"padding:8px 12px;border:1px solid #ddd;background:#f8f9fa;\"><b>{k}</b></td><td style=\"padding:8px 12px;border:1px solid #ddd;\">{v}</td></tr>' for k,
+            v in leave_details.items())
+        details_table = f'<table style=\"border-collapse:collapse;margin:16px 0;width:100%;\">{table_rows}</table>'
+    else:
+        details_table = f'<pre>{leave_details}</pre>'
+
+    # Secure Approve/Reject links using tokens
+    approve_url = reject_url = "#"
+    if approve_token and reject_token:
+        settings = get_settings()
+        base_url = settings.SITE_URL.rstrip('/')
+        approve_url = f"{base_url}/api/v1/actions/action/{approve_token}"
+        reject_url = f"{base_url}/api/v1/actions/action/{reject_token}"
+
+    # Enhanced button styling for better email client compatibility
+    approve_btn = f'''
+    <a href="{approve_url}" style="
+        display: inline-block;
+        background: #28a745;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        margin: 8px 8px 8px 0;
+        font-weight: bold;
+        font-size: 14px;
+        border: 2px solid #28a745;
+        text-align: center;
+        min-width: 100px;
+    ">✓ APPROVE</a>'''
+    
+    reject_btn = f'''
+    <a href="{reject_url}" style="
+        display: inline-block;
+        background: #dc3545;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 6px;
+        margin: 8px 0;
+        font-weight: bold;
+        font-size: 14px;
+        border: 2px solid #dc3545;
+        text-align: center;
+        min-width: 100px;
+    ">✗ REJECT</a>'''
+
+    html = f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Leave Request - {requester_name}</title>
+    </head>
+    <body style="margin: 0; padding: 0; background: #f5f5f5; font-family: Arial, sans-serif;">
+        <div style="max-width: 500px; margin: 10px auto; background: #ffffff; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: #2d6cdf; color: white; padding: 16px; text-align: center; border-radius: 6px 6px 0 0;">
+                <h2 style="margin: 0; font-size: 18px;">🏖️ Leave Request</h2>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 20px;">
+                <p style="margin: 0 0 12px 0; color: #333;">
+                    <strong>{requester_name}</strong> requests leave approval:
+                </p>
+                
+                <!-- Compact Details -->
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin: 12px 0; font-size: 14px;">
+                    {details_table}
+                </div>
+                
+                <!-- Action Buttons - Prominent Position -->
+                <div style="text-align: center; margin: 20px 0;">
+                    {approve_btn}
+                    {reject_btn}
+                </div>
+                
+                <p style="font-size: 11px; color: #6c757d; text-align: center; margin: 12px 0 0 0;">
+                    Links expire in 72 hours • Single use only
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    '''
+    
+    send_email(subject, plain_body, [to_email], request=request, html=html)
+
+    # Send confirmation to leave requestor
+    if requestor_email:
+        confirm_subject = "Your Leave Request Has Been Submitted"
+        confirm_body = f"Hello {requester_name},\n\nYour leave request has been submitted for review. You will be notified once it is approved or rejected.\n\nDetails: {leave_details}\n\nBest Regards."
+        confirm_html = f'''
+        <div style="font-family:sans-serif;max-width:600px;">
+            <p>Hello {requester_name},</p>
+            <p>Your leave request has been <b>submitted for review</b>. You will be notified once it is approved or rejected.</p>
             {details_table}
             <p style="margin-top:24px;">Best Regards,<br/>Leave Management System</p>
         </div>

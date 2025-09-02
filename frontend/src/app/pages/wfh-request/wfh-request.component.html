@@ -47,10 +47,12 @@
           editorType="dxTextArea"
           [editorOptions]="{
             height: 100,
-            placeholder: 'Please provide a reason for your work from home request (optional)',
+            placeholder: 'Please provide a detailed reason for your work from home request (minimum 40 characters)',
             maxLength: 500
           }">
-          <dxo-label text="Reason (Optional)"></dxo-label>
+          <dxo-label text="Reason" showRequiredMark="true"></dxo-label>
+          <dxi-validation-rule type="required" message="Please provide a reason for your work from home request"></dxi-validation-rule>
+          <dxi-validation-rule type="custom" [validationCallback]="validateReasonLength" message=""></dxi-validation-rule>
         </dxi-item>
 
         <!-- Submit Buttons -->

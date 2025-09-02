@@ -154,7 +154,19 @@ export class WFHRequestComponent implements OnInit {
 
       if (error && typeof error === 'object') {
         if (error.error && typeof error.error === 'object' && 'detail' in error.error) {
-          errorMessage = `Error: ${error.error.detail}`;
+          // Handle Pydantic validation errors (array format)
+          if (Array.isArray(error.error.detail)) {
+            const validationErrors = error.error.detail.map((err: any) => {
+              if (err.loc && err.msg) {
+                const field = err.loc[err.loc.length - 1]; // Get the field name
+                return `${field}: ${err.msg}`;
+              }
+              return err.msg || 'Validation error';
+            });
+            errorMessage = `Validation Error: ${validationErrors.join(', ')}`;
+          } else {
+            errorMessage = `Error: ${error.error.detail}`;
+          }
         } else if (error.message) {
           errorMessage = `Error: ${error.message}`;
         }
@@ -216,5 +228,21 @@ export class WFHRequestComponent implements OnInit {
 
   onEndDateChanged(): void {
     this.calculateWorkingDays();
+  }
+
+  // Custom validation function for reason length
+  validateReasonLength = (params: any) => {
+    const value = params.value || '';
+    const currentLength = value.length;
+    
+    if (currentLength < 40) {
+      const needed = 40 - currentLength;
+      return {
+        isValid: false,
+        message: `Reason must be at least 40 characters long. Current: ${currentLength} characters, ${needed} more needed.`
+      };
+    }
+    
+    return { isValid: true };
   }
 }

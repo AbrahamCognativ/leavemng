@@ -134,7 +134,6 @@ export class LeaveRequestComponent implements OnInit {
         }
       }
     } catch (error) {
-      console.error('Error loading leave balances:', error);
       this.showToast('Error loading leave balances', 'error');
     }
   }
@@ -167,7 +166,6 @@ export class LeaveRequestComponent implements OnInit {
         if (this.leave.id && !document.id.startsWith('temp_')) {
           this.leaveService.deleteLeaveDocument(this.leave.id, document.id)
             .catch(error => {
-              console.error('Error deleting document:', error);
               this.showToast('Error deleting document', 'error');
             });
         }
@@ -302,12 +300,10 @@ export class LeaveRequestComponent implements OnInit {
                 uploadDate: new Date()
               });
             } else {
-              console.error('Document upload failed - no document ID in response', result);
               uploadSuccess = false;
               failedUploads.push(file.name);
             }
           } catch (uploadError) {
-            console.error('Error uploading document:', uploadError);
             uploadSuccess = false;
             failedUploads.push(file.name);
           }
@@ -337,12 +333,23 @@ export class LeaveRequestComponent implements OnInit {
       };
       this.router.navigate(['/dashboard']);
     } catch (error: any) {
-      console.error('Leave request submission error:', error);
       let errorMessage = 'Error submitting leave request';
 
       if (error && typeof error === 'object') {
         if (error.error && typeof error.error === 'object' && 'detail' in error.error) {
-          errorMessage = `Error: ${error.error.detail}`;
+          // Handle Pydantic validation errors (array format)
+          if (Array.isArray(error.error.detail)) {
+            const validationErrors = error.error.detail.map((err: any) => {
+              if (err.loc && err.msg) {
+                const field = err.loc[err.loc.length - 1]; // Get the field name
+                return `${field}: ${err.msg}`;
+              }
+              return err.msg || 'Validation error';
+            });
+            errorMessage = `Validation Error: ${validationErrors.join(', ')}`;
+          } else {
+            errorMessage = `Error: ${error.error.detail}`;
+          }
         } else if (error.message) {
           errorMessage = `Error: ${error.message}`;
         }
@@ -384,6 +391,22 @@ export class LeaveRequestComponent implements OnInit {
       return found;
     }
     return null;
+  }
+
+  // Custom validation function for comments length
+  validateCommentsLength = (params: any) => {
+    const value = params.value || '';
+    const currentLength = value.length;
+    
+    if (currentLength < 40) {
+      const needed = 40 - currentLength;
+      return {
+        isValid: false,
+        message: `Reason must be at least 40 characters long. Current: ${currentLength} characters, ${needed} more needed.`
+      };
+    }
+    
+    return { isValid: true };
   }
 
 }

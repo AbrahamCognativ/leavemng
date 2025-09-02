@@ -135,10 +135,14 @@ def create_leave_request(
         raise HTTPException(status_code=503, detail="Internal server error")
 
     # Send notification to approver (manager)
-    from app.utils.email_utils import send_leave_request_notification
+    from app.utils.email_utils import send_leave_request_notification_with_tokens
+    from app.api.v1.routers.actions import generate_action_tokens
     manager = db.query(User).filter(
         User.id == current_user.manager_id).first() if current_user.manager_id else None
     if manager:
+        # Generate secure tokens for approve/reject actions
+        tokens = generate_action_tokens("leave_request", str(db_req.id), str(manager.id), db)
+        
         LEAVE_TYPE_LABELS = {
             "annual": "Annual Leave",
             "sick": "Sick Leave",
@@ -168,14 +172,21 @@ def create_leave_request(
             "Days": (req.end_date - req.start_date).days + 1,
             "Comments": req.comments or ""
         }
-        send_leave_request_notification(
-            manager.email,
-            current_user.name,
-            leave_details,
-            request=request,
-            request_id=db_req.id,
-            requestor_email=current_user.email
-        )
+        try:
+            send_leave_request_notification_with_tokens(
+                manager.email,
+                current_user.name,
+                leave_details,
+                request=request,
+                request_id=db_req.id,
+                requestor_email=current_user.email,
+                approve_token=tokens['approve'],
+                reject_token=tokens['reject']
+            )
+        except Exception as e:
+            # Log the error but don't fail the request creation
+            import logging
+            logging.error(f"Error sending leave notification email: {e}")
     return LeaveRequestRead.model_validate(db_req)
 
 

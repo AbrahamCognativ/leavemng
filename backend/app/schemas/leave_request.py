@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 from datetime import date, datetime
 from enum import Enum
@@ -16,7 +16,7 @@ class LeaveRequestBase(BaseModel):
     leave_type_id: UUID
     start_date: date
     end_date: date
-    comments: Optional[str] = None
+    comments: str = Field(..., min_length=40, description="Comments must be at least 40 characters long")
 
 
 class LeaveRequestCreate(LeaveRequestBase):
@@ -33,7 +33,7 @@ class LeaveRequestUpdate(LeaveRequestBase):
 
 
 class LeaveRequestPartialUpdate(BaseModel):
-    comments: Optional[str] = None
+    comments: Optional[str] = Field(None, min_length=40, description="Comments must be at least 40 characters long")
 
 
 class LeaveRequestRead(LeaveRequestBase):
