@@ -16,11 +16,12 @@ class LeaveRequestBase(BaseModel):
     leave_type_id: UUID
     start_date: date
     end_date: date
-    comments: str = Field(..., min_length=40, description="Comments must be at least 40 characters long")
+    comments: Optional[str] = None
 
 
 class LeaveRequestCreate(LeaveRequestBase):
     total_days: float
+    comments: str = Field(..., min_length=40, description="Comments must be at least 40 characters long")
 
 
 class LeaveRequestUpdate(LeaveRequestBase):
