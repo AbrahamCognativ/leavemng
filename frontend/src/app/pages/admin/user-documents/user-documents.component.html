@@ -208,10 +208,10 @@
         
         <dxi-item dataField="user_id" editorType="dxSelectBox" [isRequired]="true"
                   [editorOptions]="{
-                    dataSource: users,
+                    dataSource: usersWithAllOption,
                     displayExpr: 'display_name',
                     valueExpr: 'id',
-                    placeholder: 'Select user',
+                    placeholder: 'Select user or all users',
                     searchEnabled: true
                   }">
           <dxo-label text="User"></dxo-label>

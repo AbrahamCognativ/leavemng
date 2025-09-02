@@ -46,6 +46,7 @@ import notify from 'devextreme/ui/notify';
 })
 export class UserDocumentsComponent implements OnInit {
   users: any[] = [];
+  usersWithAllOption: any[] = [];
   userDocuments: UserDocument[] = [];
   allDocuments: UserDocument[] = [];
   loading = false;
@@ -135,6 +136,17 @@ export class UserDocumentsComponent implements OnInit {
           error: (error) => reject(error)
         });
       });
+      
+      // Create users list with "All Users" option
+      this.usersWithAllOption = [
+        {
+          id: 'ALL_USERS',
+          display_name: '📢 All Users',
+          email: 'all_users',
+          name: 'All Users'
+        },
+        ...this.users
+      ];
     } catch (error) {
       this.showToast('Error loading users', 'error');
     } finally {
@@ -229,15 +241,12 @@ export class UserDocumentsComponent implements OnInit {
 
     this.uploading = true;
     try {
-      const createData: UserDocumentCreate = {
-        name: this.formData.title.trim(),
-        description: this.formData.description?.trim() || undefined,
-        user_id: this.formData.user_id,
-        send_email_notification: true
-      };
-      
-      await this.userDocumentsService.createUserDocument(createData, this.selectedFile);
-      this.showToast('Document uploaded successfully', 'success');
+      // Check if "All Users" is selected
+      if (this.formData.user_id === 'ALL_USERS') {
+        await this.uploadDocumentToAllUsers();
+      } else {
+        await this.uploadDocumentToSingleUser();
+      }
       
       this.closeUploadPopup();
       await this.loadAllDocuments();
@@ -249,6 +258,57 @@ export class UserDocumentsComponent implements OnInit {
       this.showToast(errorMessage, 'error');
     } finally {
       this.uploading = false;
+    }
+  }
+
+  private async uploadDocumentToSingleUser(): Promise<void> {
+    if (!this.selectedFile) {
+      throw new Error('No file selected');
+    }
+    
+    const createData: UserDocumentCreate = {
+      name: this.formData.title.trim(),
+      description: this.formData.description?.trim() || undefined,
+      user_id: this.formData.user_id,
+      send_email_notification: true
+    };
+    
+    await this.userDocumentsService.createUserDocument(createData, this.selectedFile);
+    this.showToast('Document uploaded successfully', 'success');
+  }
+
+  private async uploadDocumentToAllUsers(): Promise<void> {
+    if (!this.selectedFile) {
+      throw new Error('No file selected');
+    }
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    // Upload document for each user
+    for (const user of this.users) {
+      try {
+        const createData: UserDocumentCreate = {
+          name: this.formData.title.trim(),
+          description: this.formData.description?.trim() || undefined,
+          user_id: user.id,
+          send_email_notification: true
+        };
+        
+        await this.userDocumentsService.createUserDocument(createData, this.selectedFile);
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        console.error(`Failed to upload document for user ${user.email}:`, error);
+      }
+    }
+    
+    if (errorCount === 0) {
+      this.showToast(`Document uploaded successfully to all ${successCount} users`, 'success');
+    } else if (successCount > 0) {
+      this.showToast(`Document uploaded to ${successCount} users, ${errorCount} failed`, 'warning');
+    } else {
+      this.showToast('Failed to upload document to any users', 'error');
     }
   }
 
