@@ -4,10 +4,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.schemas.wfh_request import WFHRequestRead, WFHRequestCreate, WFHRequestUpdate, WFHRequestPartialUpdate
 from app.models.wfh_request import WFHRequest
 from app.models.user import User
+from app.models.action_token import ActionToken, ActionTypeEnum
 from app.db.session import get_db
 from uuid import UUID
 from datetime import datetime, timezone, date, timedelta
 from app.deps.permissions import get_current_user, log_permission_denied, log_permission_accepted
+import secrets
 
 router = APIRouter()
 
@@ -130,10 +132,13 @@ def create_wfh_request(
         raise HTTPException(status_code=503, detail="Internal server error")
 
     # Send notification to approver (manager)
-    from app.utils.email_utils import send_wfh_request_notification
+    from app.utils.email_utils import send_wfh_request_notification_with_tokens
     manager = db.query(User).filter(
         User.id == current_user.manager_id).first() if current_user.manager_id else None
     if manager:
+        # Generate secure tokens for approve/reject actions
+        tokens = generate_wfh_action_tokens(db_req.id, manager.id, db)
+        
         wfh_details = {
             "Start Date": str(req.start_date),
             "End Date": str(req.end_date),
@@ -141,13 +146,15 @@ def create_wfh_request(
             "Reason": req.reason or ""
         }
         try:
-            send_wfh_request_notification(
+            send_wfh_request_notification_with_tokens(
                 manager.email,
                 current_user.name,
                 wfh_details,
                 request=request,
                 request_id=db_req.id,
-                requestor_email=current_user.email
+                requestor_email=current_user.email,
+                approve_token=tokens['approve'],
+                reject_token=tokens['reject']
             )
         except Exception as e:
             # Log the error but don't fail the request creation
@@ -436,3 +443,10 @@ def delete_wfh_request(
     db.delete(req)
     db.commit()
     return None
+
+
+def generate_wfh_action_tokens(wfh_request_id: UUID, approver_id: UUID, db: Session) -> dict:
+    """Generate secure tokens for approve/reject actions"""
+    from app.api.v1.routers.actions import generate_action_tokens
+    return generate_action_tokens("wfh_request", str(wfh_request_id), str(approver_id), db)
+

@@ -60,11 +60,12 @@
           editorType="dxTextArea"
           [editorOptions]="{
             height: 100,
-            placeholder: 'Please provide details about your leave request',
+            placeholder: 'Please provide detailed information about your leave request (minimum 40 characters)',
             maxLength: 500
           }">
           <dxo-label text="Reason for Leave" showRequiredMark="true"></dxo-label>
           <dxi-validation-rule type="required" message="Please provide a reason for your leave request"></dxi-validation-rule>
+          <dxi-validation-rule type="custom" [validationCallback]="validateCommentsLength" message=""></dxi-validation-rule>
         </dxi-item>
 
         <!-- Document Upload -->
