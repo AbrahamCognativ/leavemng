@@ -15,11 +15,11 @@ class WFHStatusEnum(str, Enum):
 class WFHRequestBase(BaseModel):
     start_date: date
     end_date: date
-    reason: str = Field(..., min_length=40, description="Reason must be at least 40 characters long")
+    reason: Optional[str] = None
 
 
 class WFHRequestCreate(WFHRequestBase):
-    pass
+    reason: str = Field(..., min_length=40, description="Reason must be at least 40 characters long")
 
 
 class WFHRequestUpdate(WFHRequestBase):
