@@ -6,14 +6,16 @@ from app.db.session import get_db
 from app.models.user_document import UserDocument
 from app.models.user import User
 from app.schemas.user_document import (
-    UserDocumentCreate, UserDocumentUpdate, UserDocumentRead, 
+    UserDocumentCreate, UserDocumentUpdate, UserDocumentRead,
     UserDocumentListItem, MyDocumentListItem, UserDocumentStats
 )
 from app.deps.permissions import get_current_user, require_role, get_current_user_from_token_param, UserInToken
 from app.settings import get_settings
-from typing import List, Optional
+from app.utils.pdf_id_extractor import PDFIdExtractor
+from typing import List, Optional, Dict, Any
 import uuid
 import os
+import tempfile
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -630,6 +632,214 @@ Leave Management System Team
         attachment_path=document.file_path,
         attachment_name=document.file_name
     )
+
+
+@router.post("/bulk-payslip-upload", tags=["user-documents"],
+             dependencies=[Depends(require_role(["HR", "Admin"]))])
+async def bulk_payslip_upload(
+    files: List[UploadFile] = File(...),
+    document_type: str = Form("payslip"),
+    send_email_notification: bool = Form(True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Bulk upload payslip PDFs with automatic ID extraction and user matching.
+    
+    This endpoint:
+    1. Accepts multiple PDF files
+    2. Extracts ID/Passport numbers from each PDF
+    3. Matches IDs with users in the database
+    4. Creates user documents for matched users
+    5. Returns detailed processing results
+    """
+    
+    if not PDFIdExtractor.is_pdf_processing_available():
+        raise HTTPException(
+            status_code=500,
+            detail="PDF processing not available. Please contact system administrator."
+        )
+    
+    results = {
+        "total_files": len(files),
+        "successful_uploads": 0,
+        "failed_uploads": 0,
+        "no_user_found": 0,
+        "no_id_extracted": 0,
+        "processing_details": [],
+        "summary": ""
+    }
+    
+    # Process each uploaded file
+    for file in files:
+        file_result = {
+            "file_name": file.filename,
+            "status": "processing",
+            "extracted_ids": [],
+            "matched_user": None,
+            "error_message": None,
+            "document_id": None
+        }
+        
+        try:
+            # Validate file type
+            if not file.filename.lower().endswith('.pdf'):
+                file_result["status"] = "failed"
+                file_result["error_message"] = "Only PDF files are supported"
+                results["failed_uploads"] += 1
+                results["processing_details"].append(file_result)
+                continue
+            
+            # Save file temporarily for processing
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                content = await file.read()
+                temp_file.write(content)
+                temp_file_path = temp_file.name
+            
+            try:
+                # Extract payslip information
+                payslip_info = PDFIdExtractor.extract_payslip_info(temp_file_path)
+                
+                if not payslip_info["extraction_success"]:
+                    file_result["status"] = "failed"
+                    file_result["error_message"] = payslip_info.get("error_message", "PDF processing failed")
+                    results["failed_uploads"] += 1
+                    results["processing_details"].append(file_result)
+                    continue
+                
+                extracted_ids = payslip_info["extracted_ids"]
+                file_result["extracted_ids"] = extracted_ids
+                
+                if not extracted_ids:
+                    file_result["status"] = "no_id_found"
+                    file_result["error_message"] = "No ID/Passport number found in PDF"
+                    results["no_id_extracted"] += 1
+                    results["processing_details"].append(file_result)
+                    continue
+                
+                # Get the most likely ID
+                primary_id = PDFIdExtractor.get_most_likely_id(extracted_ids)
+                
+                # Find user by ID/Passport number
+                matched_user = None
+                for id_candidate in extracted_ids:
+                    user = db.query(User).filter(
+                        User.passport_or_id_number == id_candidate.strip(),
+                        User.is_active == True
+                    ).first()
+                    if user:
+                        matched_user = user
+                        break
+                
+                if not matched_user:
+                    file_result["status"] = "no_user_found"
+                    file_result["error_message"] = f"No user found with ID(s): {', '.join(extracted_ids)}"
+                    results["no_user_found"] += 1
+                    results["processing_details"].append(file_result)
+                    continue
+                
+                # Create document for matched user
+                file_result["matched_user"] = {
+                    "id": str(matched_user.id),
+                    "name": matched_user.name,
+                    "email": matched_user.email,
+                    "passport_or_id_number": matched_user.passport_or_id_number
+                }
+                
+                # Generate unique filename
+                file_id = str(uuid.uuid4())
+                file_name = f"{file_id}_{file.filename}"
+                file_path = os.path.join(USER_DOCUMENTS_DIR, file_name)
+                
+                # Save the original file
+                with open(file_path, "wb") as f:
+                    f.write(content)
+                
+                file_size = len(content)
+                file_size_str = get_file_size_string(file_size)
+                
+                # Create user document record
+                user_document = UserDocument(
+                    name=f"Payslip - {matched_user.name}",
+                    description=f"Payslip for {matched_user.name} (ID: {matched_user.passport_or_id_number})",
+                    file_path=file_path,
+                    file_name=file.filename,
+                    file_type="pdf",
+                    file_size=file_size_str,
+                    user_id=matched_user.id,
+                    document_type=document_type,
+                    send_email_notification=send_email_notification,
+                    created_by=current_user.id
+                )
+                
+                db.add(user_document)
+                db.commit()
+                db.refresh(user_document)
+                
+                file_result["status"] = "success"
+                file_result["document_id"] = str(user_document.id)
+                results["successful_uploads"] += 1
+                
+                # Log audit
+                from app.utils.audit import create_audit_log
+                create_audit_log(
+                    db=db,
+                    user_id=str(current_user.id),
+                    action="bulk_payslip_upload",
+                    resource_type="user_document",
+                    resource_id=str(user_document.id),
+                    metadata={
+                        "document_name": user_document.name,
+                        "target_user_id": str(matched_user.id),
+                        "target_user_email": matched_user.email,
+                        "extracted_ids": extracted_ids,
+                        "matched_id": matched_user.passport_or_id_number,
+                        "file_name": file.filename,
+                        "bulk_upload": True
+                    }
+                )
+                
+                # Send email notification if requested
+                if send_email_notification:
+                    try:
+                        await send_document_notification_email(matched_user, user_document, current_user)
+                        user_document.email_sent_at = datetime.now(timezone.utc)
+                        db.commit()
+                    except Exception as e:
+                        # Log error but don't fail the upload
+                        import logging
+                        logging.error(f"Failed to send payslip notification email: {e}")
+                
+            finally:
+                # Clean up temporary file
+                try:
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+                    
+        except Exception as e:
+            file_result["status"] = "failed"
+            file_result["error_message"] = f"Processing error: {str(e)}"
+            results["failed_uploads"] += 1
+            import logging
+            logging.error(f"Error processing payslip {file.filename}: {str(e)}")
+        
+        results["processing_details"].append(file_result)
+    
+    # Generate summary
+    summary_parts = []
+    if results["successful_uploads"] > 0:
+        summary_parts.append(f"✅ {results['successful_uploads']} payslips uploaded successfully")
+    if results["no_user_found"] > 0:
+        summary_parts.append(f"❌ {results['no_user_found']} payslips: no matching user found")
+    if results["no_id_extracted"] > 0:
+        summary_parts.append(f"⚠️ {results['no_id_extracted']} payslips: no ID found in PDF")
+    if results["failed_uploads"] > 0:
+        summary_parts.append(f"💥 {results['failed_uploads']} payslips: processing failed")
+    
+    results["summary"] = " | ".join(summary_parts) if summary_parts else "No files processed"
+    
+    return results
 
 
 def _build_user_document_response(db: Session, document: UserDocument) -> UserDocumentRead:

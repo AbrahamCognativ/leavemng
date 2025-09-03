@@ -10,7 +10,7 @@ import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import { DxiItemModule, DxoLabelModule, DxiColumnModule, DxoPagingModule, DxoPagerModule, DxoSearchPanelModule, DxoHeaderFilterModule, DxoFilterRowModule, DxoExportModule } from 'devextreme-angular/ui/nested';
-import { UserDocumentsService, UserDocument, UserDocumentCreate } from '../../../shared/services/user-documents.service';
+import { UserDocumentsService, UserDocument, UserDocumentCreate, BulkUploadResult } from '../../../shared/services/user-documents.service';
 import { AuthService } from '../../../shared/services/auth.service';
 import { UserService } from '../../../shared/services/user.service';
 import { DocumentViewerComponent } from '../../../shared/components/document-viewer/document-viewer.component';
@@ -59,6 +59,12 @@ export class UserDocumentsComponent implements OnInit {
   
   // Upload popup
   uploadPopupVisible = false;
+  
+  // Bulk payslip upload popup
+  bulkPayslipPopupVisible = false;
+  bulkUploading = false;
+  selectedPayslipFiles: File[] = [];
+  bulkUploadResult: BulkUploadResult | null = null;
   
   // Form data
   formData: any = {
@@ -216,10 +222,29 @@ export class UserDocumentsComponent implements OnInit {
     this.selectedFile = null;
   }
 
+  openBulkPayslipPopup(): void {
+    this.selectedPayslipFiles = [];
+    this.bulkUploadResult = null;
+    this.bulkPayslipPopupVisible = true;
+  }
+
+  closeBulkPayslipPopup(): void {
+    this.bulkPayslipPopupVisible = false;
+    this.selectedPayslipFiles = [];
+    this.bulkUploadResult = null;
+  }
+
   onFileSelected(event: any): void {
     const files = event.value;
     if (files && files.length > 0) {
       this.selectedFile = files[0];
+    }
+  }
+
+  onPayslipFilesSelected(event: any): void {
+    const files = event.value;
+    if (files && files.length > 0) {
+      this.selectedPayslipFiles = Array.from(files);
     }
   }
 
@@ -312,6 +337,68 @@ export class UserDocumentsComponent implements OnInit {
     }
   }
 
+  async uploadBulkPayslips(): Promise<void> {
+    if (!this.selectedPayslipFiles || this.selectedPayslipFiles.length === 0) {
+      this.showToast('Please select PDF files to upload', 'error');
+      return;
+    }
+
+    // Validate all files are PDFs
+    const nonPdfFiles = this.selectedPayslipFiles.filter(file => !file.name.toLowerCase().endsWith('.pdf'));
+    if (nonPdfFiles.length > 0) {
+      this.showToast(`Only PDF files are supported. Found non-PDF files: ${nonPdfFiles.map(f => f.name).join(', ')}`, 'error');
+      return;
+    }
+
+    this.bulkUploading = true;
+    try {
+      this.bulkUploadResult = await this.userDocumentsService.bulkPayslipUpload(
+        this.selectedPayslipFiles,
+        'payslip',
+        true
+      );
+
+      // Show summary toast
+      if (this.bulkUploadResult.successful_uploads > 0) {
+        this.showToast(this.bulkUploadResult.summary, 'success');
+      } else {
+        this.showToast(this.bulkUploadResult.summary, 'warning');
+      }
+
+      // Refresh documents list
+      await this.loadAllDocuments();
+
+    } catch (error: any) {
+      let errorMessage = 'Error processing payslip files';
+      if (error?.error?.detail) {
+        errorMessage = error.error.detail;
+      }
+      this.showToast(errorMessage, 'error');
+    } finally {
+      this.bulkUploading = false;
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'success': return 'check';
+      case 'failed': return 'close';
+      case 'no_id_found': return 'warning';
+      case 'no_user_found': return 'user';
+      default: return 'help';
+    }
+  }
+
+  getStatusColor(status: string): string {
+    switch (status) {
+      case 'success': return '#28a745';
+      case 'failed': return '#dc3545';
+      case 'no_id_found': return '#ffc107';
+      case 'no_user_found': return '#17a2b8';
+      default: return '#6c757d';
+    }
+  }
+
   async deleteDocument(document: UserDocument): Promise<void> {
     if (!confirm(`Are you sure you want to delete "${document.name}"?`)) {
       return;
@@ -381,9 +468,9 @@ export class UserDocumentsComponent implements OnInit {
       type: type,
       displayTime: 4000,
       position: {
-        my: 'top right',
-        at: 'top right',
-        offset: '20 20'
+        my: 'top center',
+        at: 'top center',
+        offset: '0 80'
       }
     });
   }
@@ -425,5 +512,16 @@ export class UserDocumentsComponent implements OnInit {
     labelText: 'Drop a PDF file here or click to browse...',
     selectButtonText: 'Select PDF File',
     uploadButtonText: 'Upload'
+  };
+
+  // Bulk payslip uploader configuration
+  bulkPayslipUploaderOptions = {
+    multiple: true,
+    accept: '.pdf',
+    uploadMode: 'useButtons' as any,
+    showFileList: true,
+    labelText: 'Drop multiple payslip PDF files here or click to browse...',
+    selectButtonText: 'Select Payslip PDFs',
+    uploadButtonText: 'Process Payslips'
   };
 }

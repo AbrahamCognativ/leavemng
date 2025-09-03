@@ -9,6 +9,12 @@
         icon="plus"
         (onClick)="openUploadPopup()">
       </dx-button>
+      <dx-button
+        text="Bulk Payslip Upload"
+        type="success"
+        icon="upload"
+        (onClick)="openBulkPayslipPopup()">
+      </dx-button>
     </div>
   </div>
 
@@ -256,6 +262,156 @@
           type="default"
           [disabled]="uploading"
           (onClick)="uploadDocument()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Bulk Payslip Upload Popup -->
+<dx-popup
+  [visible]="bulkPayslipPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="800"
+  [height]="600"
+  [title]="'Bulk Payslip Upload'"
+  (onHiding)="closeBulkPayslipPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="bulk-payslip-content">
+      
+      <!-- Instructions -->
+      <div class="instructions-section">
+        <h4>📋 Instructions</h4>
+        <ul>
+          <li>Select multiple payslip PDF files</li>
+          <li>System will extract ID/Passport numbers from each PDF</li>
+          <li>Payslips will be automatically assigned to matching users</li>
+          <li>Users will receive email notifications</li>
+        </ul>
+      </div>
+      
+      <!-- File Upload Section -->
+      <div class="file-upload-section">
+        <label class="upload-label">Payslip PDF Files *</label>
+        <dx-file-uploader
+          [multiple]="bulkPayslipUploaderOptions.multiple"
+          [accept]="bulkPayslipUploaderOptions.accept"
+          [uploadMode]="bulkPayslipUploaderOptions.uploadMode"
+          [showFileList]="bulkPayslipUploaderOptions.showFileList"
+          [labelText]="bulkPayslipUploaderOptions.labelText"
+          [selectButtonText]="bulkPayslipUploaderOptions.selectButtonText"
+          (onValueChanged)="onPayslipFilesSelected($event)">
+        </dx-file-uploader>
+        <div class="upload-help">
+          Supported format: PDF only. Multiple files can be selected.
+        </div>
+      </div>
+      
+      <!-- Selected Files Summary -->
+      <div *ngIf="selectedPayslipFiles.length > 0" class="selected-files-summary">
+        <h5>📁 Selected Files ({{ selectedPayslipFiles.length }})</h5>
+        <div class="file-list">
+          <div *ngFor="let file of selectedPayslipFiles" class="file-item">
+            <i class="dx-icon-doc"></i>
+            <span>{{ file.name }}</span>
+            <small>({{ formatFileSize(file.size) }})</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Processing Results -->
+      <div *ngIf="bulkUploadResult" class="processing-results">
+        <h5>📊 Processing Results</h5>
+        
+        <!-- Summary Stats -->
+        <div class="results-summary">
+          <div class="stat-item success">
+            <i class="dx-icon-check"></i>
+            <span>{{ bulkUploadResult.successful_uploads }} Successful</span>
+          </div>
+          <div class="stat-item warning" *ngIf="bulkUploadResult.no_user_found > 0">
+            <i class="dx-icon-user"></i>
+            <span>{{ bulkUploadResult.no_user_found }} No User Found</span>
+          </div>
+          <div class="stat-item warning" *ngIf="bulkUploadResult.no_id_extracted > 0">
+            <i class="dx-icon-warning"></i>
+            <span>{{ bulkUploadResult.no_id_extracted }} No ID Found</span>
+          </div>
+          <div class="stat-item error" *ngIf="bulkUploadResult.failed_uploads > 0">
+            <i class="dx-icon-close"></i>
+            <span>{{ bulkUploadResult.failed_uploads }} Failed</span>
+          </div>
+        </div>
+        
+        <!-- Detailed Results -->
+        <div class="detailed-results">
+          <dx-data-grid
+            [dataSource]="bulkUploadResult.processing_details"
+            [showBorders]="true"
+            [columnAutoWidth]="true">
+            <dxo-paging [pageSize]="5"></dxo-paging>
+            
+            <dxi-column caption="Status" cellTemplate="statusTemplate" [width]="80"></dxi-column>
+            <dxi-column dataField="file_name" caption="File Name"></dxi-column>
+            <dxi-column caption="Extracted IDs" cellTemplate="idsTemplate"></dxi-column>
+            <dxi-column caption="Matched User" cellTemplate="userTemplate"></dxi-column>
+            <dxi-column dataField="error_message" caption="Message" cellTemplate="messageTemplate"></dxi-column>
+            
+            <!-- Status Template -->
+            <div *dxTemplate="let data of 'statusTemplate'">
+              <i [class]="'dx-icon-' + getStatusIcon(data.data.status)"
+                 [style.color]="getStatusColor(data.data.status)"
+                 [title]="data.data.status"></i>
+            </div>
+            
+            <!-- IDs Template -->
+            <div *dxTemplate="let data of 'idsTemplate'">
+              <span *ngIf="data.data.extracted_ids && data.data.extracted_ids.length > 0">
+                {{ data.data.extracted_ids.join(', ') }}
+              </span>
+              <span *ngIf="!data.data.extracted_ids || data.data.extracted_ids.length === 0" class="no-data">
+                No IDs found
+              </span>
+            </div>
+            
+            <!-- User Template -->
+            <div *dxTemplate="let data of 'userTemplate'">
+              <div *ngIf="data.data.matched_user" class="matched-user">
+                <strong>{{ data.data.matched_user.name }}</strong><br>
+                <small>{{ data.data.matched_user.email }}</small><br>
+                <small>ID: {{ data.data.matched_user.passport_or_id_number }}</small>
+              </div>
+              <span *ngIf="!data.data.matched_user" class="no-data">No match</span>
+            </div>
+            
+            <!-- Message Template -->
+            <div *dxTemplate="let data of 'messageTemplate'">
+              <span *ngIf="data.data.error_message" class="error-message">
+                {{ data.data.error_message }}
+              </span>
+              <span *ngIf="!data.data.error_message && data.data.status === 'success'" class="success-message">
+                Successfully uploaded
+              </span>
+            </div>
+            
+          </dx-data-grid>
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Close"
+          stylingMode="outlined"
+          (onClick)="closeBulkPayslipPopup()">
+        </dx-button>
+        <dx-button
+          [text]="bulkUploading ? 'Processing...' : 'Process Payslips'"
+          type="success"
+          [disabled]="bulkUploading || selectedPayslipFiles.length === 0"
+          (onClick)="uploadBulkPayslips()">
         </dx-button>
       </div>
     </div>

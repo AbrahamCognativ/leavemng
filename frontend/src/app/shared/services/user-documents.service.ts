@@ -332,4 +332,54 @@ export class UserDocumentsService {
       minute: '2-digit'
     });
   }
+
+  // Bulk payslip upload method
+  async bulkPayslipUpload(files: File[], documentType: string = 'payslip', sendEmailNotification: boolean = true): Promise<BulkUploadResult> {
+    try {
+      const formData = new FormData();
+      
+      // Add all files
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+      
+      // Add other parameters
+      formData.append('document_type', documentType);
+      formData.append('send_email_notification', sendEmailNotification.toString());
+
+      const response = await firstValueFrom(
+        this.http.post<BulkUploadResult>(`${this.API_URL}/user-documents/bulk-payslip-upload`, formData, {
+          headers: this.getAuthHeaders()
+        })
+      );
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+}
+
+// Interface for bulk upload results
+export interface BulkUploadResult {
+  total_files: number;
+  successful_uploads: number;
+  failed_uploads: number;
+  no_user_found: number;
+  no_id_extracted: number;
+  processing_details: BulkUploadFileResult[];
+  summary: string;
+}
+
+export interface BulkUploadFileResult {
+  file_name: string;
+  status: 'success' | 'failed' | 'no_id_found' | 'no_user_found' | 'processing';
+  extracted_ids: string[];
+  matched_user?: {
+    id: string;
+    name: string;
+    email: string;
+    passport_or_id_number: string;
+  };
+  error_message?: string;
+  document_id?: string;
 }
