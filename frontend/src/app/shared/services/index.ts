@@ -8,4 +8,5 @@ export * from './org-unit.service';
 export * from './user-state.service';
 export * from './policy.service';
 export * from './policy-acknowledgment.service';
+export * from './user-documents.service';
 export * from './navigation.service';

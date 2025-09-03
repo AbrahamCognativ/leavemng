@@ -1,0 +1,248 @@
+.docs-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .page-header {
+    text-align: left;
+    margin-bottom: 30px;
+    
+    h2 {
+      color: #333;
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .subtitle {
+      color: #6c757d;
+      font-size: 16px;
+      margin: 0 0 20px 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+  }
+
+  .content-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  // Loading state
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    
+    p {
+      margin-top: 16px;
+      color: #6c757d;
+      font-size: 16px;
+    }
+  }
+
+  // Empty state
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    
+    .empty-icon {
+      font-size: 48px;
+      color: #dee2e6;
+      margin-bottom: 24px;
+      
+      i {
+        font-size: 48px;
+      }
+    }
+    
+    h3 {
+      color: #495057;
+      margin: 0 0 12px 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    p {
+      color: #6c757d;
+      margin: 0;
+      font-size: 16px;
+      max-width: 400px;
+      line-height: 1.5;
+    }
+  }
+}
+
+// Data Grid Styling
+.dx-datagrid {
+  border-radius: 8px;
+  overflow: hidden;
+  
+  .dx-datagrid-headers {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .dx-datagrid-rowsview {
+    .dx-row {
+      &:hover {
+        background-color: #f8f9fa;
+      }
+      
+      &.dx-row-alt {
+        background-color: #fdfdfd;
+      }
+    }
+  }
+}
+
+// File info styling
+.file-info {
+  .file-details {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    align-items: center;
+    
+    .file-type {
+      background-color: #e9ecef;
+      color: #495057;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    
+    .file-size {
+      color: #6c757d;
+      font-weight: 500;
+    }
+  }
+}
+
+// Description styling
+.description-text {
+  color: #666;
+  line-height: 1.4;
+}
+
+// Document type styling
+.document-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  i {
+    font-size: 16px;
+  }
+
+  .type-text {
+    font-weight: 500;
+    color: #495057;
+  }
+}
+
+// Document name styling
+.document-name {
+  strong {
+    color: #333;
+    font-weight: 600;
+  }
+}
+
+// Actions styling
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  
+  .dx-button {
+    min-width: 32px;
+    height: 32px;
+  }
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .docs-container {
+    padding: 15px;
+    
+    .content-section {
+      padding: 15px;
+    }
+  }
+  
+  .dx-datagrid {
+    font-size: 14px;
+    
+    .dx-datagrid-headers {
+      font-size: 13px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .docs-container {
+    padding: 10px;
+    
+    .page-header {
+      h2 {
+        font-size: 24px;
+      }
+      
+      .subtitle {
+        font-size: 14px;
+      }
+    }
+    
+    .content-section {
+      padding: 10px;
+    }
+  }
+  
+  .dx-datagrid {
+    .dx-datagrid-rowsview .dx-row > td {
+      padding: 8px 4px;
+    }
+  }
+  
+  .actions-cell {
+    flex-direction: column;
+    gap: 2px;
+    
+    .dx-button {
+      min-width: 28px;
+      height: 28px;
+    }
+  }
+  
+  .empty-state {
+    padding: 40px 10px;
+    
+    .empty-icon i {
+      font-size: 36px;
+    }
+    
+    h3 {
+      font-size: 18px;
+    }
+    
+    p {
+      font-size: 14px;
+    }
+  }
+}
