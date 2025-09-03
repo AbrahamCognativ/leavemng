@@ -528,7 +528,7 @@ def get_user_documents_stats(
     # Documents by type
     type_counts = db.query(
         UserDocument.document_type,
-        func.count(UserDocument.id).label('count')
+        func.count(UserDocument.id).label('count')  # pylint: disable=not-callable
     ).filter(
         UserDocument.is_active == True  # pylint: disable=singleton-comparison
     ).group_by(UserDocument.document_type).all()
