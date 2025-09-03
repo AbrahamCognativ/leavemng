@@ -14,6 +14,7 @@ import {WfhHistoryComponent} from './pages/wfh-history/wfh-history.component';
 import {PoliciesComponent} from './pages/policies/policies.component';
 import {UserPoliciesComponent} from './pages/user-policies/user-policies.component';
 import {PolicyViewComponent} from './pages/policy-view/policy-view.component';
+import {DocsComponent} from './pages/docs/docs.component';
 
 const routes: Routes = [
   {
@@ -84,6 +85,16 @@ const routes: Routes = [
   {
     path: 'change-password/:token',
     component: ChangePasswordFormComponent
+  },
+  {
+    path: 'policies',
+    component: PoliciesComponent,
+    canActivate: [ AuthGuardService ]
+  },
+  {
+    path: 'docs',
+    component: DocsComponent,
+    canActivate: [ AuthGuardService ]
   },
   {
     path: '**',

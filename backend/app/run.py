@@ -83,6 +83,7 @@ class AuthRequiredMiddleware(BaseHTTPMiddleware):
                 or request.url.path.startswith("/api/v1/auth/reset-password-invite")
                 or request.url.path.startswith("/api/v1/auth/forgot-password")
                 or (request.url.path.startswith("/api/v1/policies/") and (request.url.path.endswith("/download") or request.url.path.endswith("/preview")))
+                or request.url.path.startswith("/api/v1/user-documents/") and (request.url.path.endswith("/download") or request.url.path.endswith("/preview"))
                 or request.url.path.startswith("/api/v1/actions/action/")
                 ):
             return await call_next(request)
@@ -113,6 +114,7 @@ def include_routers():
         "leave_policy",
         "policy",
         "policy_acknowledgment",
+        "user_documents",
         "audit_logs",
         "actions"]
     for m in modules:
@@ -128,6 +130,8 @@ def include_routers():
             prefix = "/api/v1/policies"
         elif m == "policy_acknowledgment":
             prefix = "/api/v1/policy-acknowledgments"
+        elif m == "user_documents":
+            prefix = "/api/v1/user-documents"
         else:
             prefix = f"/api/v1/{m}"
         app.include_router(router.router, prefix=prefix)

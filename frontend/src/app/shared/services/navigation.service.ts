@@ -134,6 +134,12 @@ export class NavigationService {
               path: '/admin/policy-acknowledgments',
             }
           ] : []),
+          ...(isAdmin || isHR || isManager ? [
+            {
+              text: 'User Docs',
+              path: '/admin/user-documents',
+            }
+          ] : []),
           {
             text: 'Audit Logs',
             path: '/admin/audit-logs',
@@ -144,6 +150,11 @@ export class NavigationService {
         text: 'Policies',
         icon: 'doc',
         items: [] // This will be populated dynamically
+      },
+      {
+        text: 'Docs',
+        path: '/docs',
+        icon: 'folder'
       },
       {
         text: 'Profile',

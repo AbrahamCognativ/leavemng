@@ -1,0 +1,428 @@
+<div class="user-documents-container">
+  <div class="page-header">
+    <h2>User Documents</h2>
+    <p class="subtitle">Manage documents for users</p>
+    <div class="header-actions">
+      <dx-button
+        text="Upload Document"
+        type="default"
+        icon="plus"
+        (onClick)="openUploadPopup()">
+      </dx-button>
+      <dx-button
+        text="Bulk Payslip Upload"
+        type="success"
+        icon="upload"
+        (onClick)="openBulkPayslipPopup()">
+      </dx-button>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-container">
+      <dx-load-indicator [visible]="true"></dx-load-indicator>
+      <p>Loading users...</p>
+    </div>
+
+    <!-- Users Grid -->
+    <dx-data-grid
+      *ngIf="!loading"
+      [dataSource]="users"
+      [showBorders]="true"
+      [columnAutoWidth]="true">
+      <dxo-paging [pageSize]="10"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 20]"
+        [showInfo]="true">
+      </dxo-pager>
+      
+      <dxi-column caption="Name" cellTemplate="nameTemplate"></dxi-column>
+      <dxi-column dataField="email" caption="Email"></dxi-column>
+      <dxi-column caption="Role" cellTemplate="roleTemplate"></dxi-column>
+      <dxi-column caption="Documents" cellTemplate="documentsTemplate"></dxi-column>
+      <dxi-column caption="Actions" cellTemplate="actionsTemplate"></dxi-column>
+
+      <!-- Name Template -->
+      <div *dxTemplate="let data of 'nameTemplate'">
+        <span class="user-name">
+          {{ data.data.name || (data.data.first_name + ' ' + data.data.last_name) }}
+        </span>
+      </div>
+
+      <!-- Role Template -->
+      <div *dxTemplate="let data of 'roleTemplate'">
+        <span class="user-role">
+          {{ data.data.role_band || data.data.role_title || data.data.role || 'Employee' }}
+        </span>
+      </div>
+
+      <!-- Documents Count Template -->
+      <div *dxTemplate="let data of 'documentsTemplate'">
+        <span class="document-count">
+          {{ getUserDocumentCount(data.data.id) }} documents
+        </span>
+      </div>
+
+      <!-- Actions Template -->
+      <div *dxTemplate="let data of 'actionsTemplate'">
+        <div class="actions-cell">
+          <dx-button
+            icon="plus"
+            hint="Upload Document"
+            stylingMode="text"
+            (onClick)="openUploadPopupForUser(data.data)">
+          </dx-button>
+          
+          <dx-button
+            icon="folder"
+            hint="View Documents"
+            stylingMode="text"
+            (onClick)="viewUserDocuments(data.data)">
+          </dx-button>
+        </div>
+      </div>
+
+    </dx-data-grid>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && users.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <i class="dx-icon-user"></i>
+      </div>
+      <h3>No Users Found</h3>
+      <p>There are currently no users available.</p>
+    </div>
+  </div>
+</div>
+
+<!-- User Documents Popup -->
+<dx-popup
+  [visible]="userDocumentsPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="1000"
+  [height]="600"
+  [title]="selectedUser ? 'Documents for ' + selectedUser.first_name + ' ' + selectedUser.last_name : 'User Documents'"
+  (onHiding)="closeUserDocumentsPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="user-documents-content">
+      <!-- Loading State -->
+      <div *ngIf="loadingDocuments" class="loading-container">
+        <dx-load-indicator [visible]="true"></dx-load-indicator>
+        <p>Loading documents...</p>
+      </div>
+
+      <!-- Documents Grid -->
+      <dx-data-grid
+        *ngIf="!loadingDocuments"
+        [dataSource]="userDocuments"
+        [showBorders]="true"
+        [columnAutoWidth]="true">
+        <dxo-paging [pageSize]="10"></dxo-paging>
+        <dxo-pager
+          [showPageSizeSelector]="true"
+          [allowedPageSizes]="[5, 10, 20]"
+          [showInfo]="true">
+        </dxo-pager>
+        <dxo-search-panel [visible]="true" [width]="240" placeholder="Search documents..."></dxo-search-panel>
+        <dxo-header-filter [visible]="true"></dxo-header-filter>
+        <dxo-filter-row [visible]="true"></dxo-filter-row>
+        <dxo-export [enabled]="true" fileName="user-documents"></dxo-export>
+        
+        <dxi-column dataField="name" caption="Document Title"></dxi-column>
+        <dxi-column dataField="description" caption="Description" cellTemplate="descriptionTemplate"></dxi-column>
+        <dxi-column caption="File" cellTemplate="fileTemplate"></dxi-column>
+        <dxi-column dataField="created_at" caption="Uploaded" dataType="date" format="dd/MM/yyyy HH:mm"></dxi-column>
+        <dxi-column dataField="creator_name" caption="Uploaded By"></dxi-column>
+        <dxi-column caption="Actions" cellTemplate="documentActionsTemplate"></dxi-column>
+
+        <!-- Description Template -->
+        <div *dxTemplate="let data of 'descriptionTemplate'">
+          <span class="description-text"
+                [title]="data.value || 'No description'">
+            {{ (data.value || 'No description') | slice:0:50 }}
+            <span *ngIf="data.value && data.value.length > 50">...</span>
+          </span>
+        </div>
+
+        <!-- File Template -->
+        <div *dxTemplate="let data of 'fileTemplate'">
+          <div class="file-info">
+            <div class="file-details">
+              <span class="file-type">{{ data.data.file_type?.toUpperCase() || 'PDF' }}</span>
+              <span class="file-size" *ngIf="data.data.file_size">{{ formatFileSize(data.data.file_size) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Actions Template -->
+        <div *dxTemplate="let data of 'documentActionsTemplate'">
+          <div class="actions-cell">
+            <dx-button
+              icon="eyeopen"
+              hint="View Document"
+              stylingMode="text"
+              (onClick)="viewDocument(data.data)">
+            </dx-button>
+            
+            <dx-button
+              icon="download"
+              hint="Download"
+              stylingMode="text"
+              (onClick)="downloadDocument(data.data)">
+            </dx-button>
+            
+            <dx-button
+              icon="trash"
+              hint="Delete"
+              stylingMode="text"
+              (onClick)="deleteDocument(data.data)">
+            </dx-button>
+          </div>
+        </div>
+
+      </dx-data-grid>
+
+      <!-- Empty State for Documents -->
+      <div *ngIf="!loadingDocuments && userDocuments.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="dx-icon-doc"></i>
+        </div>
+        <h3>No Documents Found</h3>
+        <p>This user has no documents uploaded yet.</p>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Upload Document Popup -->
+<dx-popup
+  [visible]="uploadPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="600"
+  [height]="500"
+  [title]="'Upload Document'"
+  (onHiding)="closeUploadPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="upload-form">
+      <dx-form [formData]="formData" [colCount]="1">
+        
+        <dxi-item dataField="user_id" editorType="dxSelectBox" [isRequired]="true"
+                  [editorOptions]="{
+                    dataSource: usersWithAllOption,
+                    displayExpr: 'display_name',
+                    valueExpr: 'id',
+                    placeholder: 'Select user or all users',
+                    searchEnabled: true
+                  }">
+          <dxo-label text="User"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="title" [isRequired]="true">
+          <dxo-label text="Document Title"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="description" editorType="dxTextArea">
+          <dxo-label text="Description"></dxo-label>
+        </dxi-item>
+        
+      </dx-form>
+      
+      <!-- File Upload Section -->
+      <div class="file-upload-section">
+        <label class="upload-label">Document File *</label>
+        <dx-file-uploader
+          [multiple]="false"
+          [accept]="fileUploaderOptions.accept"
+          [uploadMode]="fileUploaderOptions.uploadMode"
+          [showFileList]="fileUploaderOptions.showFileList"
+          [labelText]="fileUploaderOptions.labelText"
+          [selectButtonText]="fileUploaderOptions.selectButtonText"
+          (onValueChanged)="onFileSelected($event)">
+        </dx-file-uploader>
+        <div class="upload-help">
+          Supported format: PDF only
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          (onClick)="closeUploadPopup()">
+        </dx-button>
+        <dx-button
+          [text]="uploading ? 'Uploading...' : 'Upload Document'"
+          type="default"
+          [disabled]="uploading"
+          (onClick)="uploadDocument()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Bulk Payslip Upload Popup -->
+<dx-popup
+  [visible]="bulkPayslipPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="800"
+  [height]="600"
+  [title]="'Bulk Payslip Upload'"
+  (onHiding)="closeBulkPayslipPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="bulk-payslip-content">
+      
+      <!-- Instructions -->
+      <div class="instructions-section">
+        <h4>📋 Instructions</h4>
+        <ul>
+          <li>Select multiple payslip PDF files</li>
+          <li>System will extract ID/Passport numbers from each PDF</li>
+          <li>Payslips will be automatically assigned to matching users</li>
+          <li>Users will receive email notifications</li>
+        </ul>
+      </div>
+      
+      <!-- File Upload Section -->
+      <div class="file-upload-section">
+        <label class="upload-label">Payslip PDF Files *</label>
+        <dx-file-uploader
+          [multiple]="bulkPayslipUploaderOptions.multiple"
+          [accept]="bulkPayslipUploaderOptions.accept"
+          [uploadMode]="bulkPayslipUploaderOptions.uploadMode"
+          [showFileList]="bulkPayslipUploaderOptions.showFileList"
+          [labelText]="bulkPayslipUploaderOptions.labelText"
+          [selectButtonText]="bulkPayslipUploaderOptions.selectButtonText"
+          (onValueChanged)="onPayslipFilesSelected($event)">
+        </dx-file-uploader>
+        <div class="upload-help">
+          Supported format: PDF only. Multiple files can be selected.
+        </div>
+      </div>
+      
+      <!-- Selected Files Summary -->
+      <div *ngIf="selectedPayslipFiles.length > 0" class="selected-files-summary">
+        <h5>📁 Selected Files ({{ selectedPayslipFiles.length }})</h5>
+        <div class="file-list">
+          <div *ngFor="let file of selectedPayslipFiles" class="file-item">
+            <i class="dx-icon-doc"></i>
+            <span>{{ file.name }}</span>
+            <small>({{ formatFileSize(file.size) }})</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Processing Results -->
+      <div *ngIf="bulkUploadResult" class="processing-results">
+        <h5>📊 Processing Results</h5>
+        
+        <!-- Summary Stats -->
+        <div class="results-summary">
+          <div class="stat-item success">
+            <i class="dx-icon-check"></i>
+            <span>{{ bulkUploadResult.successful_uploads }} Successful</span>
+          </div>
+          <div class="stat-item warning" *ngIf="bulkUploadResult.no_user_found > 0">
+            <i class="dx-icon-user"></i>
+            <span>{{ bulkUploadResult.no_user_found }} No User Found</span>
+          </div>
+          <div class="stat-item warning" *ngIf="bulkUploadResult.no_id_extracted > 0">
+            <i class="dx-icon-warning"></i>
+            <span>{{ bulkUploadResult.no_id_extracted }} No ID Found</span>
+          </div>
+          <div class="stat-item error" *ngIf="bulkUploadResult.failed_uploads > 0">
+            <i class="dx-icon-close"></i>
+            <span>{{ bulkUploadResult.failed_uploads }} Failed</span>
+          </div>
+        </div>
+        
+        <!-- Detailed Results -->
+        <div class="detailed-results">
+          <dx-data-grid
+            [dataSource]="bulkUploadResult.processing_details"
+            [showBorders]="true"
+            [columnAutoWidth]="true">
+            <dxo-paging [pageSize]="5"></dxo-paging>
+            
+            <dxi-column caption="Status" cellTemplate="statusTemplate" [width]="80"></dxi-column>
+            <dxi-column dataField="file_name" caption="File Name"></dxi-column>
+            <dxi-column caption="Extracted IDs" cellTemplate="idsTemplate"></dxi-column>
+            <dxi-column caption="Matched User" cellTemplate="userTemplate"></dxi-column>
+            <dxi-column dataField="error_message" caption="Message" cellTemplate="messageTemplate"></dxi-column>
+            
+            <!-- Status Template -->
+            <div *dxTemplate="let data of 'statusTemplate'">
+              <i [class]="'dx-icon-' + getStatusIcon(data.data.status)"
+                 [style.color]="getStatusColor(data.data.status)"
+                 [title]="data.data.status"></i>
+            </div>
+            
+            <!-- IDs Template -->
+            <div *dxTemplate="let data of 'idsTemplate'">
+              <span *ngIf="data.data.extracted_ids && data.data.extracted_ids.length > 0">
+                {{ data.data.extracted_ids.join(', ') }}
+              </span>
+              <span *ngIf="!data.data.extracted_ids || data.data.extracted_ids.length === 0" class="no-data">
+                No IDs found
+              </span>
+            </div>
+            
+            <!-- User Template -->
+            <div *dxTemplate="let data of 'userTemplate'">
+              <div *ngIf="data.data.matched_user" class="matched-user">
+                <strong>{{ data.data.matched_user.name }}</strong><br>
+                <small>{{ data.data.matched_user.email }}</small><br>
+                <small>ID: {{ data.data.matched_user.passport_or_id_number }}</small>
+              </div>
+              <span *ngIf="!data.data.matched_user" class="no-data">No match</span>
+            </div>
+            
+            <!-- Message Template -->
+            <div *dxTemplate="let data of 'messageTemplate'">
+              <span *ngIf="data.data.error_message" class="error-message">
+                {{ data.data.error_message }}
+              </span>
+              <span *ngIf="!data.data.error_message && data.data.status === 'success'" class="success-message">
+                Successfully uploaded
+              </span>
+            </div>
+            
+          </dx-data-grid>
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Close"
+          stylingMode="outlined"
+          (onClick)="closeBulkPayslipPopup()">
+        </dx-button>
+        <dx-button
+          [text]="bulkUploading ? 'Processing...' : 'Process Payslips'"
+          type="success"
+          [disabled]="bulkUploading || selectedPayslipFiles.length === 0"
+          (onClick)="uploadBulkPayslips()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Document Viewer -->
+<app-document-viewer
+  [visible]="documentViewerVisible"
+  [documentUrl]="currentDocumentUrl"
+  [documentName]="currentDocumentName"
+  [fileType]="currentDocumentType"
+  (onPopupHiding)="closeDocumentViewer()">
+</app-document-viewer>

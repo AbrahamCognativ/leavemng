@@ -9,3 +9,4 @@ from .wfh_request import WFHRequest
 from .audit_log import AuditLog
 from .policy import Policy
 from .policy_acknowledgment import PolicyAcknowledgment
+from .user_document import UserDocument
