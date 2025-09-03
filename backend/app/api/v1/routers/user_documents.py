@@ -528,9 +528,9 @@ def get_user_documents_stats(
     # Documents by type
     type_counts = db.query(
         UserDocument.document_type,
-        func.count(UserDocument.id).label('count')
+        func.count(UserDocument.id).label('count')  # pylint: disable=not-callable
     ).filter(
-        UserDocument.is_active == True
+        UserDocument.is_active == True  # pylint: disable=singleton-comparison
     ).group_by(UserDocument.document_type).all()
     
     documents_by_type = {}
@@ -814,8 +814,10 @@ async def bulk_payslip_upload(
                 # Clean up temporary file
                 try:
                     os.unlink(temp_file_path)
-                except:
-                    pass
+                except OSError as e:
+                    # Log the error but don't fail the upload
+                    import logging
+                    logging.warning(f"Failed to clean up temporary file {temp_file_path}: {e}")
                     
         except Exception as e:
             file_result["status"] = "failed"
