@@ -40,3 +40,4 @@ class LeaveRequest(Base):
         ForeignKey("users.id"),
         nullable=True)
     comments = Column(Text, nullable=True)
+    approval_note = Column(Text, nullable=True)

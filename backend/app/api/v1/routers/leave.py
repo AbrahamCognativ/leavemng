@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, Form
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app.schemas.leave_request import LeaveRequestRead, LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestPartialUpdate
@@ -78,13 +78,13 @@ def create_leave_request(
             total_days += 1
     req.total_days = total_days
 
-    # Validate that annual leave is applied at least 3 days in advance
+    # Validate that annual leave is applied at least 5 days in advance
     if leave_type.code.value == 'annual':
         start_date = req.start_date
-        if (start_date - date.today()) < timedelta(days=3):
+        if (start_date - date.today()) < timedelta(days=5):
             raise HTTPException(
                 status_code=400,
-                detail="Annual leave must be applied at least 3 days in advance")
+                detail="Annual leave must be applied at least 5 days in advance")
 
     elif leave_type.code.value == 'maternity':
         if current_user.gender != 'female':
@@ -302,7 +302,8 @@ def approve_leave_request(
         request_id: UUID,
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user),
-        request: Request = None):
+        request: Request = None,
+        approval_note: str = Form(None)):
     req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")
@@ -338,6 +339,7 @@ def approve_leave_request(
         req.status = 'approved'
         req.decision_at = datetime.now(timezone.utc)
         req.decided_by = current_user.id
+        req.approval_note = approval_note
         db.commit()
         db.refresh(req)
     except Exception as e:
@@ -379,7 +381,8 @@ def reject_leave_request(
         request_id: UUID,
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user),
-        request: Request = None):
+        request: Request = None,
+        approval_note: str = Form(None)):
     req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")
@@ -415,6 +418,7 @@ def reject_leave_request(
         req.status = 'rejected'
         req.decision_at = datetime.now(timezone.utc)
         req.decided_by = current_user.id
+        req.approval_note = approval_note
         db.commit()
         db.refresh(req)
 

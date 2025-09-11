@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, Form
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app.schemas.wfh_request import WFHRequestRead, WFHRequestCreate, WFHRequestUpdate, WFHRequestPartialUpdate
@@ -95,11 +95,11 @@ def create_wfh_request(
     if existing:
         raise HTTPException(status_code=400, detail="Duplicate WFH request")
 
-    # Validate that WFH is applied at least 3 days in advance
-    if (req.start_date - date.today()) < timedelta(days=3):
+    # Validate that WFH is applied at least 5 days in advance
+    if (req.start_date - date.today()) < timedelta(days=5):
         raise HTTPException(
             status_code=400,
-            detail="Work from home must be applied at least 3 days in advance")
+            detail="Work from home must be applied at least 5 days in advance")
 
     try:
         db_req = WFHRequest(
@@ -250,7 +250,8 @@ def approve_wfh_request(
         request_id: UUID,
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user),
-        request: Request = None):
+        request: Request = None,
+        approval_note: str = Form(None)):
     """Approve a WFH request"""
     req = db.query(WFHRequest).filter(WFHRequest.id == request_id).first()
     if not req:
@@ -291,6 +292,7 @@ def approve_wfh_request(
         req.status = 'approved'
         req.decision_at = datetime.now(timezone.utc)
         req.decided_by = current_user.id
+        req.approval_note = approval_note
         db.commit()
         db.refresh(req)
         
@@ -332,7 +334,8 @@ def reject_wfh_request(
         request_id: UUID,
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user),
-        request: Request = None):
+        request: Request = None,
+        approval_note: str = Form(None)):
     """Reject a WFH request"""
     req = db.query(WFHRequest).filter(WFHRequest.id == request_id).first()
     if not req:
@@ -373,6 +376,7 @@ def reject_wfh_request(
         req.status = 'rejected'
         req.decision_at = datetime.now(timezone.utc)
         req.decided_by = current_user.id
+        req.approval_note = approval_note
         db.commit()
         db.refresh(req)
         

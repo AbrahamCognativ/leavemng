@@ -379,16 +379,26 @@ export class LeaveService {
   }
 
   // Approve leave request
-  async approveLeaveRequest(requestId: string): Promise<any> {
-    return this.http.patch<any>(`${this.apiUrl}/leave/${requestId}/approve`, {})
+  async approveLeaveRequest(requestId: string, approvalNote?: string): Promise<any> {
+    const formData = new FormData();
+    if (approvalNote) {
+      formData.append('approval_note', approvalNote);
+    }
+    
+    return this.http.patch<any>(`${this.apiUrl}/leave/${requestId}/approve`, formData)
       .pipe(
         catchError(this.handleError)
       ).toPromise() as Promise<any>;
   }
 
   // Reject leave request
-  async rejectLeaveRequest(requestId: string): Promise<any> {
-    return this.http.patch<any>(`${this.apiUrl}/leave/${requestId}/reject`, {})
+  async rejectLeaveRequest(requestId: string, approvalNote?: string): Promise<any> {
+    const formData = new FormData();
+    if (approvalNote) {
+      formData.append('approval_note', approvalNote);
+    }
+    
+    return this.http.patch<any>(`${this.apiUrl}/leave/${requestId}/reject`, formData)
       .pipe(
         catchError(this.handleError)
       ).toPromise() as Promise<any>;

@@ -47,5 +47,6 @@ class LeaveRequestRead(LeaveRequestBase):
     decision_at: Optional[datetime] = None
     decided_by: Optional[UUID] = None
     comments: Optional[str] = None
+    approval_note: Optional[str] = None
 
     model_config = {"from_attributes": True}

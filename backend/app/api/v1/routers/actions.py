@@ -52,11 +52,32 @@ def generate_action_tokens(resource_type: str, resource_id: str, approver_id: st
 
 
 @router.get("/action/{token}", tags=["actions"])
-def execute_action_via_token(
+@router.post("/action/{token}", tags=["actions"])
+async def execute_action_via_token(
         token: str,
         db: Session = Depends(get_db),
         request: Request = None):
     """Execute approve/reject action via secure token from email"""
+    
+    # Extract approval note and action from form data if this is a POST request
+    approval_note = None
+    selected_action = None
+    if request and request.method == "POST":
+        try:
+            form_data = await request.form()
+            approval_note = form_data.get("approval_note", "").strip()
+            if not approval_note:
+                approval_note = None
+            selected_action = form_data.get("action", "").strip()
+            
+            # Log form submission for audit purposes
+            import logging
+            logging.debug(f"Processing email action token: {token}")
+        except Exception as e:
+            import logging
+            logging.error(f"Error extracting form data: {e}")
+            approval_note = None
+            selected_action = None
     
     # Find the token
     action_token = db.query(ActionToken).filter(
@@ -85,11 +106,24 @@ def execute_action_via_token(
     if not approver:
         return HTMLResponse(content=generate_error_page("Approver not found"), status_code=404)
     
+    # Override action type based on radio button selection if provided
+    if selected_action:
+        if selected_action == "approve":
+            if action_token.resource_type == "wfh_request":
+                action_token.action_type = ActionTypeEnum.wfh_approve
+            elif action_token.resource_type == "leave_request":
+                action_token.action_type = ActionTypeEnum.leave_approve
+        elif selected_action == "reject":
+            if action_token.resource_type == "wfh_request":
+                action_token.action_type = ActionTypeEnum.wfh_reject
+            elif action_token.resource_type == "leave_request":
+                action_token.action_type = ActionTypeEnum.leave_reject
+    
     try:
         if action_token.resource_type == "wfh_request":
-            return process_wfh_action(action_token, approver, db, request)
+            return process_wfh_action(action_token, approver, db, request, approval_note)
         elif action_token.resource_type == "leave_request":
-            return process_leave_action(action_token, approver, db, request)
+            return process_leave_action(action_token, approver, db, request, approval_note)
         else:
             return HTMLResponse(content=generate_error_page("Invalid resource type"), status_code=400)
     except Exception as e:
@@ -97,7 +131,7 @@ def execute_action_via_token(
         return HTMLResponse(content=generate_error_page(f"Error processing request: {str(e)}"), status_code=500)
 
 
-def process_wfh_action(action_token: ActionToken, approver: User, db: Session, request: Request):
+def process_wfh_action(action_token: ActionToken, approver: User, db: Session, request: Request, approval_note: str = None):
     """Process WFH approve/reject action"""
     from app.utils.email_utils import send_wfh_approval_notification
     
@@ -130,6 +164,11 @@ def process_wfh_action(action_token: ActionToken, approver: User, db: Session, r
     wfh_request.status = 'approved' if is_approve else 'rejected'
     wfh_request.decision_at = datetime.now(timezone.utc)
     wfh_request.decided_by = approver.id
+    wfh_request.approval_note = approval_note
+    
+    # Log WFH decision for audit purposes
+    import logging
+    logging.debug(f"WFH request {wfh_request.id} {'approved' if is_approve else 'rejected'}")
     
     # Mark token as used
     action_token.used = True
@@ -157,6 +196,10 @@ def process_wfh_action(action_token: ActionToken, approver: User, db: Session, r
         "Decided By": approver.name
     }
     
+    # Add approval note to details if provided
+    if approval_note:
+        wfh_details["Note"] = approval_note
+    
     try:
         if employee:
             send_wfh_approval_notification(
@@ -176,7 +219,7 @@ def process_wfh_action(action_token: ActionToken, approver: User, db: Session, r
     ))
 
 
-def process_leave_action(action_token: ActionToken, approver: User, db: Session, request: Request):
+def process_leave_action(action_token: ActionToken, approver: User, db: Session, request: Request, approval_note: str = None):
     """Process leave approve/reject action"""
     from app.utils.email_utils import send_leave_approval_notification
     
@@ -209,6 +252,11 @@ def process_leave_action(action_token: ActionToken, approver: User, db: Session,
     leave_request.status = 'approved' if is_approve else 'rejected'
     leave_request.decision_at = datetime.now(timezone.utc)
     leave_request.decided_by = approver.id
+    leave_request.approval_note = approval_note
+    
+    # Log leave decision for audit purposes
+    import logging
+    logging.debug(f"Leave request {leave_request.id} {'approved' if is_approve else 'rejected'}")
     
     # Handle leave balance for rejections
     if not is_approve:
@@ -250,6 +298,10 @@ def process_leave_action(action_token: ActionToken, approver: User, db: Session,
         "Days": str(leave_request.total_days),
         "Decided By": approver.name
     }
+    
+    # Add approval note to details if provided
+    if approval_note:
+        leave_details["Note"] = approval_note
     
     try:
         if employee:

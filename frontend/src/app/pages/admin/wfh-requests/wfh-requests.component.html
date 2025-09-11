@@ -170,25 +170,46 @@
         </dxi-item>
         
         <dxi-item dataField="approver_name" [colSpan]="1" *ngIf="selectedRequest.approver_name">
-          <dxo-label text="Approved By"></dxo-label>
+          <dxo-label text="{{ selectedRequest.status === 'approved' ? 'Approved By' : 'Rejected By' }}"></dxo-label>
+        </dxi-item>
+        
+        <dxi-item dataField="approval_note" [colSpan]="2" editorType="dxTextArea" *ngIf="selectedRequest.approval_note">
+          <dxo-label text="{{ selectedRequest.status === 'approved' ? 'Approval Note' : 'Rejection Note' }}"></dxo-label>
         </dxi-item>
         
       </dx-form>
       
-      <!-- Action buttons in popup -->
-      <div class="popup-actions" *ngIf="canApproveReject(selectedRequest)">
-        <dx-button
-          text="Approve"
-          type="default"
-          icon="check"
-          (onClick)="approveRequest(selectedRequest); closeDetailsPopup()">
-        </dx-button>
-        <dx-button
-          text="Reject"
-          type="danger"
-          icon="close"
-          (onClick)="rejectRequest(selectedRequest); closeDetailsPopup()">
-        </dx-button>
+      <!-- Approval section in popup -->
+      <div class="popup-approval-section" *ngIf="canApproveReject(selectedRequest)">
+        <h4>Decision</h4>
+        <dx-form [formData]="approvalData">
+          <dxi-item
+            dataField="approval_note"
+            editorType="dxTextArea"
+            [editorOptions]="{
+              height: 80,
+              placeholder: 'Optional note for approval/rejection...',
+              value: approvalData.approval_note,
+              maxLength: 500
+            }">
+            <dxo-label text="Note (Optional)"></dxo-label>
+          </dxi-item>
+        </dx-form>
+        
+        <div class="popup-actions">
+          <dx-button
+            text="Approve"
+            type="default"
+            icon="check"
+            (onClick)="approveRequest(selectedRequest); closeDetailsPopup()">
+          </dx-button>
+          <dx-button
+            text="Reject"
+            type="danger"
+            icon="close"
+            (onClick)="rejectRequest(selectedRequest); closeDetailsPopup()">
+          </dx-button>
+        </div>
       </div>
     </div>
   </div>

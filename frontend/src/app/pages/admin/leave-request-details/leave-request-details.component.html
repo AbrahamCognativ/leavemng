@@ -171,28 +171,64 @@
             </div>
           </div>
 
-          <div class="decided-by" *ngIf="leaveRequest.status === 'approved' && leaveRequest.decided_by">
-            Approved by: <span style="font-style: italic; font-weight: bold;">{{ leaveRequest.decided_by }}</span>
+          <!-- Approval/Rejection Information -->
+          <div class="section" *ngIf="leaveRequest.status !== 'pending'">
+            <h3>Decision Information</h3>
+            <div class="info-grid">
+              <div class="info-item" *ngIf="leaveRequest.decided_by">
+                <label>{{ leaveRequest.status === 'approved' ? 'Approved by' : 'Rejected by' }}</label>
+                <span>{{ leaveRequest.decided_by }}</span>
+              </div>
+              <div class="info-item" *ngIf="leaveRequest.decision_at">
+                <label>Decision Date</label>
+                <span>{{ leaveRequest.decision_at | date:'medium' }}</span>
+              </div>
+              <div class="info-item full-width" *ngIf="leaveRequest.approval_note">
+                <label>{{ leaveRequest.status === 'approved' ? 'Approval Note' : 'Rejection Note' }}</label>
+                <span>{{ leaveRequest.approval_note }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </dx-scroll-view>
 
-      <!-- Approval/Rejection buttons for managers/admins -->
-      <div class="actions" *ngIf="leaveRequest.status === 'pending' && !isLeaveRequestOwner">
-        <dx-button
-          [text]="isApproving ? 'Approving...' : 'Approve'"
-          type="success"
-          stylingMode="contained"
-          [disabled]="isApproving || isRejecting"
-          (onClick)="approveRequest()">
-        </dx-button>
-        <dx-button
-          [text]="isRejecting ? 'Rejecting...' : 'Reject'"
-          type="danger"
-          stylingMode="contained"
-          [disabled]="isRejecting || isApproving"
-          (onClick)="rejectRequest()">
-        </dx-button>
+      <!-- Approval/Rejection section for managers/admins -->
+      <div class="approval-section" *ngIf="leaveRequest.status === 'pending' && !isLeaveRequestOwner">
+        <div class="section">
+          <h3>Decision</h3>
+          <div class="approval-form">
+            <dx-form [formData]="approvalData">
+              <dxi-item
+                dataField="approval_note"
+                editorType="dxTextArea"
+                [editorOptions]="{
+                  height: 80,
+                  placeholder: 'Optional note for approval/rejection...',
+                  value: approvalData.approval_note,
+                  maxLength: 500
+                }">
+                <dxo-label text="Note (Optional)"></dxo-label>
+              </dxi-item>
+            </dx-form>
+          </div>
+        </div>
+        
+        <div class="actions">
+          <dx-button
+            [text]="isApproving ? 'Approving...' : 'Approve'"
+            type="success"
+            stylingMode="contained"
+            [disabled]="isApproving || isRejecting"
+            (onClick)="approveRequest()">
+          </dx-button>
+          <dx-button
+            [text]="isRejecting ? 'Rejecting...' : 'Reject'"
+            type="danger"
+            stylingMode="contained"
+            [disabled]="isRejecting || isApproving"
+            (onClick)="rejectRequest()">
+          </dx-button>
+        </div>
       </div>
       
       <!-- Edit mode actions -->
