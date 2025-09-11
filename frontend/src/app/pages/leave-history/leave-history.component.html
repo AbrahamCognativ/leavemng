@@ -82,6 +82,12 @@
         [minWidth]="200"
       ></dxi-column>
       
+      <dxi-column
+        dataField="approval_note"
+        caption="Approval Note"
+        [minWidth]="200"
+      ></dxi-column>
+      
       <div *dxTemplate="let data of 'startDateTemplate'">
         {{ formatDate(data.value) }}
       </div>

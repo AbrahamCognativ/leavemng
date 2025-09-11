@@ -43,6 +43,11 @@ export class LeaveRequestDetailsComponent implements OnInit {
   };
   uploadedFiles: File[] = [];
   isSaving: boolean = false;
+  
+  // Approval properties
+  approvalData: any = {
+    approval_note: ''
+  };
 
   private returnUrl: string = '/admin/leaves';
 
@@ -125,7 +130,7 @@ export class LeaveRequestDetailsComponent implements OnInit {
 
     try {
       this.isApproving = true;
-      await this.leaveService.approveLeaveRequest(this.requestId);
+      await this.leaveService.approveLeaveRequest(this.requestId, this.approvalData.approval_note);
       await this.loadRequestDetails();
       this.router.navigate([this.returnUrl]);
     } catch (error) {
@@ -139,7 +144,7 @@ export class LeaveRequestDetailsComponent implements OnInit {
     if (!this.requestId) return;
     try {
       this.isRejecting = true;
-      await this.leaveService.rejectLeaveRequest(this.requestId);
+      await this.leaveService.rejectLeaveRequest(this.requestId, this.approvalData.approval_note);
       await this.loadRequestDetails();
       this.router.navigate([this.returnUrl]);
     } catch (error) {

@@ -61,8 +61,8 @@ export class WFHRequestComponent implements OnInit {
     private authService: AuthService,
     private router: Router
   ) {
-    // Set minimum date to 3 days from now
-    this.minDate.setDate(this.minDate.getDate() + 3);
+    // Set minimum date to 5 days from now
+    this.minDate.setDate(this.minDate.getDate() + 5);
   }
 
   ngOnInit(): void {
@@ -202,11 +202,11 @@ export class WFHRequestComponent implements OnInit {
     }
     
     const selectedDate = new Date(params.value);
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-    threeDaysFromNow.setHours(0, 0, 0, 0);
+    const fiveDaysFromNow = new Date();
+    fiveDaysFromNow.setDate(fiveDaysFromNow.getDate() + 5);
+    fiveDaysFromNow.setHours(0, 0, 0, 0);
     
-    return selectedDate >= threeDaysFromNow;
+    return selectedDate >= fiveDaysFromNow;
   }
 
   // Validation function for end date

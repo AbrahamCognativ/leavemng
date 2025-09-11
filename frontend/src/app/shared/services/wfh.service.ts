@@ -176,16 +176,26 @@ export class WFHService {
   }
 
   // Approve WFH request
-  async approveWFHRequest(requestId: string): Promise<any> {
-    return this.http.patch<any>(`${this.apiUrl}/wfh/${requestId}/approve`, {})
+  async approveWFHRequest(requestId: string, approvalNote?: string): Promise<any> {
+    const formData = new FormData();
+    if (approvalNote) {
+      formData.append('approval_note', approvalNote);
+    }
+    
+    return this.http.patch<any>(`${this.apiUrl}/wfh/${requestId}/approve`, formData)
       .pipe(
         catchError(this.handleError)
       ).toPromise() as Promise<any>;
   }
 
   // Reject WFH request
-  async rejectWFHRequest(requestId: string): Promise<any> {
-    return this.http.patch<any>(`${this.apiUrl}/wfh/${requestId}/reject`, {})
+  async rejectWFHRequest(requestId: string, approvalNote?: string): Promise<any> {
+    const formData = new FormData();
+    if (approvalNote) {
+      formData.append('approval_note', approvalNote);
+    }
+    
+    return this.http.patch<any>(`${this.apiUrl}/wfh/${requestId}/reject`, formData)
       .pipe(
         catchError(this.handleError)
       ).toPromise() as Promise<any>;
