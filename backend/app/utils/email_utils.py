@@ -381,46 +381,64 @@ def send_wfh_request_notification_with_tokens(
     else:
         details_table = f'<pre>{wfh_details}</pre>'
 
-    # Secure Approve/Reject links using tokens
-    approve_url = reject_url = "#"
+    # Secure Approve/Reject forms using tokens with shared note input
+    action_forms = ""
     if approve_token and reject_token:
         settings = get_settings()
         base_url = settings.SITE_URL.rstrip('/')
         approve_url = f"{base_url}/api/v1/actions/action/{approve_token}"
         reject_url = f"{base_url}/api/v1/actions/action/{reject_token}"
 
-    # Enhanced button styling for better email client compatibility
-    approve_btn = f'''
-    <a href="{approve_url}" style="
-        display: inline-block;
-        background: #28a745;
-        color: #ffffff;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 6px;
-        margin: 8px 8px 8px 0;
-        font-weight: bold;
-        font-size: 14px;
-        border: 2px solid #28a745;
-        text-align: center;
-        min-width: 100px;
-    ">✓ APPROVE</a>'''
-    
-    reject_btn = f'''
-    <a href="{reject_url}" style="
-        display: inline-block;
-        background: #dc3545;
-        color: #ffffff;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 6px;
-        margin: 8px 0;
-        font-weight: bold;
-        font-size: 14px;
-        border: 2px solid #dc3545;
-        text-align: center;
-        min-width: 100px;
-    ">✗ REJECT</a>'''
+        # Compact single form with radio buttons - professional design
+        action_forms = f'''
+        <div style="background: #fff; padding: 16px; border: 1px solid #ddd; border-radius: 6px; margin: 16px 0;">
+            <form method="POST" action="{approve_url}">
+                <!-- Single Note Input -->
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 4px; color: #333; font-size: 14px;">
+                        Note (Optional):
+                    </label>
+                    <textarea name="approval_note" placeholder="Add a note for your decision..." style="
+                        width: 100%;
+                        height: 50px;
+                        padding: 8px;
+                        border: 1px solid #ddd;
+                        border-radius: 4px;
+                        font-size: 13px;
+                        resize: vertical;
+                        font-family: Arial, sans-serif;
+                        box-sizing: border-box;
+                    "></textarea>
+                </div>
+                
+                <!-- Action Selection -->
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; gap: 0; justify-content: center;">
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 12px; border: 1px solid #28a745; border-right: none; border-radius: 4px 0 0 4px; background: #f8fff8; font-size: 13px;">
+                            <input type="radio" name="action" value="approve" checked style="margin-right: 6px;">
+                            <span style="color: #28a745; font-weight: bold;">✓ APPROVE</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 12px; border: 1px solid #dc3545; border-radius: 0 4px 4px 0; background: #fff8f8; font-size: 13px;">
+                            <input type="radio" name="action" value="reject" style="margin-right: 6px;">
+                            <span style="color: #dc3545; font-weight: bold;">✗ REJECT</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" style="
+                    background: #0f6cbd;
+                    color: #ffffff;
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    font-size: 13px;
+                    cursor: pointer;
+                    width: 100%;
+                ">Submit Decision</button>
+            </form>
+        </div>'''
 
     html = f'''
     <!DOCTYPE html>
@@ -430,32 +448,29 @@ def send_wfh_request_notification_with_tokens(
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>WFH Request - {requester_name}</title>
     </head>
-    <body style="margin: 0; padding: 0; background: #f5f5f5; font-family: Arial, sans-serif;">
-        <div style="max-width: 500px; margin: 10px auto; background: #ffffff; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <body style="margin: 0; padding: 10px; background: #f8f9fa; font-family: Arial, sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 6px; border: 1px solid #dee2e6;">
             <!-- Header -->
-            <div style="background: #2d6cdf; color: white; padding: 16px; text-align: center; border-radius: 6px 6px 0 0;">
-                <h2 style="margin: 0; font-size: 18px;">🏠 WFH Request</h2>
+            <div style="background: #0f6cbd; color: white; padding: 12px; text-align: center; border-radius: 6px 6px 0 0;">
+                <h3 style="margin: 0; font-size: 16px;">🏠 WFH Request</h3>
             </div>
             
             <!-- Content -->
-            <div style="padding: 20px;">
-                <p style="margin: 0 0 12px 0; color: #333;">
-                    <strong>{requester_name}</strong> requests work from home approval:
+            <div style="padding: 16px;">
+                <p style="margin: 0 0 8px 0; color: #333; font-size: 14px;">
+                    <strong>{requester_name}</strong> requests work from home approval
                 </p>
                 
                 <!-- Compact Details -->
-                <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin: 12px 0; font-size: 14px;">
+                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin: 8px 0; font-size: 12px;">
                     {details_table}
                 </div>
                 
-                <!-- Action Buttons - Prominent Position -->
-                <div style="text-align: center; margin: 20px 0;">
-                    {approve_btn}
-                    {reject_btn}
-                </div>
+                <!-- Action Form -->
+                {action_forms}
                 
-                <p style="font-size: 11px; color: #6c757d; text-align: center; margin: 12px 0 0 0;">
-                    Links expire in 72 hours • Single use only
+                <p style="font-size: 10px; color: #6c757d; text-align: center; margin: 8px 0 0 0;">
+                    Expires in 72 hours • Single use only
                 </p>
             </div>
         </div>
@@ -512,46 +527,64 @@ def send_leave_request_notification_with_tokens(
     else:
         details_table = f'<pre>{leave_details}</pre>'
 
-    # Secure Approve/Reject links using tokens
-    approve_url = reject_url = "#"
+    # Secure Approve/Reject forms using tokens with shared note input
+    action_forms = ""
     if approve_token and reject_token:
         settings = get_settings()
         base_url = settings.SITE_URL.rstrip('/')
         approve_url = f"{base_url}/api/v1/actions/action/{approve_token}"
         reject_url = f"{base_url}/api/v1/actions/action/{reject_token}"
 
-    # Enhanced button styling for better email client compatibility
-    approve_btn = f'''
-    <a href="{approve_url}" style="
-        display: inline-block;
-        background: #28a745;
-        color: #ffffff;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 6px;
-        margin: 8px 8px 8px 0;
-        font-weight: bold;
-        font-size: 14px;
-        border: 2px solid #28a745;
-        text-align: center;
-        min-width: 100px;
-    ">✓ APPROVE</a>'''
-    
-    reject_btn = f'''
-    <a href="{reject_url}" style="
-        display: inline-block;
-        background: #dc3545;
-        color: #ffffff;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 6px;
-        margin: 8px 0;
-        font-weight: bold;
-        font-size: 14px;
-        border: 2px solid #dc3545;
-        text-align: center;
-        min-width: 100px;
-    ">✗ REJECT</a>'''
+        # Compact single form with radio buttons - professional design
+        action_forms = f'''
+        <div style="background: #fff; padding: 16px; border: 1px solid #ddd; border-radius: 6px; margin: 16px 0;">
+            <form method="POST" action="{approve_url}">
+                <!-- Single Note Input -->
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 4px; color: #333; font-size: 14px;">
+                        Note (Optional):
+                    </label>
+                    <textarea name="approval_note" placeholder="Add a note for your decision..." style="
+                        width: 100%;
+                        height: 50px;
+                        padding: 8px;
+                        border: 1px solid #ddd;
+                        border-radius: 4px;
+                        font-size: 13px;
+                        resize: vertical;
+                        font-family: Arial, sans-serif;
+                        box-sizing: border-box;
+                    "></textarea>
+                </div>
+                
+                <!-- Action Selection -->
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; gap: 0; justify-content: center;">
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 12px; border: 1px solid #28a745; border-right: none; border-radius: 4px 0 0 4px; background: #f8fff8; font-size: 13px;">
+                            <input type="radio" name="action" value="approve" checked style="margin-right: 6px;">
+                            <span style="color: #28a745; font-weight: bold;">✓ APPROVE</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 12px; border: 1px solid #dc3545; border-radius: 0 4px 4px 0; background: #fff8f8; font-size: 13px;">
+                            <input type="radio" name="action" value="reject" style="margin-right: 6px;">
+                            <span style="color: #dc3545; font-weight: bold;">✗ REJECT</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" style="
+                    background: #0f6cbd;
+                    color: #ffffff;
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    font-size: 13px;
+                    cursor: pointer;
+                    width: 100%;
+                ">Submit Decision</button>
+            </form>
+        </div>'''
 
     html = f'''
     <!DOCTYPE html>
@@ -561,32 +594,29 @@ def send_leave_request_notification_with_tokens(
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Leave Request - {requester_name}</title>
     </head>
-    <body style="margin: 0; padding: 0; background: #f5f5f5; font-family: Arial, sans-serif;">
-        <div style="max-width: 500px; margin: 10px auto; background: #ffffff; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <body style="margin: 0; padding: 10px; background: #f8f9fa; font-family: Arial, sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 6px; border: 1px solid #dee2e6;">
             <!-- Header -->
-            <div style="background: #2d6cdf; color: white; padding: 16px; text-align: center; border-radius: 6px 6px 0 0;">
-                <h2 style="margin: 0; font-size: 18px;">🏖️ Leave Request</h2>
+            <div style="background: #0f6cbd; color: white; padding: 12px; text-align: center; border-radius: 6px 6px 0 0;">
+                <h3 style="margin: 0; font-size: 16px;">🏖️ Leave Request</h3>
             </div>
             
             <!-- Content -->
-            <div style="padding: 20px;">
-                <p style="margin: 0 0 12px 0; color: #333;">
-                    <strong>{requester_name}</strong> requests leave approval:
+            <div style="padding: 16px;">
+                <p style="margin: 0 0 8px 0; color: #333; font-size: 14px;">
+                    <strong>{requester_name}</strong> requests leave approval
                 </p>
                 
                 <!-- Compact Details -->
-                <div style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin: 12px 0; font-size: 14px;">
+                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; margin: 8px 0; font-size: 12px;">
                     {details_table}
                 </div>
                 
-                <!-- Action Buttons - Prominent Position -->
-                <div style="text-align: center; margin: 20px 0;">
-                    {approve_btn}
-                    {reject_btn}
-                </div>
+                <!-- Action Form -->
+                {action_forms}
                 
-                <p style="font-size: 11px; color: #6c757d; text-align: center; margin: 12px 0 0 0;">
-                    Links expire in 72 hours • Single use only
+                <p style="font-size: 10px; color: #6c757d; text-align: center; margin: 8px 0 0 0;">
+                    Expires in 72 hours • Single use only
                 </p>
             </div>
         </div>

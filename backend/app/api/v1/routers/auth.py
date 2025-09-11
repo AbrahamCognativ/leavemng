@@ -72,7 +72,7 @@ def login(
         db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not is_allowed_email(user.email):
-        raise HTTPException(status_code=401, detail="Login allowed only for cognativ.com or realware.com emails, or user@emaple.com.")
+        raise HTTPException(status_code=401, detail="Login allowed only for cognativ.com or realware.com emails, or user@example.com.")
     # if not user or not user.is_active:
     #     raise HTTPException(status_code=401, detail="User is not active")
     if not verify_password(
@@ -156,7 +156,7 @@ def invite_user(
         current_user=Depends(get_current_user),
         request: Request = None):
     if not is_allowed_email(invite.email):
-        raise HTTPException(status_code=400, detail="Only cognativ.com or realware.com emails, or user@emaple.com, can be invited.")
+        raise HTTPException(status_code=400, detail="Only cognativ.com or realware.com emails, or user@example.com, can be invited.")
     # Only HR or Manager/Admin can invite
     existing = db.query(User).filter(User.email == invite.email).first()
     passport_exist = db.query(User).filter(

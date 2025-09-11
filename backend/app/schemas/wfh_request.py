@@ -44,6 +44,7 @@ class WFHRequestRead(WFHRequestBase):
     decision_at: Optional[datetime] = None
     decided_by: Optional[UUID] = None
     comments: Optional[str] = None
+    approval_note: Optional[str] = None
     approver_name: Optional[str] = None  # Add approver name field
     working_days: Optional[int] = None  # Add working days field
     employee_name: Optional[str] = None  # Add employee name field

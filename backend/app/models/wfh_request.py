@@ -37,3 +37,4 @@ class WFHRequest(Base):
         nullable=True
     )
     comments = Column(Text, nullable=True)
+    approval_note = Column(Text, nullable=True)

@@ -46,6 +46,11 @@ export class WFHRequestsComponent implements OnInit {
   isAdmin = false;
   isHR = false;
   isManager = false;
+  
+  // Approval properties
+  approvalData: any = {
+    approval_note: ''
+  };
 
   constructor(
     private wfhService: WFHService,
@@ -191,8 +196,9 @@ export class WFHRequestsComponent implements OnInit {
     }
 
     try {
-      await this.wfhService.approveWFHRequest(request.id);
+      await this.wfhService.approveWFHRequest(request.id, this.approvalData.approval_note);
       this.showToast('WFH request approved successfully', 'success');
+      this.approvalData.approval_note = ''; // Reset the note
       await this.loadWFHRequests(); // This will also reapply the filter
     } catch (error: any) {
       let errorMessage = 'Error approving WFH request';
@@ -210,8 +216,9 @@ export class WFHRequestsComponent implements OnInit {
     }
 
     try {
-      await this.wfhService.rejectWFHRequest(request.id);
+      await this.wfhService.rejectWFHRequest(request.id, this.approvalData.approval_note);
       this.showToast('WFH request rejected successfully', 'success');
+      this.approvalData.approval_note = ''; // Reset the note
       await this.loadWFHRequests(); // This will also reapply the filter
     } catch (error: any) {
       let errorMessage = 'Error rejecting WFH request';

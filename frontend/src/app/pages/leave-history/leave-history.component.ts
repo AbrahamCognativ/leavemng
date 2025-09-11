@@ -19,6 +19,7 @@ interface LeaveRequest {
   decision_at?: string; // Database field name
   decided_by?: string;
   comments?: string;
+  approval_note?: string; // Note from approver
   leave_type?: string; // We'll populate this from the leave type ID
   approver_name?: string; // We'll populate this from the decided_by ID
   [key: string]: any;
