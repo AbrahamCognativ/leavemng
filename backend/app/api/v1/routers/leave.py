@@ -78,13 +78,13 @@ def create_leave_request(
             total_days += 1
     req.total_days = total_days
 
-    # Validate that annual leave is applied at least 5 days in advance
+    # Validate that annual leave is applied at least 14 days in advance
     if leave_type.code.value == 'annual':
         start_date = req.start_date
-        if (start_date - date.today()) < timedelta(days=5):
+        if (start_date - date.today()) < timedelta(days=14):
             raise HTTPException(
                 status_code=400,
-                detail="Annual leave must be applied at least 5 days in advance")
+                detail="Annual leave must be applied at least 14 days in advance")
 
     elif leave_type.code.value == 'maternity':
         if current_user.gender != 'female':

@@ -95,11 +95,11 @@ def create_wfh_request(
     if existing:
         raise HTTPException(status_code=400, detail="Duplicate WFH request")
 
-    # Validate that WFH is applied at least 5 days in advance
-    if (req.start_date - date.today()) < timedelta(days=5):
+    # Validate that WFH is applied at least 14 days in advance
+    if (req.start_date - date.today()) < timedelta(days=14):
         raise HTTPException(
             status_code=400,
-            detail="Work from home must be applied at least 5 days in advance")
+            detail="Work from home must be applied at least 14 days in advance")
 
     try:
         db_req = WFHRequest(

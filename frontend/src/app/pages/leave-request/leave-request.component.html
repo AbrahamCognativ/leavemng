@@ -20,6 +20,16 @@
           }">
           <dxo-label text="Leave Type" showRequiredMark="true"></dxo-label>
           <dxi-validation-rule type="required" message="Please select a leave type"></dxi-validation-rule>
+          <div *dxTemplate>
+            <dx-select-box
+              [(value)]="leave.leaveType"
+              [items]="leaveTypesDescription"
+              placeholder="Select leave type"
+              [searchEnabled]="true"
+              [showClearButton]="true"
+              (onValueChanged)="onLeaveTypeChanged($event)">
+            </dx-select-box>
+          </div>
         </dxi-item>
 
         <!-- Date Selection -->
