@@ -61,20 +61,55 @@ export class LeaveRequestComponent implements OnInit {
   submitting = false;
   calculatedDays = 0;
   minDate = new Date();
-  toastVisible = false;
-  toastMessage = '';
-  toastType: 'success' | 'error' | 'info' | 'warning' = 'info';
 
   constructor(
     private leaveService: LeaveService,
     private authService: AuthService,
     private sanitizer: DomSanitizer,
     private router: Router
-  ) { }
+  ) {
+    // minDate is set to today by default
+  }
+
+  // Event handler for leave type change
+  onLeaveTypeChanged = (e: any) => {
+    // Extract the selected leave type from the event
+    const selectedLeaveType = e.value;
+    
+    if (selectedLeaveType && selectedLeaveType.toLowerCase().includes('annual')) {
+      // For Annual Leave, set minDate to 14 days from now
+      const fourteenDaysFromNow = new Date();
+      fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
+      this.minDate = fourteenDaysFromNow;
+    } else {
+      // For other leave types (like sick leave), set minDate to today
+      this.minDate = new Date();
+    }
+    
+    // Reset the start date if it's now invalid
+    if (this.leave.startDate && this.leave.startDate < this.minDate) {
+      this.leave.startDate = new Date(this.minDate);
+      // Also update end date if it's now before start date
+      if (this.leave.endDate < this.leave.startDate) {
+        this.leave.endDate = new Date(this.leave.startDate);
+      }
+      // Recalculate working days
+      this.calculateWorkingDays();
+    }
+  }
+  toastVisible = false;
+  toastMessage = '';
+  toastType: 'success' | 'error' | 'info' | 'warning' = 'info';
+
 
   ngOnInit(): void {
     this.loadLeaveTypes();
     this.loadLeaveBalances();
+    
+    // Initialize minDate based on current leave type (if any)
+    if (this.leave.leaveType) {
+      this.onLeaveTypeChanged({ value: this.leave.leaveType });
+    }
   }
 
   async loadLeaveTypes(): Promise<void> {
@@ -407,6 +442,19 @@ export class LeaveRequestComponent implements OnInit {
     }
     
     return { isValid: true };
+  }
+
+  // Validation function for start date
+  validateStartDate = (params: any) => {
+    if (!params.value) {
+      return true; // Let required validation handle empty values
+    }
+    
+    const selectedDate = new Date(params.value);
+    
+    // Simply check if the selected date is on or after the minDate
+    // minDate will already be set correctly based on leave type
+    return selectedDate >= this.minDate;
   }
 
 }
