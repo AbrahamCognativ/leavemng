@@ -66,6 +66,13 @@ export class WFHRequestComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Set default dates to 14 days from now
+    const fourteenDaysFromNow = new Date();
+    fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
+    
+    this.wfhRequest.start_date = new Date(fourteenDaysFromNow);
+    this.wfhRequest.end_date = new Date(fourteenDaysFromNow);
+    
     this.calculateWorkingDays();
   }
 
