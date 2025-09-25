@@ -81,21 +81,21 @@ export class LeaveRequestComponent implements OnInit {
       const fourteenDaysFromNow = new Date();
       fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
       this.minDate = fourteenDaysFromNow;
+      
+      // Update start and end dates to 14 days from now
+      this.leave.startDate = new Date(fourteenDaysFromNow);
+      this.leave.endDate = new Date(fourteenDaysFromNow);
     } else {
       // For other leave types (like sick leave), set minDate to today
       this.minDate = new Date();
+      
+      // Update start and end dates to today
+      this.leave.startDate = new Date();
+      this.leave.endDate = new Date();
     }
     
-    // Reset the start date if it's now invalid
-    if (this.leave.startDate && this.leave.startDate < this.minDate) {
-      this.leave.startDate = new Date(this.minDate);
-      // Also update end date if it's now before start date
-      if (this.leave.endDate < this.leave.startDate) {
-        this.leave.endDate = new Date(this.leave.startDate);
-      }
-      // Recalculate working days
-      this.calculateWorkingDays();
-    }
+    // Recalculate working days
+    this.calculateWorkingDays();
   }
   toastVisible = false;
   toastMessage = '';
@@ -105,6 +105,13 @@ export class LeaveRequestComponent implements OnInit {
   ngOnInit(): void {
     this.loadLeaveTypes();
     this.loadLeaveBalances();
+    
+    // Set initial dates to 14 days from now (assuming Annual Leave as default)
+    const fourteenDaysFromNow = new Date();
+    fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
+    
+    this.leave.startDate = new Date(fourteenDaysFromNow);
+    this.leave.endDate = new Date(fourteenDaysFromNow);
     
     // Initialize minDate based on current leave type (if any)
     if (this.leave.leaveType) {
