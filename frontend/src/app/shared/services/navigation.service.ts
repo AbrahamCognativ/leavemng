@@ -85,16 +85,12 @@ export class NavigationService {
         icon: 'home',
         items: [
           {
-            text: 'Apply',
-            path: '/wfh/apply',
-          },
-          {
             text: 'Dashboard',
             path: '/wfh/dashboard',
           },
           {
-            text: 'History',
-            path: '/wfh/history',
+            text: 'Apply',
+            path: '/wfh/apply',
           },
           ...(isAdmin || isHR || isManager ? [
             {
@@ -103,6 +99,16 @@ export class NavigationService {
             }
           ] : [])
         ]
+      },
+      {
+        text: 'Policies',
+        icon: 'doc',
+        items: [] // This will be populated dynamically
+      },
+      {
+        text: 'Docs',
+        path: '/docs',
+        icon: 'folder'
       },
       {
         text: 'Admin',
@@ -145,21 +151,6 @@ export class NavigationService {
             path: '/admin/audit-logs',
           }
         ]
-      },
-      {
-        text: 'Policies',
-        icon: 'doc',
-        items: [] // This will be populated dynamically
-      },
-      {
-        text: 'Docs',
-        path: '/docs',
-        icon: 'folder'
-      },
-      {
-        text: 'Profile',
-        path: '/profile',
-        icon: 'user'
       }
     ];
   }

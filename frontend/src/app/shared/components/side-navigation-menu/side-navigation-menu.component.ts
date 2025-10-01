@@ -84,12 +84,14 @@ export class SideNavigationMenuComponent implements OnInit, AfterViewInit, OnDes
       if(item.path && !(/^\//.test(item.path))){
         item.path = `/${item.path}`;
       }
-      return { ...item, expanded: !this._compactMode }
+      return { ...item, expanded: false } // Always start with collapsed dropdowns
     });
 
     // Refresh the tree view if it exists
     if (this.menu?.instance) {
       this.menu.instance.option('items', this._items);
+      // Collapse all items to ensure dropdowns are closed
+      this.menu.instance.collapseAll();
     }
   }
 

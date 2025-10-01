@@ -53,12 +53,13 @@ def insert_audit_log_db(
         resource_id: str = "",
         extra_metadata: dict = None):
     """Insert an audit log record into the database using the scheduler user."""
+    import uuid
     user = get_or_create_scheduler_user(db)
     log = AuditLog(
         user_id=user.id,
         action=action,
         resource_type="system_scheduler",
-        resource_id="cron_job",
+        resource_id=resource_id or str(uuid.uuid4()),
         timestamp=datetime.datetime.now(),
         extra_metadata=extra_metadata
     )
