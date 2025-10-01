@@ -63,19 +63,23 @@ export class NavigationService {
           {
             text: 'Apply',
             path: '/leave/apply',
+            icon: 'plus'
           },
           {
-            text: 'Leave History',
+            text: 'History',
             path: '/leave/history',
+            icon: 'event'
           },
           {
             text: 'Schedule',
             path: '/leave/schedule',
+            icon: 'clock'
           },
           ...(isAdmin || isHR || isManager ? [
             {
               text: 'Requests',
               path: '/admin/leaves',
+              icon: 'check'
             }
           ] : [])
         ]
@@ -87,15 +91,18 @@ export class NavigationService {
           {
             text: 'Dashboard',
             path: '/wfh/dashboard',
+            icon: 'chart'
           },
           {
             text: 'Apply',
             path: '/wfh/apply',
+            icon: 'plus'
           },
           ...(isAdmin || isHR || isManager ? [
             {
               text: 'Requests',
               path: '/admin/wfh-requests',
+              icon: 'check'
             }
           ] : [])
         ]
@@ -117,38 +124,46 @@ export class NavigationService {
           {
             text: 'Dashboard',
             path: '/admin/leave-requests',
+            icon: 'chart'
           },
           {
             text: 'Leave Types',
             path: '/admin/leave-types',
+            icon: 'tags'
           },
           {
             text: 'Org Units',
             path: '/admin/org-units',
+            icon: 'group'
           },
           {
             text: 'Users',
             path: '/admin/employee-invite',
+            icon: 'user'
           },
           ...(isAdmin || isHR ? [
             {
               text: 'Policies',
               path: '/admin/policies',
+              icon: 'doc'
             },
             {
               text: 'Policy Stats',
               path: '/admin/policy-acknowledgments',
+              icon: 'chart'
             }
           ] : []),
           ...(isAdmin || isHR || isManager ? [
             {
               text: 'User Docs',
               path: '/admin/user-documents',
+              icon: 'folder'
             }
           ] : []),
           {
             text: 'Audit Logs',
             path: '/admin/audit-logs',
+            icon: 'bulletlist'
           }
         ]
       }
@@ -183,6 +198,7 @@ export class NavigationService {
         policiesNav.items!.push({
           text: policy.policy_name,
           path: `/policy/${policy.policy_id}`,
+          icon: 'doc',
           badge: badge
         });
       });
@@ -190,7 +206,8 @@ export class NavigationService {
       // If no policies, show a placeholder
       policiesNav.items!.push({
         text: 'No policies',
-        path: undefined
+        path: undefined,
+        icon: 'doc'
       });
     }
 
