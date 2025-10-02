@@ -273,56 +273,62 @@
   [visible]="bulkPayslipPopupVisible"
   [hideOnOutsideClick]="false"
   [showCloseButton]="true"
-  [width]="800"
-  [height]="600"
+  [width]="'90%'"
+  [height]="'85%'"
+  [maxWidth]="1400"
+  [maxHeight]="800"
+  [minWidth]="800"
+  [minHeight]="600"
   [title]="'Bulk Payslip Upload'"
   (onHiding)="closeBulkPayslipPopup()">
   
   <div *dxTemplate="let data of 'content'">
     <div class="bulk-payslip-content">
       
-      <!-- Instructions -->
-      <div class="instructions-section">
-        <h4>📋 Instructions</h4>
-        <ul>
-          <li>Select multiple payslip PDF files</li>
-          <li>System will extract ID/Passport numbers from each PDF</li>
-          <li>Payslips will be automatically assigned to matching users</li>
-          <li>Users will receive email notifications</li>
-        </ul>
-      </div>
-      
-      <!-- File Upload Section -->
-      <div class="file-upload-section">
-        <label class="upload-label">Payslip PDF Files *</label>
-        <dx-file-uploader
-          [multiple]="bulkPayslipUploaderOptions.multiple"
-          [accept]="bulkPayslipUploaderOptions.accept"
-          [uploadMode]="bulkPayslipUploaderOptions.uploadMode"
-          [showFileList]="bulkPayslipUploaderOptions.showFileList"
-          [labelText]="bulkPayslipUploaderOptions.labelText"
-          [selectButtonText]="bulkPayslipUploaderOptions.selectButtonText"
-          (onValueChanged)="onPayslipFilesSelected($event)">
-        </dx-file-uploader>
-        <div class="upload-help">
-          Supported format: PDF only. Multiple files can be selected.
+      <!-- Scrollable Content -->
+      <div class="scrollable-content" #scrollableContent>
+        <!-- Instructions -->
+        <div class="instructions-section">
+          <h4>📋 Instructions</h4>
+          <ul>
+            <li>Select multiple payslip PDF files</li>
+            <li>System will extract ID/Passport numbers from each PDF</li>
+            <li>Payslips will be automatically assigned to matching users</li>
+            <li>Users will receive email notifications</li>
+          </ul>
         </div>
-      </div>
-      
-      <!-- Selected Files Summary -->
-      <div *ngIf="selectedPayslipFiles.length > 0" class="selected-files-summary">
-        <h5>📁 Selected Files ({{ selectedPayslipFiles.length }})</h5>
-        <div class="file-list">
-          <div *ngFor="let file of selectedPayslipFiles" class="file-item">
-            <i class="dx-icon-doc"></i>
-            <span>{{ file.name }}</span>
-            <small>({{ formatFileSize(file.size) }})</small>
+        
+        <!-- File Upload Section -->
+        <div class="file-upload-section">
+          <label class="upload-label">Payslip PDF Files *</label>
+          <dx-file-uploader
+            [multiple]="bulkPayslipUploaderOptions.multiple"
+            [accept]="bulkPayslipUploaderOptions.accept"
+            [uploadMode]="bulkPayslipUploaderOptions.uploadMode"
+            [showFileList]="bulkPayslipUploaderOptions.showFileList"
+            [labelText]="bulkPayslipUploaderOptions.labelText"
+            [selectButtonText]="bulkPayslipUploaderOptions.selectButtonText"
+            (onValueChanged)="onPayslipFilesSelected($event)">
+          </dx-file-uploader>
+          <div class="upload-help">
+            Supported format: PDF only. Multiple files can be selected.
           </div>
         </div>
-      </div>
-      
-      <!-- Processing Results -->
-      <div *ngIf="bulkUploadResult" class="processing-results">
+        
+        <!-- Selected Files Summary -->
+        <div *ngIf="selectedPayslipFiles.length > 0" class="selected-files-summary">
+          <h5>📁 Selected Files ({{ selectedPayslipFiles.length }})</h5>
+          <div class="file-list">
+            <div *ngFor="let file of selectedPayslipFiles" class="file-item">
+              <i class="dx-icon-doc"></i>
+              <span>{{ file.name }}</span>
+              <small>({{ formatFileSize(file.size) }})</small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Processing Results -->
+        <div *ngIf="bulkUploadResult" class="processing-results">
         <h5>📊 Processing Results</h5>
         
         <!-- Summary Stats -->
@@ -351,13 +357,19 @@
             [dataSource]="bulkUploadResult.processing_details"
             [showBorders]="true"
             [columnAutoWidth]="true">
-            <dxo-paging [pageSize]="5"></dxo-paging>
+            <dxo-paging [pageSize]="10"></dxo-paging>
+            <dxo-pager
+              [showPageSizeSelector]="true"
+              [allowedPageSizes]="[5, 10, 20]"
+              [showInfo]="true">
+            </dxo-pager>
             
-            <dxi-column caption="Status" cellTemplate="statusTemplate" [width]="80"></dxi-column>
+            <dxi-column caption="Status" cellTemplate="statusTemplate"></dxi-column>
             <dxi-column dataField="file_name" caption="File Name"></dxi-column>
             <dxi-column caption="Extracted IDs" cellTemplate="idsTemplate"></dxi-column>
             <dxi-column caption="Matched User" cellTemplate="userTemplate"></dxi-column>
             <dxi-column dataField="error_message" caption="Message" cellTemplate="messageTemplate"></dxi-column>
+            <dxi-column caption="Actions" cellTemplate="failedDocActionsTemplate"></dxi-column>
             
             <!-- Status Template -->
             <div *dxTemplate="let data of 'statusTemplate'">
@@ -396,11 +408,31 @@
               </span>
             </div>
             
+            <!-- Failed Document Actions Template -->
+            <div *dxTemplate="let data of 'failedDocActionsTemplate'">
+              <div class="actions-cell" *ngIf="data.data.status !== 'success'">
+                <dx-button
+                  icon="eyeopen"
+                  hint="Preview Document"
+                  stylingMode="text"
+                  (onClick)="previewFailedDocument(data.data)">
+                </dx-button>
+                
+                <dx-button
+                  icon="user"
+                  hint="Manual Match"
+                  stylingMode="text"
+                  (onClick)="openManualMatchPopup(data.data)">
+                </dx-button>
+              </div>
+            </div>
+            
           </dx-data-grid>
         </div>
       </div>
+      </div>
       
-      <!-- Action buttons -->
+      <!-- Action buttons - Fixed at bottom -->
       <div class="popup-actions">
         <dx-button
           text="Close"
@@ -412,6 +444,101 @@
           type="success"
           [disabled]="bulkUploading || selectedPayslipFiles.length === 0"
           (onClick)="uploadBulkPayslips()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Manual Match Popup -->
+<dx-popup
+  [visible]="manualMatchPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="600"
+  [height]="500"
+  [title]="'Manual Document Assignment'"
+  (onHiding)="closeManualMatchPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="manual-match-content" *ngIf="selectedFailedDocument">
+      
+      <!-- Document Info -->
+      <div class="document-info-section">
+        <h4>📄 Document Information</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <strong>File Name:</strong>
+            <span>{{ selectedFailedDocument.file_name }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Status:</strong>
+            <span class="status-badge" [ngClass]="selectedFailedDocument.status">
+              {{ selectedFailedDocument.status | titlecase }}
+            </span>
+          </div>
+          <div class="info-item" *ngIf="selectedFailedDocument.extracted_ids?.length > 0">
+            <strong>Extracted IDs:</strong>
+            <span>{{ selectedFailedDocument.extracted_ids.join(', ') }}</span>
+          </div>
+          <div class="info-item" *ngIf="selectedFailedDocument.error_message">
+            <strong>Error:</strong>
+            <span class="error-text">{{ selectedFailedDocument.error_message }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- User Selection -->
+      <div class="user-selection-section">
+        <h4>👤 Assign to User</h4>
+        <dx-form [formData]="manualMatchFormData" [colCount]="1">
+          <dxi-item dataField="user_id" editorType="dxSelectBox" [isRequired]="true"
+                    [editorOptions]="{
+                      dataSource: users,
+                      displayExpr: 'display_name',
+                      valueExpr: 'id',
+                      placeholder: 'Select user to assign this document',
+                      searchEnabled: true
+                    }">
+            <dxo-label text="Select User"></dxo-label>
+          </dxi-item>
+          
+          <dxi-item dataField="document_title" [isRequired]="true">
+            <dxo-label text="Document Title"></dxo-label>
+          </dxi-item>
+          
+          <dxi-item dataField="description" editorType="dxTextArea">
+            <dxo-label text="Description (Optional)"></dxo-label>
+          </dxi-item>
+        </dx-form>
+      </div>
+      
+      <!-- Preview Section -->
+      <div class="preview-section">
+        <h4>👁️ Document Preview</h4>
+        <div class="preview-actions">
+          <dx-button
+            text="Preview Document"
+            type="normal"
+            icon="eyeopen"
+            (onClick)="previewFailedDocument(selectedFailedDocument)">
+          </dx-button>
+          <small class="preview-help">Preview the document to verify it's the correct payslip before assigning</small>
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          (onClick)="closeManualMatchPopup()">
+        </dx-button>
+        <dx-button
+          [text]="manualMatching ? 'Assigning...' : 'Assign Document'"
+          type="success"
+          [disabled]="manualMatching || !manualMatchFormData.user_id || !manualMatchFormData.document_title"
+          (onClick)="assignDocumentManually()">
         </dx-button>
       </div>
     </div>

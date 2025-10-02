@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
@@ -44,7 +44,7 @@ import notify from 'devextreme/ui/notify';
     DocumentViewerComponent
   ]
 })
-export class UserDocumentsComponent implements OnInit {
+export class UserDocumentsComponent implements OnInit, AfterViewChecked {
   users: any[] = [];
   usersWithAllOption: any[] = [];
   userDocuments: UserDocument[] = [];
@@ -65,6 +65,26 @@ export class UserDocumentsComponent implements OnInit {
   bulkUploading = false;
   selectedPayslipFiles: File[] = [];
   bulkUploadResult: BulkUploadResult | null = null;
+  
+  // Manual match popup
+  manualMatchPopupVisible = false;
+  selectedFailedDocument: any = null;
+  manualMatching = false;
+  manualMatchFormData: any = {
+    user_id: null,
+    document_title: '',
+    description: ''
+  };
+  
+  // Failed document files storage (for preview)
+  failedDocumentFiles: Map<string, File> = new Map();
+  
+  // ViewChild for scrollable content
+  @ViewChild('scrollableContent') scrollableContent!: ElementRef;
+  
+  
+  // Flag to trigger scroll after view update
+  shouldScrollToResults = false;
   
   // Form data
   formData: any = {
@@ -90,13 +110,21 @@ export class UserDocumentsComponent implements OnInit {
   constructor(
     private userDocumentsService: UserDocumentsService,
     private authService: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit(): Promise<void> {
     await this.loadCurrentUser();
     await this.loadUsers();
     await this.loadAllDocuments();
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.shouldScrollToResults && this.bulkUploadResult) {
+      this.shouldScrollToResults = false;
+      this.performScroll();
+    }
   }
 
   async loadCurrentUser(): Promise<void> {
@@ -352,6 +380,11 @@ export class UserDocumentsComponent implements OnInit {
 
     this.bulkUploading = true;
     try {
+      // Store files for potential preview later
+      this.selectedPayslipFiles.forEach(file => {
+        this.failedDocumentFiles.set(file.name, file);
+      });
+
       this.bulkUploadResult = await this.userDocumentsService.bulkPayslipUpload(
         this.selectedPayslipFiles,
         'payslip',
@@ -367,6 +400,10 @@ export class UserDocumentsComponent implements OnInit {
 
       // Refresh documents list
       await this.loadAllDocuments();
+      
+      // Trigger scroll after view update
+      this.shouldScrollToResults = true;
+      this.cdr.detectChanges();
 
     } catch (error: any) {
       let errorMessage = 'Error processing payslip files';
@@ -376,6 +413,154 @@ export class UserDocumentsComponent implements OnInit {
       this.showToast(errorMessage, 'error');
     } finally {
       this.bulkUploading = false;
+    }
+  }
+
+  previewFailedDocument(failedDoc: any): void {
+    try {
+      const file = this.failedDocumentFiles.get(failedDoc.file_name);
+      if (!file) {
+        this.showToast('Document file not available for preview', 'error');
+        return;
+      }
+
+      // Create a blob URL for the file
+      const blob = new Blob([file], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      // Reset state first
+      this.closeDocumentViewer();
+      
+      // Set new document data
+      setTimeout(() => {
+        try {
+          this.currentDocumentUrl = url;
+          this.currentDocumentName = failedDoc.file_name;
+          this.currentDocumentType = 'pdf';
+          this.documentViewerVisible = true;
+        } catch (error) {
+          this.showToast('Error preparing document for viewing', 'error');
+        }
+      }, 100);
+    } catch (error) {
+      this.showToast('Error opening document viewer', 'error');
+    }
+  }
+
+  openManualMatchPopup(failedDoc: any): void {
+    this.selectedFailedDocument = failedDoc;
+    this.manualMatchFormData = {
+      user_id: null,
+      document_title: `Payslip - ${failedDoc.file_name}`,
+      description: `Manual assignment for ${failedDoc.file_name}${failedDoc.extracted_ids?.length > 0 ? ` (IDs found: ${failedDoc.extracted_ids.join(', ')})` : ''}`
+    };
+    this.manualMatchPopupVisible = true;
+  }
+
+  closeManualMatchPopup(): void {
+    this.manualMatchPopupVisible = false;
+    this.selectedFailedDocument = null;
+    this.manualMatchFormData = {
+      user_id: null,
+      document_title: '',
+      description: ''
+    };
+  }
+
+  async assignDocumentManually(): Promise<void> {
+    if (!this.selectedFailedDocument || !this.manualMatchFormData.user_id || !this.manualMatchFormData.document_title) {
+      this.showToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    const file = this.failedDocumentFiles.get(this.selectedFailedDocument.file_name);
+    if (!file) {
+      this.showToast('Document file not available for assignment', 'error');
+      return;
+    }
+
+    this.manualMatching = true;
+    try {
+      const createData = {
+        name: this.manualMatchFormData.document_title.trim(),
+        description: this.manualMatchFormData.description?.trim() || undefined,
+        user_id: this.manualMatchFormData.user_id,
+        document_type: 'payslip',
+        send_email_notification: true
+      };
+
+      // Create the document
+      const createdDocument = await this.userDocumentsService.createUserDocument(createData, file);
+      
+      // Update the bulk upload result to reflect the manual assignment
+      if (this.bulkUploadResult) {
+        const docIndex = this.bulkUploadResult.processing_details.findIndex(
+          doc => doc.file_name === this.selectedFailedDocument.file_name
+        );
+        if (docIndex !== -1) {
+          // Store the original status for counter updates
+          const originalStatus = this.bulkUploadResult.processing_details[docIndex].status;
+          
+          // Update the document status
+          this.bulkUploadResult.processing_details[docIndex].status = 'success';
+          this.bulkUploadResult.processing_details[docIndex].error_message = undefined;
+          this.bulkUploadResult.processing_details[docIndex].document_id = createdDocument.id;
+          
+          // Find the assigned user
+          const assignedUser = this.users.find(user => user.id === this.manualMatchFormData.user_id);
+          if (assignedUser) {
+            this.bulkUploadResult.processing_details[docIndex].matched_user = {
+              id: assignedUser.id,
+              name: assignedUser.name || `${assignedUser.first_name} ${assignedUser.last_name}`,
+              email: assignedUser.email,
+              passport_or_id_number: assignedUser.passport_or_id_number || 'Manual Assignment'
+            };
+          }
+          
+          // Update counters based on original status
+          this.bulkUploadResult.successful_uploads++;
+          if (originalStatus === 'no_user_found') {
+            this.bulkUploadResult.no_user_found = Math.max(0, this.bulkUploadResult.no_user_found - 1);
+          } else if (originalStatus === 'no_id_found') {
+            this.bulkUploadResult.no_id_extracted = Math.max(0, this.bulkUploadResult.no_id_extracted - 1);
+          } else if (originalStatus === 'failed') {
+            this.bulkUploadResult.failed_uploads = Math.max(0, this.bulkUploadResult.failed_uploads - 1);
+          }
+          
+          // Update summary message
+          const totalProcessed = this.bulkUploadResult.successful_uploads + this.bulkUploadResult.failed_uploads +
+                               this.bulkUploadResult.no_user_found + this.bulkUploadResult.no_id_extracted;
+          this.bulkUploadResult.summary = `Processed ${totalProcessed} files: ${this.bulkUploadResult.successful_uploads} successful, ` +
+                                        `${this.bulkUploadResult.failed_uploads} failed, ${this.bulkUploadResult.no_user_found} no user found, ` +
+                                        `${this.bulkUploadResult.no_id_extracted} no ID extracted`;
+        }
+      }
+      
+      // Remove the file from failed documents storage since it's now processed
+      this.failedDocumentFiles.delete(this.selectedFailedDocument.file_name);
+      
+      // Refresh documents list
+      await this.loadAllDocuments();
+      
+      this.showToast('Document assigned successfully', 'success');
+      this.closeManualMatchPopup();
+
+    } catch (error: any) {
+      console.error('Error assigning document:', error);
+      let errorMessage = 'Error assigning document';
+      
+      // Handle different types of errors
+      if (error?.error?.detail) {
+        errorMessage = error.error.detail;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      this.showToast(errorMessage, 'error');
+    } finally {
+      this.manualMatching = false;
     }
   }
 
@@ -456,10 +641,45 @@ export class UserDocumentsComponent implements OnInit {
   }
 
   closeDocumentViewer(): void {
+    // Clean up blob URLs to prevent memory leaks
+    if (this.currentDocumentUrl && this.currentDocumentUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(this.currentDocumentUrl);
+    }
+    
     this.documentViewerVisible = false;
     this.currentDocumentUrl = '';
     this.currentDocumentName = '';
     this.currentDocumentType = '';
+  }
+
+  performScroll(): void {
+    let scrollContainer: HTMLElement | null = null;
+    
+    // Try ViewChild first
+    if (this.scrollableContent && this.scrollableContent.nativeElement) {
+      scrollContainer = this.scrollableContent.nativeElement;
+    } else {
+      // Fallback to querySelector
+      scrollContainer = document.querySelector('.scrollable-content') as HTMLElement;
+    }
+    
+    if (scrollContainer) {
+      // Force immediate scroll to bottom
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      
+      // Then try smooth scroll
+      setTimeout(() => {
+        scrollContainer!.scrollTo({
+          top: scrollContainer!.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 50);
+    }
+  }
+
+  scrollToProcessingResults(): void {
+    // Legacy method - now just calls performScroll
+    this.performScroll();
   }
 
   showToast(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {

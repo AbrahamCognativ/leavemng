@@ -72,7 +72,9 @@
 
         &[aria-level="2"] .dx-treeview-item-content {
           font-weight: normal;
-          padding: 0 var(--side-panel-min-width);
+          padding-left: var(--side-panel-min-width);
+          padding-right: 8px;
+          text-align: left;
         }
       }
       // ##

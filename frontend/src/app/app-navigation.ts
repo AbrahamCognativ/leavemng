@@ -36,16 +36,12 @@ export const getNavigationItems = (authService: AuthService) => [
     icon: 'home',
     items: [
       {
-        text: 'Apply',
-        path: '/wfh/apply',
-      },
-      {
         text: 'Dashboard',
         path: '/wfh/dashboard',
       },
       {
-        text: 'History',
-        path: '/wfh/history',
+        text: 'Apply',
+        path: '/wfh/apply',
       },
       ...(authService.isAdmin || authService.isHR || authService.isManager ? [
         {
@@ -54,6 +50,16 @@ export const getNavigationItems = (authService: AuthService) => [
         }
       ] : [])
     ]
+  },
+  {
+    text: 'Policies',
+    path: '/policies',
+    icon: 'doc'
+  },
+  {
+    text: 'Docs',
+    path: '/docs',
+    icon: 'folder'
   },
   {
     text: 'Admin',
@@ -92,21 +98,6 @@ export const getNavigationItems = (authService: AuthService) => [
         path: '/admin/audit-logs',
       }
     ]
-  },
-  {
-    text: 'Policies',
-    path: '/policies',
-    icon: 'doc'
-  },
-  {
-    text: 'Docs',
-    path: '/docs',
-    icon: 'folder'
-  },
-  {
-    text: 'Profile',
-    path: '/profile',
-    icon: 'user'
   }
 ];
 

@@ -229,9 +229,10 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 20px;
-  padding-top: 20px;
+  margin-top: auto;
+  padding-top: 15px;
   border-top: 1px solid #dee2e6;
+  flex-shrink: 0;
 }
 
 // Responsive design
@@ -249,6 +250,15 @@
     
     .dx-datagrid-headers {
       font-size: 13px;
+    }
+  }
+  
+  // Adjust bulk upload modal for smaller screens
+  .bulk-payslip-content {
+    .detailed-results {
+      .dx-datagrid {
+        font-size: 12px;
+      }
     }
   }
 }
@@ -296,6 +306,34 @@
     }
   }
   
+  // Mobile responsive for bulk upload modal
+  .bulk-payslip-content {
+    .scrollable-content {
+      padding: 10px;
+    }
+    
+    .instructions-section {
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .processing-results {
+      padding: 10px;
+      margin: 10px 0;
+      
+      .results-summary {
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .detailed-results {
+        .dx-datagrid {
+          font-size: 11px;
+        }
+      }
+    }
+  }
+  
   :host ::ng-deep {
     .dx-popup-content {
       padding: 10px;
@@ -310,14 +348,47 @@
 
 // Bulk payslip upload styles
 .bulk-payslip-content {
-  padding: 20px;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  
+  .scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    padding-bottom: 20px;
+    position: relative;
+    
+    // Add scroll indicator
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+  
   
   .instructions-section {
     background: #f8f9fa;
     border: 1px solid #e9ecef;
     border-radius: 6px;
     padding: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    flex-shrink: 0;
     
     h4 {
       margin: 0 0 10px 0;
@@ -338,7 +409,8 @@
   }
   
   .file-upload-section {
-    margin: 20px 0;
+    margin: 15px 0;
+    flex-shrink: 0;
     
     .upload-label {
       display: block;
@@ -359,7 +431,8 @@
     border: 1px solid #b3d9ff;
     border-radius: 6px;
     padding: 15px;
-    margin: 20px 0;
+    margin: 15px 0;
+    flex-shrink: 0;
     
     h5 {
       margin: 0 0 10px 0;
@@ -403,7 +476,7 @@
     border: 1px solid #dee2e6;
     border-radius: 6px;
     padding: 15px;
-    margin: 20px 0;
+    margin: 15px 0;
     
     h5 {
       margin: 0 0 15px 0;
@@ -413,8 +486,9 @@
     .results-summary {
       display: flex;
       gap: 15px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       flex-wrap: wrap;
+      flex-shrink: 0;
       
       .stat-item {
         display: flex;
@@ -446,6 +520,13 @@
     }
     
     .detailed-results {
+      margin-top: 15px;
+      
+      // Let the data grid size naturally like the main page
+      .dx-datagrid {
+        width: 100%;
+      }
+      
       .matched-user {
         font-size: 12px;
         
@@ -483,5 +564,210 @@
     margin-top: 30px;
     padding-top: 20px;
     border-top: 1px solid #eee;
+  }
+}
+
+// Manual match popup styles
+.manual-match-content {
+  padding: 20px;
+  
+  .document-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+    
+    h5 {
+      margin: 0 0 10px 0;
+      color: #495057;
+      font-size: 16px;
+    }
+    
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      
+      .label {
+        font-weight: 500;
+        color: #666;
+      }
+      
+      .value {
+        color: #333;
+      }
+    }
+  }
+  
+  .user-selection {
+    margin: 20px 0;
+    
+    .selection-label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+  
+  .document-preview {
+    margin: 20px 0;
+    
+    .preview-label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .preview-container {
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      overflow: hidden;
+      height: 400px;
+      
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+    }
+    
+    .preview-error {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 400px;
+      background: #f8f9fa;
+      color: #6c757d;
+      font-style: italic;
+    }
+  }
+  
+  .popup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  }
+}
+
+// Status badges for bulk upload results
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  
+  &.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  
+  &.failed {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  
+  &.no-id-found {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+  }
+  
+  &.no-user-found {
+    background: #ffeaa7;
+    color: #856404;
+    border: 1px solid #ffd93d;
+  }
+  
+  i {
+    font-size: 10px;
+  }
+}
+
+// Action buttons in bulk upload results
+.bulk-result-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  
+  .dx-button {
+    min-width: 28px;
+    height: 28px;
+    
+    &.preview-btn {
+      .dx-button-content {
+        color: #007bff;
+      }
+    }
+    
+    &.manual-match-btn {
+      .dx-button-content {
+        color: #28a745;
+      }
+    }
+  }
+}
+
+// Responsive adjustments for manual match popup
+@media (max-width: 768px) {
+  .manual-match-content {
+    padding: 15px;
+    
+    .document-info {
+      padding: 12px;
+      
+      .info-row {
+        flex-direction: column;
+        gap: 4px;
+        
+        .label {
+          font-size: 12px;
+        }
+        
+        .value {
+          font-size: 14px;
+        }
+      }
+    }
+    
+    .document-preview {
+      .preview-container {
+        height: 300px;
+      }
+    }
+    
+    .popup-actions {
+      flex-direction: column;
+      
+      .dx-button {
+        width: 100%;
+      }
+    }
+  }
+  
+  .bulk-result-actions {
+    flex-direction: column;
+    gap: 2px;
+    
+    .dx-button {
+      min-width: 24px;
+      height: 24px;
+    }
+  }
+  
+  .status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
   }
 }
