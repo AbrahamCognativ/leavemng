@@ -33,6 +33,11 @@ export class DocumentViewerComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnDestroy() {
+    // Clean up blob URLs to prevent memory leaks
+    if (this.documentUrl && this.documentUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(this.documentUrl);
+    }
+    
     if (this.safeUrl) {
       this.safeUrl = null;
     }
@@ -59,19 +64,32 @@ export class DocumentViewerComponent implements OnInit, OnDestroy, OnChanges {
       this.canPreview = this.canPreviewFileType(normalizedFileType);
       
       if (this.canPreview) {
-        // Add cache-busting parameter to prevent browser caching
-        const cacheBuster = `cacheBust=${Date.now()}`;
-        const separator = this.documentUrl.includes('?') ? '&' : '?';
-        const urlWithCacheBuster = `${this.documentUrl}${separator}${cacheBuster}`;
+        // Check if this is a blob URL (for failed document previews)
+        const isBlobUrl = this.documentUrl.startsWith('blob:');
+        
+        let finalUrl = this.documentUrl;
+        
+        if (!isBlobUrl) {
+          // Add cache-busting parameter to prevent browser caching (only for server URLs)
+          const cacheBuster = `cacheBust=${Date.now()}`;
+          const separator = this.documentUrl.includes('?') ? '&' : '?';
+          finalUrl = `${this.documentUrl}${separator}${cacheBuster}`;
+        }
         
         // For PDFs, we can embed directly
         if (this.isPdf(normalizedFileType)) {
-          this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlWithCacheBuster);
-        } else if (this.isDocx(normalizedFileType)) {
-          // For DOCX files, use the preview endpoint that converts to PDF
+          this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(finalUrl);
+        } else if (this.isDocx(normalizedFileType) && !isBlobUrl) {
+          // For DOCX files, use the preview endpoint that converts to PDF (only for server URLs)
           const previewUrl = this.getPreviewUrl(this.documentUrl);
+          const cacheBuster = `cacheBust=${Date.now()}`;
           const previewUrlWithCacheBuster = `${previewUrl}${previewUrl.includes('?') ? '&' : '?'}${cacheBuster}`;
           this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(previewUrlWithCacheBuster);
+        } else if (this.isDocx(normalizedFileType) && isBlobUrl) {
+          // For blob URLs with DOCX, we can't convert, so show error message
+          this.canPreview = false;
+          this.safeUrl = null;
+          this.errorMessage = 'DOCX files from uploads cannot be previewed. Please download the file to view it.';
         } else {
           // For other files, we'll show a preview message
           this.safeUrl = null;
@@ -144,6 +162,11 @@ export class DocumentViewerComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private resetState(): void {
+    // Clean up blob URLs to prevent memory leaks
+    if (this.documentUrl && this.documentUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(this.documentUrl);
+    }
+    
     this.safeUrl = null;
     this.isLoading = false;
     this.canPreview = false;

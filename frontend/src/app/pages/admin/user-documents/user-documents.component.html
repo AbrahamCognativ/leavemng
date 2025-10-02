@@ -273,56 +273,62 @@
   [visible]="bulkPayslipPopupVisible"
   [hideOnOutsideClick]="false"
   [showCloseButton]="true"
-  [width]="800"
-  [height]="600"
+  [width]="'90%'"
+  [height]="'85%'"
+  [maxWidth]="1400"
+  [maxHeight]="800"
+  [minWidth]="800"
+  [minHeight]="600"
   [title]="'Bulk Payslip Upload'"
   (onHiding)="closeBulkPayslipPopup()">
   
   <div *dxTemplate="let data of 'content'">
     <div class="bulk-payslip-content">
       
-      <!-- Instructions -->
-      <div class="instructions-section">
-        <h4>📋 Instructions</h4>
-        <ul>
-          <li>Select multiple payslip PDF files</li>
-          <li>System will extract ID/Passport numbers from each PDF</li>
-          <li>Payslips will be automatically assigned to matching users</li>
-          <li>Users will receive email notifications</li>
-        </ul>
-      </div>
-      
-      <!-- File Upload Section -->
-      <div class="file-upload-section">
-        <label class="upload-label">Payslip PDF Files *</label>
-        <dx-file-uploader
-          [multiple]="bulkPayslipUploaderOptions.multiple"
-          [accept]="bulkPayslipUploaderOptions.accept"
-          [uploadMode]="bulkPayslipUploaderOptions.uploadMode"
-          [showFileList]="bulkPayslipUploaderOptions.showFileList"
-          [labelText]="bulkPayslipUploaderOptions.labelText"
-          [selectButtonText]="bulkPayslipUploaderOptions.selectButtonText"
-          (onValueChanged)="onPayslipFilesSelected($event)">
-        </dx-file-uploader>
-        <div class="upload-help">
-          Supported format: PDF only. Multiple files can be selected.
+      <!-- Scrollable Content -->
+      <div class="scrollable-content" #scrollableContent>
+        <!-- Instructions -->
+        <div class="instructions-section">
+          <h4>📋 Instructions</h4>
+          <ul>
+            <li>Select multiple payslip PDF files</li>
+            <li>System will extract ID/Passport numbers from each PDF</li>
+            <li>Payslips will be automatically assigned to matching users</li>
+            <li>Users will receive email notifications</li>
+          </ul>
         </div>
-      </div>
-      
-      <!-- Selected Files Summary -->
-      <div *ngIf="selectedPayslipFiles.length > 0" class="selected-files-summary">
-        <h5>📁 Selected Files ({{ selectedPayslipFiles.length }})</h5>
-        <div class="file-list">
-          <div *ngFor="let file of selectedPayslipFiles" class="file-item">
-            <i class="dx-icon-doc"></i>
-            <span>{{ file.name }}</span>
-            <small>({{ formatFileSize(file.size) }})</small>
+        
+        <!-- File Upload Section -->
+        <div class="file-upload-section">
+          <label class="upload-label">Payslip PDF Files *</label>
+          <dx-file-uploader
+            [multiple]="bulkPayslipUploaderOptions.multiple"
+            [accept]="bulkPayslipUploaderOptions.accept"
+            [uploadMode]="bulkPayslipUploaderOptions.uploadMode"
+            [showFileList]="bulkPayslipUploaderOptions.showFileList"
+            [labelText]="bulkPayslipUploaderOptions.labelText"
+            [selectButtonText]="bulkPayslipUploaderOptions.selectButtonText"
+            (onValueChanged)="onPayslipFilesSelected($event)">
+          </dx-file-uploader>
+          <div class="upload-help">
+            Supported format: PDF only. Multiple files can be selected.
           </div>
         </div>
-      </div>
-      
-      <!-- Processing Results -->
-      <div *ngIf="bulkUploadResult" class="processing-results">
+        
+        <!-- Selected Files Summary -->
+        <div *ngIf="selectedPayslipFiles.length > 0" class="selected-files-summary">
+          <h5>📁 Selected Files ({{ selectedPayslipFiles.length }})</h5>
+          <div class="file-list">
+            <div *ngFor="let file of selectedPayslipFiles" class="file-item">
+              <i class="dx-icon-doc"></i>
+              <span>{{ file.name }}</span>
+              <small>({{ formatFileSize(file.size) }})</small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Processing Results -->
+        <div *ngIf="bulkUploadResult" class="processing-results">
         <h5>📊 Processing Results</h5>
         
         <!-- Summary Stats -->
@@ -351,14 +357,19 @@
             [dataSource]="bulkUploadResult.processing_details"
             [showBorders]="true"
             [columnAutoWidth]="true">
-            <dxo-paging [pageSize]="5"></dxo-paging>
+            <dxo-paging [pageSize]="10"></dxo-paging>
+            <dxo-pager
+              [showPageSizeSelector]="true"
+              [allowedPageSizes]="[5, 10, 20]"
+              [showInfo]="true">
+            </dxo-pager>
             
-            <dxi-column caption="Status" cellTemplate="statusTemplate" [width]="80"></dxi-column>
+            <dxi-column caption="Status" cellTemplate="statusTemplate"></dxi-column>
             <dxi-column dataField="file_name" caption="File Name"></dxi-column>
             <dxi-column caption="Extracted IDs" cellTemplate="idsTemplate"></dxi-column>
             <dxi-column caption="Matched User" cellTemplate="userTemplate"></dxi-column>
             <dxi-column dataField="error_message" caption="Message" cellTemplate="messageTemplate"></dxi-column>
-            <dxi-column caption="Actions" cellTemplate="failedDocActionsTemplate" [width]="120"></dxi-column>
+            <dxi-column caption="Actions" cellTemplate="failedDocActionsTemplate"></dxi-column>
             
             <!-- Status Template -->
             <div *dxTemplate="let data of 'statusTemplate'">
@@ -419,8 +430,9 @@
           </dx-data-grid>
         </div>
       </div>
+      </div>
       
-      <!-- Action buttons -->
+      <!-- Action buttons - Fixed at bottom -->
       <div class="popup-actions">
         <dx-button
           text="Close"
