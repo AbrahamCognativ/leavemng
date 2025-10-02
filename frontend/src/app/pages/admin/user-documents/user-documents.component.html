@@ -358,6 +358,7 @@
             <dxi-column caption="Extracted IDs" cellTemplate="idsTemplate"></dxi-column>
             <dxi-column caption="Matched User" cellTemplate="userTemplate"></dxi-column>
             <dxi-column dataField="error_message" caption="Message" cellTemplate="messageTemplate"></dxi-column>
+            <dxi-column caption="Actions" cellTemplate="failedDocActionsTemplate" [width]="120"></dxi-column>
             
             <!-- Status Template -->
             <div *dxTemplate="let data of 'statusTemplate'">
@@ -396,6 +397,25 @@
               </span>
             </div>
             
+            <!-- Failed Document Actions Template -->
+            <div *dxTemplate="let data of 'failedDocActionsTemplate'">
+              <div class="actions-cell" *ngIf="data.data.status !== 'success'">
+                <dx-button
+                  icon="eyeopen"
+                  hint="Preview Document"
+                  stylingMode="text"
+                  (onClick)="previewFailedDocument(data.data)">
+                </dx-button>
+                
+                <dx-button
+                  icon="user"
+                  hint="Manual Match"
+                  stylingMode="text"
+                  (onClick)="openManualMatchPopup(data.data)">
+                </dx-button>
+              </div>
+            </div>
+            
           </dx-data-grid>
         </div>
       </div>
@@ -412,6 +432,101 @@
           type="success"
           [disabled]="bulkUploading || selectedPayslipFiles.length === 0"
           (onClick)="uploadBulkPayslips()">
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Manual Match Popup -->
+<dx-popup
+  [visible]="manualMatchPopupVisible"
+  [hideOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [width]="600"
+  [height]="500"
+  [title]="'Manual Document Assignment'"
+  (onHiding)="closeManualMatchPopup()">
+  
+  <div *dxTemplate="let data of 'content'">
+    <div class="manual-match-content" *ngIf="selectedFailedDocument">
+      
+      <!-- Document Info -->
+      <div class="document-info-section">
+        <h4>📄 Document Information</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <strong>File Name:</strong>
+            <span>{{ selectedFailedDocument.file_name }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Status:</strong>
+            <span class="status-badge" [ngClass]="selectedFailedDocument.status">
+              {{ selectedFailedDocument.status | titlecase }}
+            </span>
+          </div>
+          <div class="info-item" *ngIf="selectedFailedDocument.extracted_ids?.length > 0">
+            <strong>Extracted IDs:</strong>
+            <span>{{ selectedFailedDocument.extracted_ids.join(', ') }}</span>
+          </div>
+          <div class="info-item" *ngIf="selectedFailedDocument.error_message">
+            <strong>Error:</strong>
+            <span class="error-text">{{ selectedFailedDocument.error_message }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- User Selection -->
+      <div class="user-selection-section">
+        <h4>👤 Assign to User</h4>
+        <dx-form [formData]="manualMatchFormData" [colCount]="1">
+          <dxi-item dataField="user_id" editorType="dxSelectBox" [isRequired]="true"
+                    [editorOptions]="{
+                      dataSource: users,
+                      displayExpr: 'display_name',
+                      valueExpr: 'id',
+                      placeholder: 'Select user to assign this document',
+                      searchEnabled: true
+                    }">
+            <dxo-label text="Select User"></dxo-label>
+          </dxi-item>
+          
+          <dxi-item dataField="document_title" [isRequired]="true">
+            <dxo-label text="Document Title"></dxo-label>
+          </dxi-item>
+          
+          <dxi-item dataField="description" editorType="dxTextArea">
+            <dxo-label text="Description (Optional)"></dxo-label>
+          </dxi-item>
+        </dx-form>
+      </div>
+      
+      <!-- Preview Section -->
+      <div class="preview-section">
+        <h4>👁️ Document Preview</h4>
+        <div class="preview-actions">
+          <dx-button
+            text="Preview Document"
+            type="normal"
+            icon="eyeopen"
+            (onClick)="previewFailedDocument(selectedFailedDocument)">
+          </dx-button>
+          <small class="preview-help">Preview the document to verify it's the correct payslip before assigning</small>
+        </div>
+      </div>
+      
+      <!-- Action buttons -->
+      <div class="popup-actions">
+        <dx-button
+          text="Cancel"
+          stylingMode="outlined"
+          (onClick)="closeManualMatchPopup()">
+        </dx-button>
+        <dx-button
+          [text]="manualMatching ? 'Assigning...' : 'Assign Document'"
+          type="success"
+          [disabled]="manualMatching || !manualMatchFormData.user_id || !manualMatchFormData.document_title"
+          (onClick)="assignDocumentManually()">
         </dx-button>
       </div>
     </div>

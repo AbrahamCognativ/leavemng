@@ -87,18 +87,26 @@ def test_accrue_annual_leave(db: Session):
 def accrue_monthly_leave_balances(db: Session):
     """
     Accrue all monthly leave types for all active users.
+    FIXED VERSION: Only applies policies to users in the correct organization.
     """
     from app.models.leave_policy import LeavePolicy
+    from app.models.org_unit import OrgUnit
+    
     policies = db.query(LeavePolicy).filter(
         LeavePolicy.accrual_frequency == AccrualFrequencyEnum.monthly).all()
+    
     if not policies:
         log_audit(
             db,
             "Monthly Leave Accrual",
             "No monthly leave policy found. No database update was done.")
         return
+    
     users = db.query(User).filter(User.is_active).all()
+    
     affected_types = []
+    total_users_processed = 0
+    
     for policy in policies:
         leave_type = db.query(LeaveType).filter(
             LeaveType.id == policy.leave_type_id).first()
@@ -107,7 +115,11 @@ def accrue_monthly_leave_balances(db: Session):
         accrual_amount = Decimal(str(policy.accrual_amount_per_period or 0))
         affected_types.append(
             f"{leave_type.code if hasattr(leave_type, 'code') else leave_type.id}")
-        for user in users:
+        
+        # FIXED: Only process users in the same organization as the policy
+        policy_users = [user for user in users if user.org_unit_id == policy.org_unit_id]
+        
+        for user in policy_users:
             bal = db.query(LeaveBalance).filter_by(
                 user_id=user.id, leave_type_id=leave_type.id).first()
             if not bal:
@@ -116,13 +128,13 @@ def accrue_monthly_leave_balances(db: Session):
                     leave_type_id=leave_type.id,
                     balance_days=0)
                 db.add(bal)
-            bal.balance_days = (
-                bal.balance_days or Decimal(0)) + accrual_amount
+            old_balance = bal.balance_days or Decimal(0)
+            bal.balance_days = old_balance + accrual_amount
+            total_users_processed += 1
+    
     db.commit()
-    log_audit(
-        db,
-        "Monthly Leave Accrual",
-        f"Updated leave types: {', '.join(affected_types)}. Accrued {accrual_amount} days per active user (per policy).")
+    log_audit(db, "Monthly Leave Accrual",
+              f"Added {accrual_amount} days to monthly leave balances for {total_users_processed} users in matching organizations.")
 
 
 def accrue_quarterly_leave_balances(db: Session):

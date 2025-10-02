@@ -125,20 +125,22 @@ export class PolicyService {
 
   async downloadPolicy(policyId: string, fileName: string): Promise<void> {
     try {
-      const response = await firstValueFrom(
-        this.http.get(`${this.API_URL}/policies/${policyId}/download`, {
-          headers: this.getAuthHeaders(),
-          responseType: 'blob'
-        })
-      );
+      const token = localStorage.getItem('user_token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
 
-      // Create blob link to download
-      const url = window.URL.createObjectURL(response);
+      // Use token parameter instead of Authorization header for downloads
+      const downloadUrl = `${this.API_URL}/policies/${policyId}/download?token=${encodeURIComponent(token)}`;
+      
+      // Create a temporary link to trigger download
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       link.download = fileName;
+      link.target = '_blank';
+      document.body.appendChild(link);
       link.click();
-      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
     } catch (error) {
       throw error;
     }
