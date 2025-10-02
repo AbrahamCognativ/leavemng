@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
@@ -44,7 +44,7 @@ import notify from 'devextreme/ui/notify';
     DocumentViewerComponent
   ]
 })
-export class UserDocumentsComponent implements OnInit {
+export class UserDocumentsComponent implements OnInit, AfterViewChecked {
   users: any[] = [];
   usersWithAllOption: any[] = [];
   userDocuments: UserDocument[] = [];
@@ -79,6 +79,13 @@ export class UserDocumentsComponent implements OnInit {
   // Failed document files storage (for preview)
   failedDocumentFiles: Map<string, File> = new Map();
   
+  // ViewChild for scrollable content
+  @ViewChild('scrollableContent') scrollableContent!: ElementRef;
+  
+  
+  // Flag to trigger scroll after view update
+  shouldScrollToResults = false;
+  
   // Form data
   formData: any = {
     user_id: null,
@@ -103,13 +110,21 @@ export class UserDocumentsComponent implements OnInit {
   constructor(
     private userDocumentsService: UserDocumentsService,
     private authService: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit(): Promise<void> {
     await this.loadCurrentUser();
     await this.loadUsers();
     await this.loadAllDocuments();
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.shouldScrollToResults && this.bulkUploadResult) {
+      this.shouldScrollToResults = false;
+      this.performScroll();
+    }
   }
 
   async loadCurrentUser(): Promise<void> {
@@ -385,6 +400,10 @@ export class UserDocumentsComponent implements OnInit {
 
       // Refresh documents list
       await this.loadAllDocuments();
+      
+      // Trigger scroll after view update
+      this.shouldScrollToResults = true;
+      this.cdr.detectChanges();
 
     } catch (error: any) {
       let errorMessage = 'Error processing payslip files';
@@ -622,10 +641,45 @@ export class UserDocumentsComponent implements OnInit {
   }
 
   closeDocumentViewer(): void {
+    // Clean up blob URLs to prevent memory leaks
+    if (this.currentDocumentUrl && this.currentDocumentUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(this.currentDocumentUrl);
+    }
+    
     this.documentViewerVisible = false;
     this.currentDocumentUrl = '';
     this.currentDocumentName = '';
     this.currentDocumentType = '';
+  }
+
+  performScroll(): void {
+    let scrollContainer: HTMLElement | null = null;
+    
+    // Try ViewChild first
+    if (this.scrollableContent && this.scrollableContent.nativeElement) {
+      scrollContainer = this.scrollableContent.nativeElement;
+    } else {
+      // Fallback to querySelector
+      scrollContainer = document.querySelector('.scrollable-content') as HTMLElement;
+    }
+    
+    if (scrollContainer) {
+      // Force immediate scroll to bottom
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      
+      // Then try smooth scroll
+      setTimeout(() => {
+        scrollContainer!.scrollTo({
+          top: scrollContainer!.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 50);
+    }
+  }
+
+  scrollToProcessingResults(): void {
+    // Legacy method - now just calls performScroll
+    this.performScroll();
   }
 
   showToast(message: string, type: 'success' | 'error' | 'info' | 'warning'): void {
