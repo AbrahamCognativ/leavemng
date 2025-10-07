@@ -54,12 +54,13 @@ def create_leave_request(
     if not leave_type:
         raise HTTPException(status_code=400, detail="Invalid leave_type_id")
 
-    # Check for duplicate leave request
+    # Check for duplicate leave request (only consider pending and approved requests)
     existing = db.query(LeaveRequest).filter(
         LeaveRequest.user_id == current_user.id,
         LeaveRequest.leave_type_id == req.leave_type_id,
         LeaveRequest.start_date == req.start_date,
-        LeaveRequest.end_date == req.end_date
+        LeaveRequest.end_date == req.end_date,
+        LeaveRequest.status.in_(['pending', 'approved'])
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Duplicate leave request")
