@@ -199,11 +199,16 @@ def get_leave_request(
     req = db.query(LeaveRequest).filter(LeaveRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Leave request not found")
-    # IC can view own, Manager can view direct reports, HR/Admin can view all
-    if (str(current_user.id) != str(req.user_id)
-        and current_user.role_band not in ("HR", "Admin")
-        and current_user.role_title not in ("HR", "Admin")
-            and str(req.user_id) != str(current_user.id)):
+    
+    # Check permissions: IC can view own, Manager can view direct reports, HR/Admin can view all
+    can_view = (
+        str(current_user.id) == str(req.user_id) or  # Own request
+        current_user.role_band in ("HR", "Admin") or  # HR/Admin
+        current_user.role_title in ("HR", "Admin") or  # HR/Admin
+        str(req.user_id) == str(current_user.id)  # Own request (redundant but safe)
+    )
+    
+    if not can_view:
         log_permission_denied(
             db,
             current_user.id,
@@ -213,7 +218,23 @@ def get_leave_request(
             message="Insufficient permissions to view leave request",
             http_status=403)
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    return LeaveRequestRead.model_validate(req)
+    
+    # Get user name for display
+    user = db.query(User).filter(User.id == req.user_id).first()
+    user_name = user.name if user else "Unknown User"
+    
+    # Get decided_by user name if exists
+    decided_by_name = None
+    if req.decided_by:
+        decided_by_user = db.query(User).filter(User.id == req.decided_by).first()
+        decided_by_name = decided_by_user.name if decided_by_user else "Unknown User"
+    
+    # Create response with user names
+    response_data = LeaveRequestRead.model_validate(req)
+    response_data.user_name = user_name
+    response_data.decided_by_name = decided_by_name
+    
+    return response_data
 
 
 @router.put("/{request_id}", tags=["leave"], response_model=LeaveRequestRead)

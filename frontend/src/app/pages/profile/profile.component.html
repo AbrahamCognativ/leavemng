@@ -114,6 +114,134 @@
   </div>
 </div>
 
+    <!-- Next of Kin Section -->
+    <div class="content-block dx-card responsive-paddings">
+      <div class="section-header">
+        <h3>Emergency Contacts (Next of Kin)</h3>
+        <p class="section-description">Manage your emergency contact information</p>
+      </div>
+      
+      <!-- Success/Error Messages -->
+      <div *ngIf="nextOfKinSuccessMessage" class="success-message">
+        <p>{{ nextOfKinSuccessMessage }}</p>
+      </div>
+      
+      <div *ngIf="nextOfKinErrorMessage" class="error-message">
+        <p>{{ nextOfKinErrorMessage }}</p>
+      </div>
+      
+      <!-- Next of Kin List -->
+      <div *ngIf="!isEditingNextOfKin">
+        <dx-data-grid
+          *ngIf="nextOfKinContacts.length > 0"
+          [dataSource]="nextOfKinContacts"
+          [showBorders]="true"
+          [columnAutoWidth]="true"
+          [rowAlternationEnabled]="true"
+        >
+          <dxi-column dataField="full_name" caption="Name"></dxi-column>
+          <dxi-column dataField="relationship" caption="Relationship"></dxi-column>
+          <dxi-column dataField="phone_number" caption="Phone"></dxi-column>
+          <dxi-column dataField="email" caption="Email"></dxi-column>
+          <dxi-column dataField="address" caption="Address"></dxi-column>
+          <dxi-column caption="Actions" cellTemplate="actionsTemplate" [width]="120"></dxi-column>
+          
+          <div *dxTemplate="let contact of 'actionsTemplate'">
+            <div class="action-buttons">
+              <dx-button
+                icon="edit"
+                type="default"
+                [stylingMode]="'text'"
+                (onClick)="editNextOfKin(contact.data)"
+                [disabled]="isLoading"
+                hint="Edit Contact"
+              ></dx-button>
+              <dx-button
+                icon="trash"
+                type="danger"
+                [stylingMode]="'text'"
+                (onClick)="deleteNextOfKin(contact.data)"
+                [disabled]="isLoading"
+                hint="Delete Contact"
+              ></dx-button>
+            </div>
+          </div>
+        </dx-data-grid>
+        
+        <div class="empty-state" *ngIf="nextOfKinContacts.length === 0">
+          <i class="dx-icon-user"></i>
+          <p>No emergency contacts added yet</p>
+          <dx-button
+            text="Add First Contact"
+            type="default"
+            icon="plus"
+            (onClick)="toggleNextOfKinEdit()"
+          ></dx-button>
+        </div>
+      </div>
+
+      <!-- Next of Kin Form -->
+      <div class="next-of-kin-form" *ngIf="isEditingNextOfKin">
+        <dx-form
+          [formData]="nextOfKinFormData"
+          labelLocation="top"
+          [colCountByScreen]="colCountByScreen"
+        >
+          <dxi-item dataField="relationship" editorType="dxSelectBox" 
+                    [editorOptions]="{dataSource: relationshipOptions, placeholder: 'Select relationship'}">
+            <dxi-validation-rule type="required" message="Relationship is required"></dxi-validation-rule>
+          </dxi-item>
+          
+          <dxi-item dataField="full_name">
+            <dxi-validation-rule type="required" message="Full name is required"></dxi-validation-rule>
+          </dxi-item>
+          
+          <dxi-item dataField="phone_number">
+            <dxi-validation-rule type="required" message="Phone number is required"></dxi-validation-rule>
+            <dxi-validation-rule type="pattern" pattern="^[\+]?[1-9][\d]{0,15}$" message="Invalid phone number"></dxi-validation-rule>
+          </dxi-item>
+          
+          <dxi-item dataField="email" editorType="dxTextBox">
+            <dxi-validation-rule type="email" message="Invalid email address"></dxi-validation-rule>
+          </dxi-item>
+          
+          <dxi-item dataField="address" editorType="dxTextArea" 
+                    [editorOptions]="{height: 32, placeholder: 'Enter full address'}">
+          </dxi-item>
+          
+          
+          <dxi-item dataField="is_emergency_contact" editorType="dxCheckBox" 
+                    [editorOptions]="{text: 'Use as emergency contact'}">
+          </dxi-item>
+        </dx-form>
+        
+        <div class="form-actions">
+          <dx-button
+            [text]="isCreatingNextOfKin ? 'Create Contact' : 'Update Contact'"
+            type="success"
+            (onClick)="isCreatingNextOfKin ? createNextOfKin() : updateNextOfKin()"
+            [disabled]="isLoading"
+          ></dx-button>
+          <dx-button
+            text="Cancel"
+            type="normal"
+            (onClick)="cancelNextOfKinEdit()"
+            [disabled]="isLoading"
+          ></dx-button>
+        </div>
+      </div>
+      
+      <!-- Add Contact Button (when not editing) -->
+      <div class="add-contact-section" *ngIf="!isEditingNextOfKin && nextOfKinContacts.length > 0">
+        <dx-button
+          text="Add New Contact"
+          type="default"
+          icon="plus"
+          (onClick)="toggleNextOfKinEdit()"
+        ></dx-button>
+      </div>
+    </div>
+
 <dx-file-uploader
   *ngIf="false"
   selectButtonText="Select Image"

@@ -79,10 +79,10 @@ export class LeaveRequestDetailsComponent implements OnInit {
     try {
       this.isLoading = true;
       this.leaveRequest = await this.leaveService.getLeaveRequestDetails(this.requestId);
-      // Capitalize user name
-      this.leaveRequest.user_name = this.capitalize(
-        (await this.userService.getUserById(this.leaveRequest.user_id))?.name || ''
-      );
+      // User name is now included in the API response
+      if (this.leaveRequest.user_name) {
+        this.leaveRequest.user_name = this.capitalize(this.leaveRequest.user_name);
+      }
 
       // Compute total_days = end_date - start_date + 1
       const start = new Date(this.leaveRequest.start_date);
@@ -105,13 +105,15 @@ export class LeaveRequestDetailsComponent implements OnInit {
         file_name: doc.file_name || 'unknown-document'
       }));
 
-      // Fetch decided_by info
-      this.leaveRequest.decided_by = this.leaveRequest.decided_by ? this.capitalize((
-        await this.userService.getUserById(this.leaveRequest.decided_by)
-      )?.name || '') : null;
+      // decided_by_name is now included in the API response
+      if (this.leaveRequest.decided_by_name) {
+        this.leaveRequest.decided_by_name = this.capitalize(this.leaveRequest.decided_by_name);
+      }
 
-      // Format decided_at
-      this.leaveRequest.decision_at = this.leaveRequest.decision_at ? new Date(this.leaveRequest.decision_at).toLocaleString() : null;
+      // Format decision_at for display
+      if (this.leaveRequest.decision_at) {
+        this.leaveRequest.formatted_decision_at = new Date(this.leaveRequest.decision_at).toLocaleString();
+      }
 
       // Check if the user is the owner of the leave request
       this.isLeaveRequestOwner = this.leaveRequest.user_id === (await this.authService.getUser()).data?.id;

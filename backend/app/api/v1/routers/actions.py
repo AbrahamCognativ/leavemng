@@ -55,37 +55,58 @@ def generate_action_tokens(resource_type: str, resource_id: str, approver_id: st
 @router.post("/action/{token}", tags=["actions"])
 async def execute_action_via_token(
         token: str,
+        action: str = None,  # URL parameter for GET requests
+        approval_note: str = None,  # URL parameter for GET requests
         db: Session = Depends(get_db),
         request: Request = None):
     """Execute approve/reject action via secure token from email"""
     
-    # Extract approval note and action from form data if this is a POST request
-    approval_note = None
-    selected_action = None
+    # Extract approval note and action from URL parameters (GET) or form data (POST)
+    extracted_approval_note = None
+    extracted_action = None
+    
     if request and request.method == "POST":
+        # Handle POST request (form submission)
         try:
             form_data = await request.form()
-            approval_note = form_data.get("approval_note", "").strip()
-            if not approval_note:
-                approval_note = None
-            selected_action = form_data.get("action", "").strip()
+            extracted_approval_note = form_data.get("approval_note", "").strip()
+            if not extracted_approval_note:
+                extracted_approval_note = None
+            extracted_action = form_data.get("action", "").strip()
             
             # Log form submission for audit purposes
             import logging
-            logging.debug(f"Processing email action token: {token}")
+            logging.info(f"Processing email action token via POST: {token}")
         except Exception as e:
             import logging
             logging.error(f"Error extracting form data: {e}")
-            approval_note = None
-            selected_action = None
+            extracted_approval_note = None
+            extracted_action = None
+    else:
+        # Handle GET request (URL parameters)
+        extracted_action = action
+        extracted_approval_note = approval_note
+        
+        import logging
+        logging.info(f"Processing email action token via GET: {token}, action: {action}")
     
-    # Find the token
+    # Use extracted values
+    approval_note = extracted_approval_note
+    selected_action = extracted_action
+    
+    # Find the token first to get request data
     action_token = db.query(ActionToken).filter(
         ActionToken.token == token
     ).first()
     
     if not action_token:
         return HTMLResponse(content=generate_error_page("Invalid or expired token"), status_code=404)
+    
+    # If this is a GET request without action parameter, show the note input page with request data
+    if request and request.method == "GET" and not selected_action:
+        # Fetch request data based on resource type
+        request_data = get_request_data(action_token, db)
+        return HTMLResponse(content=generate_note_input_page(token, request_data), status_code=200)
     
     # Check if token is expired (handle timezone-aware vs naive datetime)
     current_time = datetime.now(timezone.utc)
@@ -168,7 +189,7 @@ def process_wfh_action(action_token: ActionToken, approver: User, db: Session, r
     
     # Log WFH decision for audit purposes
     import logging
-    logging.debug(f"WFH request {wfh_request.id} {'approved' if is_approve else 'rejected'}")
+    logging.info(f"WFH request {wfh_request.id} {'approved' if is_approve else 'rejected'}")
     
     # Mark token as used
     action_token.used = True
@@ -256,7 +277,7 @@ def process_leave_action(action_token: ActionToken, approver: User, db: Session,
     
     # Log leave decision for audit purposes
     import logging
-    logging.debug(f"Leave request {leave_request.id} {'approved' if is_approve else 'rejected'}")
+    logging.info(f"Leave request {leave_request.id} {'approved' if is_approve else 'rejected'}")
     
     # Handle leave balance for rejections
     if not is_approve:
@@ -380,6 +401,183 @@ def generate_success_page(request_type: str, action: str, employee_name: str, de
                 <p><strong>Leave Management System</strong></p>
             </div>
         </div>
+    </body>
+    </html>
+    """
+
+
+def get_request_data(action_token: ActionToken, db: Session) -> dict:
+    """Fetch request data based on the action token's resource type"""
+    try:
+        if action_token.resource_type == "wfh_request":
+            wfh_request = db.query(WFHRequest).filter(WFHRequest.id == action_token.resource_id).first()
+            if wfh_request:
+                user = db.query(User).filter(User.id == wfh_request.user_id).first()
+                
+                # Calculate days for WFH request
+                days = 1  # Default to 1 day
+                if wfh_request.start_date and wfh_request.end_date:
+                    days = (wfh_request.end_date - wfh_request.start_date).days + 1
+                
+                return {
+                    'employee_name': user.name if user else 'Unknown User',
+                    'request_type': 'Work From Home',
+                    'start_date': wfh_request.start_date.strftime('%Y-%m-%d') if wfh_request.start_date else 'N/A',
+                    'end_date': wfh_request.end_date.strftime('%Y-%m-%d') if wfh_request.end_date else 'N/A',
+                    'days': str(days),
+                    'reason': wfh_request.reason if wfh_request.reason else 'No reason provided'
+                }
+        
+        elif action_token.resource_type == "leave_request":
+            leave_request = db.query(LeaveRequest).filter(LeaveRequest.id == action_token.resource_id).first()
+            if leave_request:
+                user = db.query(User).filter(User.id == leave_request.user_id).first()
+                leave_type = db.query(LeaveType).filter(LeaveType.id == leave_request.leave_type_id).first()
+                return {
+                    'employee_name': user.name if user else 'Unknown User',
+                    'request_type': leave_type.description if leave_type else 'Leave Request',
+                    'start_date': leave_request.start_date.strftime('%Y-%m-%d') if leave_request.start_date else 'N/A',
+                    'end_date': leave_request.end_date.strftime('%Y-%m-%d') if leave_request.end_date else 'N/A',
+                    'days': str(leave_request.total_days) if leave_request.total_days else 'N/A',
+                    'reason': leave_request.comments if leave_request.comments else 'No reason provided'
+                }
+            
+    except Exception as e:
+        import logging
+        logging.error(f"Error fetching request data: {e}")
+    
+    # Return default data if anything goes wrong
+    return {
+        'employee_name': 'Unknown User',
+        'request_type': 'Request',
+        'start_date': 'N/A',
+        'end_date': 'N/A',
+        'days': 'N/A',
+        'reason': 'Unable to load request details'
+    }
+
+
+def generate_note_input_page(token: str, request_data: dict = None) -> str:
+    """Generate simple decision page HTML matching success page style"""
+    # Default placeholder data
+    if not request_data:
+        request_data = {
+            'employee_name': 'Loading...',
+            'request_type': 'Leave Request',
+            'start_date': 'Loading...',
+            'end_date': 'Loading...',
+            'days': 'Loading...',
+            'reason': 'Loading...'
+        }
+    
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Review & Submit Decision</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }}
+            .container {{ max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+            .header {{ text-align: center; margin-bottom: 30px; }}
+            .header h1 {{ margin: 0; color: #333; font-size: 24px; font-weight: bold; }}
+            .header p {{ margin: 10px 0 0 0; color: #666; font-size: 16px; }}
+            .request-details {{ background: #f8f9fa; padding: 20px; border-radius: 6px; margin-bottom: 25px; }}
+            .request-details h3 {{ margin: 0 0 15px 0; color: #333; font-size: 18px; font-weight: bold; }}
+            .detail-row {{ display: flex; justify-content: space-between; margin: 8px 0; padding: 4px 0; border-bottom: 1px solid #e9ecef; }}
+            .detail-label {{ font-weight: bold; color: #495057; }}
+            .detail-value {{ color: #333; }}
+            .form-group {{ margin-bottom: 20px; }}
+            .form-group label {{ display: block; font-weight: bold; margin-bottom: 8px; color: #333; font-size: 14px; }}
+            .form-group textarea {{ width: 100%; height: 80px; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: inherit; box-sizing: border-box; resize: vertical; }}
+            .radio-group {{ display: flex; gap: 15px; margin-bottom: 25px; }}
+            .radio-option {{ flex: 1; }}
+            .radio-option input[type="radio"] {{ display: none; }}
+            .radio-option label {{ display: block; padding: 12px; border: 2px solid #e9ecef; border-radius: 4px; text-align: center; cursor: pointer; font-weight: bold; font-size: 14px; }}
+            .radio-option input[type="radio"]:checked + label {{ border-color: #28a745; background: #f8fff8; color: #28a745; }}
+            .radio-option.reject input[type="radio"]:checked + label {{ border-color: #dc3545; background: #fff8f8; color: #dc3545; }}
+            .button-group {{ text-align: center; }}
+            .btn {{ padding: 12px 24px; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }}
+            .btn-primary {{ background: #0f6cbd; color: white; }}
+            .btn-primary:hover {{ background: #0d5aa7; }}
+            .footer {{ text-align: center; margin-top: 30px; color: #6c757d; font-size: 14px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Review & Submit Decision</h1>
+                <p>Please review the request details and submit your decision</p>
+            </div>
+            
+            <div class="request-details">
+                <h3>Request Details:</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Employee:</span>
+                    <span class="detail-value">{request_data.get('employee_name', 'Loading...')}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Type:</span>
+                    <span class="detail-value">{request_data.get('request_type', 'Loading...')}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Start Date:</span>
+                    <span class="detail-value">{request_data.get('start_date', 'Loading...')}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">End Date:</span>
+                    <span class="detail-value">{request_data.get('end_date', 'Loading...')}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Days:</span>
+                    <span class="detail-value">{request_data.get('days', 'Loading...')}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Comments:</span>
+                    <span class="detail-value">{request_data.get('reason', 'Loading...')}</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="approval_note">Note (Optional):</label>
+                <textarea id="approval_note" name="approval_note" placeholder="Add a note for your decision..."></textarea>
+            </div>
+            
+            <div class="radio-group">
+                <div class="radio-option">
+                    <input type="radio" id="approve" name="decision" value="approve" checked>
+                    <label for="approve">APPROVE</label>
+                </div>
+                <div class="radio-option reject">
+                    <input type="radio" id="reject" name="decision" value="reject">
+                    <label for="reject">REJECT</label>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn btn-primary" onclick="submitDecision()">
+                    Submit Decision
+                </button>
+            </div>
+            
+            <div class="footer">
+                <p><strong>Leave Management System</strong></p>
+            </div>
+        </div>
+        
+        <script>
+            function submitDecision() {{
+                const note = document.getElementById('approval_note').value.trim();
+                const decision = document.querySelector('input[name="decision"]:checked').value;
+                const url = new URL(window.location.href);
+                url.searchParams.set('action', decision);
+                if (note) {{
+                    url.searchParams.set('approval_note', note);
+                }}
+                window.location.href = url.toString();
+            }}
+        </script>
     </body>
     </html>
     """

@@ -1,0 +1,41 @@
+<dx-popup
+  [visible]="isVisible"
+  [showTitle]="true"
+  title="Emergency Contact Required"
+  [width]="500"
+  [height]="400"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  position="center"
+>
+  <div *dxTemplate="let data of 'content'" class="reminder-modal-content">
+    <div class="modal-icon">
+      <i class="dx-icon-user"></i>
+    </div>
+    
+    <div class="modal-message">
+      <h3>Add Your Emergency Contact</h3>
+      <p>For your safety and our records, please add at least one emergency contact (Next of Kin) to your profile.</p>
+      <p class="reminder-text">This reminder will appear every 5 seconds until you add an emergency contact.</p>
+    </div>
+    
+    <div class="modal-actions">
+      <dx-button
+        text="Go to Profile"
+        type="success"
+        icon="user"
+        [width]="150"
+        (onClick)="goToProfile()"
+      ></dx-button>
+      
+      <dx-button
+        text="Dismiss for Now"
+        type="normal"
+        [stylingMode]="'outlined'"
+        [width]="150"
+        (onClick)="dismissModal()"
+      ></dx-button>
+    </div>
+  </div>
+</dx-popup>
