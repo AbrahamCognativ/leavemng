@@ -10,3 +10,4 @@ export * from './policy.service';
 export * from './policy-acknowledgment.service';
 export * from './user-documents.service';
 export * from './navigation.service';
+export * from './next-of-kin.service';

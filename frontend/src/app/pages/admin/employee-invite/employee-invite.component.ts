@@ -11,6 +11,8 @@ import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http'
 import { AuthService } from '../../../shared/services';
 import { UserService, IUser } from '../../../shared/services/user.service';
 import { LeaveService } from '../../../shared/services/leave.service';
+import { NextOfKinService } from '../../../shared/services/next-of-kin.service';
+import { NextOfKinContact } from '../../../models/next-of-kin.model';
 import { environment } from '../../../../environments/environment';
 
 interface NewEmployee {
@@ -84,6 +86,10 @@ export class EmployeeInviteComponent implements OnInit {
   selectedLeaveBalance: any = null;
   editedBalance: number = 0;
   
+  // Next of Kin properties
+  userNextOfKin: NextOfKinContact[] = [];
+  loadingNextOfKin: boolean = false;
+  
   colCountByScreen: object;
   baseUrl: string = environment.apiUrl;
 
@@ -91,7 +97,8 @@ export class EmployeeInviteComponent implements OnInit {
     private http: HttpClient,
     private authService: AuthService,
     private userService: UserService,
-    private leaveService: LeaveService
+    private leaveService: LeaveService,
+    private nextOfKinService: NextOfKinService
   ) {
     this.colCountByScreen = {
       xs: 1,
@@ -294,6 +301,9 @@ export class EmployeeInviteComponent implements OnInit {
     // Fetch leave balances and types when editing a user
     this.fetchUserLeaveBalances(user.id);
     this.fetchLeaveTypes();
+    
+    // Load Next of Kin contacts automatically
+    this.loadUserNextOfKin();
   }
   
   cancelEdit(): void {
@@ -302,6 +312,8 @@ export class EmployeeInviteComponent implements OnInit {
     this.userLeaveBalances = [];
     this.isEditingLeaveBalance = false;
     this.selectedLeaveBalance = null;
+    this.userNextOfKin = [];
+    this.loadingNextOfKin = false;
   }
   
   saveUserChanges(): void {
@@ -518,5 +530,28 @@ export class EmployeeInviteComponent implements OnInit {
       this.isLoading = false;
       this.errorMessage = error.error?.detail || 'Failed to update leave balance. Please try again.';
     }
+  }
+
+  // ==================== NEXT OF KIN METHODS ====================
+
+  /**
+   * Load Next of Kin contacts for the selected user
+   */
+  loadUserNextOfKin(): void {
+    if (!this.selectedUser) return;
+    
+    this.loadingNextOfKin = true;
+    
+    this.nextOfKinService.getUserNextOfKin(this.selectedUser.id).subscribe({
+      next: (contacts) => {
+        this.userNextOfKin = contacts;
+        this.loadingNextOfKin = false;
+      },
+      error: (error) => {
+        console.error('Failed to load user next of kin contacts:', error);
+        this.userNextOfKin = [];
+        this.loadingNextOfKin = false;
+      }
+    });
   }
 }

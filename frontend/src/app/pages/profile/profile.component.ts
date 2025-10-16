@@ -3,12 +3,14 @@ import {DxFormModule} from 'devextreme-angular/ui/form';
 import {DxButtonModule} from 'devextreme-angular/ui/button';
 import {DxFileUploaderModule} from 'devextreme-angular/ui/file-uploader';
 import {DxTextBoxModule} from 'devextreme-angular/ui/text-box';
+import {DxDataGridModule} from 'devextreme-angular/ui/data-grid';
 import {CommonModule} from '@angular/common';
 import {HttpClient, HttpClientModule, HttpHeaders} from '@angular/common/http';
-import {AuthService} from '../../shared/services';
+import {AuthService, NextOfKinService} from '../../shared/services';
 import { environment } from '../../../environments/environment';
 import { UserStateService } from '../../shared/services/user-state.service';
 import { Subscription } from 'rxjs';
+import { NextOfKinContact, NextOfKinCreate, NextOfKinUpdate, RELATIONSHIP_OPTIONS } from '../../models/next-of-kin.model';
 
 interface Employee {
   id: string;
@@ -38,7 +40,7 @@ interface FileUploaderEvent {
   templateUrl: 'profile.component.html',
   styleUrls: [ './profile.component.scss' ],
   standalone: true,
-  imports: [DxFormModule, DxButtonModule, DxFileUploaderModule, DxTextBoxModule, CommonModule, HttpClientModule]
+  imports: [DxFormModule, DxButtonModule, DxFileUploaderModule, DxTextBoxModule, DxDataGridModule, CommonModule, HttpClientModule]
 })
 
 export class ProfileComponent implements OnInit, OnDestroy {
@@ -68,12 +70,30 @@ export class ProfileComponent implements OnInit, OnDestroy {
   passwordErrorMessage: string = '';
   passwordPattern: RegExp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   
+  // Next of Kin properties
+  nextOfKinContacts: NextOfKinContact[] = [];
+  isEditingNextOfKin: boolean = false;
+  nextOfKinFormData: NextOfKinCreate = {
+    relationship: '',
+    full_name: '',
+    phone_number: '',
+    email: '',
+    address: '',
+    is_emergency_contact: true
+  };
+  selectedNextOfKin: NextOfKinContact | null = null;
+  isCreatingNextOfKin: boolean = false;
+  relationshipOptions: readonly string[] = RELATIONSHIP_OPTIONS;
+  nextOfKinSuccessMessage: string = '';
+  nextOfKinErrorMessage: string = '';
+  
   private userSubscription: Subscription | null = null;
 
   constructor(
     private http: HttpClient, 
     private authService: AuthService,
-    private userStateService: UserStateService
+    private userStateService: UserStateService,
+    private nextOfKinService: NextOfKinService
   ) {
     this.colCountByScreen = {
       xs: 1,
@@ -85,6 +105,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   
   ngOnInit(): void {
     this.refreshUserData();
+    this.loadNextOfKinContacts();
     
     // Subscribe to user state changes
     this.userSubscription = this.userStateService.user$.subscribe(user => {
@@ -393,5 +414,158 @@ export class ProfileComponent implements OnInit, OnDestroy {
   handleUploadedEvent(event: FileUploaderEvent): void {
     // This method is kept for backward compatibility but not used in the new flow
     // Legacy upload event handling
+  }
+
+  // ==================== NEXT OF KIN METHODS ====================
+
+  /**
+   * Load next of kin contacts from the API
+   */
+  loadNextOfKinContacts(): void {
+    this.nextOfKinService.getNextOfKin().subscribe({
+      next: (contacts) => {
+        this.nextOfKinContacts = contacts;
+        this.nextOfKinErrorMessage = '';
+      },
+      error: (error) => {
+        console.error('Failed to load next of kin contacts:', error);
+        this.nextOfKinErrorMessage = 'Failed to load emergency contacts. Please try again.';
+      }
+    });
+  }
+
+  /**
+   * Create a new next of kin contact
+   */
+  createNextOfKin(): void {
+    this.isLoading = true;
+    this.nextOfKinErrorMessage = '';
+    this.nextOfKinSuccessMessage = '';
+
+    this.nextOfKinService.createNextOfKin(this.nextOfKinFormData).subscribe({
+      next: (contact) => {
+        this.nextOfKinContacts.push(contact);
+        this.nextOfKinSuccessMessage = `Contact ${contact.full_name} added successfully!`;
+        this.cancelNextOfKinEdit();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Failed to create contact:', error);
+        this.nextOfKinErrorMessage = error.error?.detail || 'Failed to add contact. Please try again.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Update an existing next of kin contact
+   */
+  updateNextOfKin(): void {
+    if (!this.selectedNextOfKin) return;
+    
+    this.isLoading = true;
+    this.nextOfKinErrorMessage = '';
+    this.nextOfKinSuccessMessage = '';
+
+    this.nextOfKinService.updateNextOfKin(this.selectedNextOfKin.id, this.nextOfKinFormData).subscribe({
+      next: (updatedContact) => {
+        const index = this.nextOfKinContacts.findIndex(c => c.id === this.selectedNextOfKin!.id);
+        if (index !== -1) {
+          this.nextOfKinContacts[index] = updatedContact;
+        }
+        this.nextOfKinSuccessMessage = `Contact ${updatedContact.full_name} updated successfully!`;
+        this.cancelNextOfKinEdit();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Failed to update contact:', error);
+        this.nextOfKinErrorMessage = error.error?.detail || 'Failed to update contact. Please try again.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Delete a next of kin contact
+   */
+  deleteNextOfKin(contact: NextOfKinContact): void {
+    if (confirm(`Are you sure you want to delete ${contact.full_name}?`)) {
+      this.isLoading = true;
+      this.nextOfKinErrorMessage = '';
+      this.nextOfKinSuccessMessage = '';
+
+      this.nextOfKinService.deleteNextOfKin(contact.id).subscribe({
+        next: () => {
+          // Reload the data from server to ensure consistency
+          this.loadNextOfKinContacts();
+          this.nextOfKinSuccessMessage = `Contact ${contact.full_name} deleted successfully!`;
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Failed to delete contact:', error);
+          this.nextOfKinErrorMessage = error.error?.detail || 'Failed to delete contact. Please try again.';
+          this.isLoading = false;
+        }
+      });
+    }
+  }
+
+
+  /**
+   * Edit an existing next of kin contact
+   */
+  editNextOfKin(contact: NextOfKinContact): void {
+    this.selectedNextOfKin = contact;
+    this.isCreatingNextOfKin = false;
+    this.nextOfKinFormData = { ...contact };
+    this.isEditingNextOfKin = true;
+    this.nextOfKinErrorMessage = '';
+    this.nextOfKinSuccessMessage = '';
+  }
+
+  /**
+   * Start creating a new next of kin contact
+   */
+  toggleNextOfKinEdit(): void {
+    this.selectedNextOfKin = null;
+    this.isCreatingNextOfKin = true;
+    this.nextOfKinFormData = {
+      relationship: '',
+      full_name: '',
+      phone_number: '',
+      email: '',
+      address: '',
+      is_emergency_contact: true
+    };
+    this.isEditingNextOfKin = true;
+    this.nextOfKinErrorMessage = '';
+    this.nextOfKinSuccessMessage = '';
+  }
+
+  /**
+   * Cancel next of kin editing
+   */
+  cancelNextOfKinEdit(): void {
+    this.isEditingNextOfKin = false;
+    this.selectedNextOfKin = null;
+    this.isCreatingNextOfKin = false;
+    this.nextOfKinFormData = {
+      relationship: '',
+      full_name: '',
+      phone_number: '',
+      email: '',
+      address: '',
+      is_emergency_contact: true
+    };
+    this.nextOfKinErrorMessage = '';
+    this.nextOfKinSuccessMessage = '';
+  }
+
+  /**
+   * Clear next of kin messages
+   */
+  clearNextOfKinMessages(): void {
+    this.nextOfKinErrorMessage = '';
+    this.nextOfKinSuccessMessage = '';
   }
 }

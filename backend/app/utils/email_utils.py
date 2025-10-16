@@ -389,55 +389,30 @@ def send_wfh_request_notification_with_tokens(
         approve_url = f"{base_url}/api/v1/actions/action/{approve_token}"
         reject_url = f"{base_url}/api/v1/actions/action/{reject_token}"
 
-        # Compact single form with radio buttons - professional design
+        # Simple action button
         action_forms = f'''
-        <div style="background: #fff; padding: 16px; border: 1px solid #ddd; border-radius: 6px; margin: 16px 0;">
-            <form method="POST" action="{approve_url}">
-                <!-- Single Note Input -->
-                <div style="margin-bottom: 12px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 4px; color: #333; font-size: 14px;">
-                        Note (Optional):
-                    </label>
-                    <textarea name="approval_note" placeholder="Add a note for your decision..." style="
-                        width: 100%;
-                        height: 50px;
-                        padding: 8px;
-                        border: 1px solid #ddd;
-                        border-radius: 4px;
-                        font-size: 13px;
-                        resize: vertical;
-                        font-family: Arial, sans-serif;
-                        box-sizing: border-box;
-                    "></textarea>
-                </div>
-                
-                <!-- Action Selection -->
-                <div style="margin-bottom: 12px;">
-                    <div style="display: flex; gap: 0; justify-content: center;">
-                        <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 12px; border: 1px solid #28a745; border-right: none; border-radius: 4px 0 0 4px; background: #f8fff8; font-size: 13px;">
-                            <input type="radio" name="action" value="approve" checked style="margin-right: 6px;">
-                            <span style="color: #28a745; font-weight: bold;">✓ APPROVE</span>
-                        </label>
-                        <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 12px; border: 1px solid #dc3545; border-radius: 0 4px 4px 0; background: #fff8f8; font-size: 13px;">
-                            <input type="radio" name="action" value="reject" style="margin-right: 6px;">
-                            <span style="color: #dc3545; font-weight: bold;">✗ REJECT</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <!-- Submit Button -->
-                <button type="submit" style="
-                    background: #0f6cbd;
-                    color: #ffffff;
-                    padding: 10px 20px;
-                    border: none;
-                    border-radius: 4px;
-                    font-weight: bold;
-                    font-size: 13px;
-                    cursor: pointer;
-                    width: 100%;
-                ">Submit Decision</button>
-            </form>
+        <div style="background: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 6px; margin: 16px 0; text-align: center;">
+            <p style="margin: 0 0 16px 0; font-size: 14px; color: #333; font-weight: bold;">
+                Click the button below to review the request, add a note, and submit your decision:
+            </p>
+            
+            <a href="{approve_url}" style="
+                display: inline-block;
+                background: #0f6cbd;
+                color: #ffffff;
+                padding: 12px 24px;
+                text-decoration: none;
+                border-radius: 4px;
+                font-weight: bold;
+                font-size: 14px;
+                border: 2px solid #0f6cbd;
+            " onmouseover="this.style.background='#0d5aa7'; this.style.borderColor='#0d5aa7';" onmouseout="this.style.background='#0f6cbd'; this.style.borderColor='#0f6cbd';">
+                Review & Submit Decision
+            </a>
+            
+            <p style="margin: 16px 0 0 0; font-size: 12px; color: #6c757d;">
+                Expires in 72 hours • Single use only
+            </p>
         </div>'''
 
     html = f'''
@@ -468,10 +443,6 @@ def send_wfh_request_notification_with_tokens(
                 
                 <!-- Action Form -->
                 {action_forms}
-                
-                <p style="font-size: 10px; color: #6c757d; text-align: center; margin: 8px 0 0 0;">
-                    Expires in 72 hours • Single use only
-                </p>
             </div>
         </div>
     </body>
@@ -535,55 +506,30 @@ def send_leave_request_notification_with_tokens(
         approve_url = f"{base_url}/api/v1/actions/action/{approve_token}"
         reject_url = f"{base_url}/api/v1/actions/action/{reject_token}"
 
-        # Compact single form with radio buttons - professional design
+        # Simple action button
         action_forms = f'''
-        <div style="background: #fff; padding: 16px; border: 1px solid #ddd; border-radius: 6px; margin: 16px 0;">
-            <form method="POST" action="{approve_url}">
-                <!-- Single Note Input -->
-                <div style="margin-bottom: 12px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 4px; color: #333; font-size: 14px;">
-                        Note (Optional):
-                    </label>
-                    <textarea name="approval_note" placeholder="Add a note for your decision..." style="
-                        width: 100%;
-                        height: 50px;
-                        padding: 8px;
-                        border: 1px solid #ddd;
-                        border-radius: 4px;
-                        font-size: 13px;
-                        resize: vertical;
-                        font-family: Arial, sans-serif;
-                        box-sizing: border-box;
-                    "></textarea>
-                </div>
-                
-                <!-- Action Selection -->
-                <div style="margin-bottom: 12px;">
-                    <div style="display: flex; gap: 0; justify-content: center;">
-                        <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 12px; border: 1px solid #28a745; border-right: none; border-radius: 4px 0 0 4px; background: #f8fff8; font-size: 13px;">
-                            <input type="radio" name="action" value="approve" checked style="margin-right: 6px;">
-                            <span style="color: #28a745; font-weight: bold;">✓ APPROVE</span>
-                        </label>
-                        <label style="display: flex; align-items: center; cursor: pointer; padding: 8px 12px; border: 1px solid #dc3545; border-radius: 0 4px 4px 0; background: #fff8f8; font-size: 13px;">
-                            <input type="radio" name="action" value="reject" style="margin-right: 6px;">
-                            <span style="color: #dc3545; font-weight: bold;">✗ REJECT</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <!-- Submit Button -->
-                <button type="submit" style="
-                    background: #0f6cbd;
-                    color: #ffffff;
-                    padding: 10px 20px;
-                    border: none;
-                    border-radius: 4px;
-                    font-weight: bold;
-                    font-size: 13px;
-                    cursor: pointer;
-                    width: 100%;
-                ">Submit Decision</button>
-            </form>
+        <div style="background: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 6px; margin: 16px 0; text-align: center;">
+            <p style="margin: 0 0 16px 0; font-size: 14px; color: #333; font-weight: bold;">
+                Click the button below to review the request, add a note, and submit your decision:
+            </p>
+            
+            <a href="{approve_url}" style="
+                display: inline-block;
+                background: #0f6cbd;
+                color: #ffffff;
+                padding: 12px 24px;
+                text-decoration: none;
+                border-radius: 4px;
+                font-weight: bold;
+                font-size: 14px;
+                border: 2px solid #0f6cbd;
+            " onmouseover="this.style.background='#0d5aa7'; this.style.borderColor='#0d5aa7';" onmouseout="this.style.background='#0f6cbd'; this.style.borderColor='#0f6cbd';">
+                Review & Submit Decision
+            </a>
+            
+            <p style="margin: 16px 0 0 0; font-size: 12px; color: #6c757d;">
+                Expires in 72 hours • Single use only
+            </p>
         </div>'''
 
     html = f'''
@@ -614,10 +560,6 @@ def send_leave_request_notification_with_tokens(
                 
                 <!-- Action Form -->
                 {action_forms}
-                
-                <p style="font-size: 10px; color: #6c757d; text-align: center; margin: 8px 0 0 0;">
-                    Expires in 72 hours • Single use only
-                </p>
             </div>
         </div>
     </body>

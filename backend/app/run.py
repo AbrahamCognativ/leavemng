@@ -41,6 +41,7 @@ app = FastAPI(
         {"name": "files", "description": "Files endpoints"},
         {"name": "analytics", "description": "Analytics endpoints"},
         {"name": "audit_logs", "description": "Audit logs endpoints"},
+        {"name": "next-of-kin", "description": "Next of kin emergency contacts endpoints"},
     ]
 )
 
@@ -116,7 +117,8 @@ def include_routers():
         "policy_acknowledgment",
         "user_documents",
         "audit_logs",
-        "actions"]
+        "actions",
+        "next_of_kin"]
     for m in modules:
         router = import_module(f"app.api.v1.routers.{m}")
         # Use kebab-case for leave-policy and leave-types
@@ -132,6 +134,8 @@ def include_routers():
             prefix = "/api/v1/policy-acknowledgments"
         elif m == "user_documents":
             prefix = "/api/v1/user-documents"
+        elif m == "next_of_kin":
+            prefix = "/api/v1/next-of-kin"
         else:
             prefix = f"/api/v1/{m}"
         app.include_router(router.router, prefix=prefix)

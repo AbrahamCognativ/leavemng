@@ -298,6 +298,75 @@
         </dx-data-grid>
       </div>
       
+      <!-- Next of Kin Section -->
+      <div class="next-of-kin-section">
+        <div class="section-header">
+          <h3>Emergency Contacts (Next of Kin)</h3>
+        </div>
+        
+        <!-- Loading State -->
+        <div *ngIf="loadingNextOfKin" class="loading-container">
+          <dx-load-indicator [visible]="true"></dx-load-indicator>
+          <p>Loading emergency contacts...</p>
+        </div>
+        
+        <!-- Data Grid -->
+        <dx-data-grid
+          *ngIf="!loadingNextOfKin && userNextOfKin.length > 0"
+          [dataSource]="userNextOfKin"
+          [showBorders]="true"
+          [columnAutoWidth]="true"
+          [rowAlternationEnabled]="true"
+          [allowColumnReordering]="false"
+          [allowColumnResizing]="false"
+          [scrolling]="{ mode: 'standard' }"
+        >
+          <dxo-paging [pageSize]="5"></dxo-paging>
+          <dxo-pager
+            [showPageSizeSelector]="false"
+            [showInfo]="true">
+          </dxo-pager>
+          
+          <dxi-column dataField="full_name" caption="Name" [width]="150"></dxi-column>
+          <dxi-column dataField="relationship" caption="Relationship" [width]="120"></dxi-column>
+          <dxi-column dataField="phone_number" caption="Phone" [width]="140"></dxi-column>
+          <dxi-column dataField="email" caption="Email" [width]="180" cellTemplate="emailTemplate"></dxi-column>
+          <dxi-column dataField="address" caption="Address" [width]="200" cellTemplate="addressTemplate"></dxi-column>
+          <dxi-column caption="Status" cellTemplate="statusTemplate" [width]="120"></dxi-column>
+          
+          <!-- Email Template -->
+          <div *dxTemplate="let data of 'emailTemplate'">
+            <span class="email-text" [title]="data.value || 'No email'">
+              {{ data.value || 'No email' }}
+            </span>
+          </div>
+          
+          <!-- Address Template -->
+          <div *dxTemplate="let data of 'addressTemplate'">
+            <span class="address-text" [title]="data.value || 'No address'">
+              {{ data.value || 'No address' }}
+            </span>
+          </div>
+          
+          <!-- Status Template -->
+          <div *dxTemplate="let data of 'statusTemplate'">
+            <div class="status-badges">
+              <span class="badge primary" *ngIf="data.data.is_primary">Primary</span>
+              <span class="badge emergency" *ngIf="data.data.is_emergency_contact">Emergency</span>
+            </div>
+          </div>
+        </dx-data-grid>
+        
+        <!-- Empty State -->
+        <div *ngIf="!loadingNextOfKin && userNextOfKin.length === 0" class="empty-state">
+          <div class="empty-icon">
+            <i class="dx-icon-user"></i>
+          </div>
+          <h3>No Emergency Contacts</h3>
+          <p>This user has not added any emergency contacts yet.</p>
+        </div>
+      </div>
+      
       <div class="popup-buttons">
         <dx-button
           text="Save Changes"
