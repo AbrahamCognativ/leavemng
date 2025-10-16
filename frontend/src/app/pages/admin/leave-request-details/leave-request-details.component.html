@@ -7,7 +7,7 @@
         <div class="header-content">
           <h2>Leave Request Details</h2>
           <div class="status-badge" [ngClass]="getStatusClass(leaveRequest.status)">
-            {{ leaveRequest.status | titlecase }} <span *ngIf="leaveRequest.status === 'approved' && leaveRequest.decision_at">on {{ leaveRequest.decision_at | date:'medium' }}</span>
+            {{ leaveRequest.status | titlecase }} <span *ngIf="leaveRequest.status === 'approved' && leaveRequest.decision_at">on {{ leaveRequest.formatted_decision_at || (leaveRequest.decision_at | date:'medium') }}</span>
           </div>
         </div>
         
@@ -177,11 +177,11 @@
             <div class="info-grid">
               <div class="info-item" *ngIf="leaveRequest.decided_by">
                 <label>{{ leaveRequest.status === 'approved' ? 'Approved by' : 'Rejected by' }}</label>
-                <span>{{ leaveRequest.decided_by }}</span>
+                <span>{{ leaveRequest.decided_by_name || 'Unknown User' }}</span>
               </div>
               <div class="info-item" *ngIf="leaveRequest.decision_at">
                 <label>Decision Date</label>
-                <span>{{ leaveRequest.decision_at | date:'medium' }}</span>
+                <span>{{ leaveRequest.formatted_decision_at || (leaveRequest.decision_at | date:'medium') }}</span>
               </div>
               <div class="info-item full-width" *ngIf="leaveRequest.approval_note">
                 <label>{{ leaveRequest.status === 'approved' ? 'Approval Note' : 'Rejection Note' }}</label>

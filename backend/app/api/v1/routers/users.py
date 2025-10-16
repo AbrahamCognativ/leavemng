@@ -129,7 +129,7 @@ def get_user(user_id: UUID, db: Session = Depends(get_db),
     if (str(current_user.id) != str(user_id)
         and current_user.role_band not in ("HR", "Admin")
         and current_user.role_title not in ("HR", "Admin")
-            and str(user.manager_id) != str(current_user.id)):
+        and str(user.manager_id) != str(current_user.id)):
         from app.deps.permissions import log_permission_denied
         log_permission_denied(db, current_user.id, "get_user", "user", str(
             user_id), message="Insufficient permissions to view user", http_status=403)

@@ -156,3 +156,127 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+// ==================== NEXT OF KIN STYLES ====================
+
+.section-description {
+  color: #666;
+  font-size: 14px;
+  margin: 5px 0 20px 0;
+}
+
+// Empty state
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  background: #f8f9fa;
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  
+  i {
+    font-size: 48px;
+    color: #ccc;
+    margin-bottom: 16px;
+  }
+  
+  p {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    font-weight: 500;
+  }
+}
+
+
+// Action buttons
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  
+  .dx-button {
+    min-width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+}
+
+.next-of-kin-form {
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  margin-top: 20px;
+  
+  // Improve field spacing and alignment
+  ::ng-deep .dx-field[data-field="address"] {
+    margin-bottom: 8px;
+  }
+  
+  ::ng-deep .dx-field[data-field="is_emergency_contact"] {
+    margin-top: 16px;
+    
+    .dx-field-label {
+      margin-bottom: 8px;
+    }
+    
+    .dx-checkbox {
+      margin-top: 4px;
+    }
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.add-contact-section {
+  margin-top: 24px;
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+// Data grid styling to match All Users section
+::ng-deep .dx-datagrid {
+  .dx-datagrid-headers {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .dx-datagrid-rowsview {
+    .dx-row {
+      &:hover {
+        background-color: #f8f9fa;
+      }
+      
+      &.dx-row-alt {
+        background-color: #fdfdfd;
+      }
+    }
+  }
+}
+
+// Responsive design for mobile
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: row;
+    gap: 2px;
+    flex-wrap: wrap;
+    
+    .dx-button {
+      min-width: 28px;
+      height: 28px;
+      font-size: 11px;
+    }
+  }
+  
+}

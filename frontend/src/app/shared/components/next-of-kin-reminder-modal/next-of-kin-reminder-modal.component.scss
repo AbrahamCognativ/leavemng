@@ -1,0 +1,74 @@
+.reminder-modal-content {
+  padding: 20px;
+  text-align: center;
+  
+  .modal-icon {
+    margin-bottom: 20px;
+    
+    i {
+      font-size: 48px;
+      color: #ff6b6b;
+    }
+  }
+  
+  .modal-message {
+    margin-bottom: 30px;
+    
+    h3 {
+      color: #333;
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    p {
+      color: #666;
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      line-height: 1.5;
+      
+      &.reminder-text {
+        color: #ff6b6b;
+        font-weight: 500;
+        font-size: 14px;
+        margin-top: 16px;
+      }
+    }
+  }
+  
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+// Responsive design
+@media (max-width: 600px) {
+  .reminder-modal-content {
+    padding: 16px;
+    
+    .modal-icon i {
+      font-size: 40px;
+    }
+    
+    .modal-message h3 {
+      font-size: 20px;
+    }
+    
+    .modal-message p {
+      font-size: 14px;
+    }
+    
+    .modal-actions {
+      flex-direction: column;
+      align-items: center;
+      
+      .dx-button {
+        width: 100% !important;
+        max-width: 200px;
+      }
+    }
+  }
+}

@@ -43,9 +43,10 @@ class LeaveRequestRead(LeaveRequestBase):
     applied_at: datetime
     total_days: float
     user_id: UUID
-    decided_at: Optional[datetime] = None
+    user_name: Optional[str] = None
     decision_at: Optional[datetime] = None
     decided_by: Optional[UUID] = None
+    decided_by_name: Optional[str] = None
     comments: Optional[str] = None
     approval_note: Optional[str] = None
 
