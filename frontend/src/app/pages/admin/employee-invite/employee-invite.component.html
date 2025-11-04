@@ -131,6 +131,14 @@
       [columnAutoWidth]="true"
       [rowAlternationEnabled]="true"
     >
+      <dxo-paging [pageSize]="20"></dxo-paging>
+      <dxo-pager
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[10, 20, 50]"
+        [showInfo]="true">
+      </dxo-pager>
+      <dxo-search-panel [visible]="true" [width]="300" placeholder="Search users..."></dxo-search-panel>
+      
       <dxi-column dataField="name" caption="Name"></dxi-column>
       <dxi-column dataField="email" caption="Email"></dxi-column>
       <dxi-column dataField="role_band" caption="Role Band"></dxi-column>
