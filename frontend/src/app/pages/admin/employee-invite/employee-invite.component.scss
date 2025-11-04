@@ -84,6 +84,19 @@
 
 .users-section {
   margin-top: 30px;
+  
+  // Responsive search panel for mobile - reduce width on small screens
+  ::ng-deep .dx-datagrid-search-panel {
+    @media (max-width: 768px) {
+      width: 200px !important;
+      max-width: 200px !important;
+    }
+    
+    @media (max-width: 480px) {
+      width: 150px !important;
+      max-width: 150px !important;
+    }
+  }
 }
 
 .section-header {
