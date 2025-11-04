@@ -6,6 +6,7 @@ import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
+import { DxoSearchPanelModule, DxoPagingModule, DxoPagerModule } from 'devextreme-angular/ui/nested';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../shared/services';
@@ -49,6 +50,9 @@ interface OrgUnit {
     DxDataGridModule,
     DxPopupModule,
     DxNumberBoxModule,
+    DxoSearchPanelModule,
+    DxoPagingModule,
+    DxoPagerModule,
     CommonModule, 
     HttpClientModule
   ]
