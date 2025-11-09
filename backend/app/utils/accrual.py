@@ -103,9 +103,31 @@ def accrue_monthly_leave_balances(db: Session):
         return
     
     users = db.query(User).filter(User.is_active).all()
+    org_units = db.query(OrgUnit).all()
+
+    from collections import defaultdict, deque
+
+    children_by_parent = defaultdict(list)
+    for unit in org_units:
+        if unit.parent_unit_id:
+            children_by_parent[unit.parent_unit_id].append(unit.id)
+
+    def collect_org_tree(root_id):
+        """Return the set of org unit IDs rooted at root_id (including root)."""
+        if not root_id:
+            return set()
+        visited = set()
+        queue = deque([root_id])
+        while queue:
+            current = queue.popleft()
+            if current in visited:
+                continue
+            visited.add(current)
+            queue.extend(children_by_parent.get(current, []))
+        return visited
     
-    affected_types = []
     total_users_processed = 0
+    policy_summaries = []
     
     for policy in policies:
         leave_type = db.query(LeaveType).filter(
@@ -113,11 +135,15 @@ def accrue_monthly_leave_balances(db: Session):
         if not leave_type:
             continue
         accrual_amount = Decimal(str(policy.accrual_amount_per_period or 0))
-        affected_types.append(
-            f"{leave_type.code if hasattr(leave_type, 'code') else leave_type.id}")
-        
-        # FIXED: Only process users in the same organization as the policy
-        policy_users = [user for user in users if user.org_unit_id == policy.org_unit_id]
+        policy_org_ids = collect_org_tree(policy.org_unit_id)
+        if not policy_org_ids:
+            continue
+
+        policy_users = [
+            user for user in users
+            if user.org_unit_id in policy_org_ids]
+        if not policy_users:
+            continue
         
         for user in policy_users:
             bal = db.query(LeaveBalance).filter_by(
@@ -131,10 +157,21 @@ def accrue_monthly_leave_balances(db: Session):
             old_balance = bal.balance_days or Decimal(0)
             bal.balance_days = old_balance + accrual_amount
             total_users_processed += 1
+        policy_summaries.append(
+            f"{leave_type.code if hasattr(leave_type, 'code') else leave_type.id}: "
+            f"{accrual_amount} days x {len(policy_users)} users")
     
     db.commit()
-    log_audit(db, "Monthly Leave Accrual",
-              f"Added {accrual_amount} days to monthly leave balances for {total_users_processed} users in matching organizations.")
+    if not policy_summaries:
+        log_audit(
+            db,
+            "Monthly Leave Accrual",
+            "Monthly leave policies found but no eligible users matched the associated organization trees.")
+    else:
+        log_audit(
+            db,
+            "Monthly Leave Accrual",
+            f"Updated {total_users_processed} users. Details: {', '.join(policy_summaries)}.")
 
 
 def accrue_quarterly_leave_balances(db: Session):

@@ -17,6 +17,7 @@ class NextOfKinContact(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
+    @classmethod
     @validator('phone_number')
     def validate_phone_number(cls, v):
         # Remove all non-digit characters except +
@@ -26,12 +27,14 @@ class NextOfKinContact(BaseModel):
             raise ValueError('Invalid phone number format')
         return v
 
+    @classmethod
     @validator('email')
     def validate_email(cls, v):
         if v and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', v):
             raise ValueError('Invalid email format')
         return v
 
+    @classmethod
     @validator('relationship')
     def validate_relationship(cls, v):
         allowed_relationships = [
@@ -52,6 +55,7 @@ class NextOfKinCreate(BaseModel):
     is_primary: bool = False
     is_emergency_contact: bool = True
 
+    @classmethod
     @validator('phone_number')
     def validate_phone_number(cls, v):
         cleaned = re.sub(r'[^\d+]', '', v)
@@ -59,12 +63,14 @@ class NextOfKinCreate(BaseModel):
             raise ValueError('Invalid phone number format')
         return v
 
+    @classmethod
     @validator('email')
     def validate_email(cls, v):
         if v and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', v):
             raise ValueError('Invalid email format')
         return v
 
+    @classmethod
     @validator('relationship')
     def validate_relationship(cls, v):
         allowed_relationships = [
@@ -85,6 +91,7 @@ class NextOfKinUpdate(BaseModel):
     is_primary: Optional[bool] = None
     is_emergency_contact: Optional[bool] = None
 
+    @classmethod
     @validator('phone_number')
     def validate_phone_number(cls, v):
         if v:
@@ -93,12 +100,14 @@ class NextOfKinUpdate(BaseModel):
                 raise ValueError('Invalid phone number format')
         return v
 
+    @classmethod
     @validator('email')
     def validate_email(cls, v):
         if v and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', v):
             raise ValueError('Invalid email format')
         return v
 
+    @classmethod
     @validator('relationship')
     def validate_relationship(cls, v):
         if v:
@@ -114,6 +123,7 @@ class NextOfKinUpdate(BaseModel):
 class NextOfKinData(BaseModel):
     next_of_kin: List[NextOfKinContact] = Field(default_factory=list)
 
+    @classmethod
     @validator('next_of_kin')
     def validate_primary_contact(cls, v):
         primary_contacts = [contact for contact in v if contact.is_primary]
